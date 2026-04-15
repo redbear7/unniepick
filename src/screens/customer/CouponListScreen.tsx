@@ -169,15 +169,23 @@ interface CouponStripProps {
 }
 function CouponStrip({ coupon, isUsed = false, onPress, onShare }: CouponStripProps) {
   const kind       = getCouponKindConfig(coupon.coupon_kind);
-  const color      = isUsed ? '#666' : kind.bg;
+  const color      = isUsed ? '#BBBBBB' : kind.bg;
   const disc       = coupon.discount_type === 'percent'
     ? `${coupon.discount_value}% 할인`
     : coupon.discount_value > 0
       ? `${coupon.discount_value.toLocaleString()}원 할인`
       : '무료 제공';
-  const expiry     = new Date(coupon.expires_at)
-    .toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   const isTimesale = coupon.coupon_kind === 'timesale';
+
+  // 마감일 강조
+  const diffMs   = new Date(coupon.expires_at).getTime() - Date.now();
+  const diffH    = diffMs / 3_600_000;
+  const expiryColor = isUsed ? '#BBBBBB' : diffH <= 24 ? '#E53935' : diffH <= 72 ? '#FF6F0F' : '#8B95A1';
+  const expiryLabel = diffH <= 24
+    ? `⏰ ${Math.max(0, Math.ceil(diffH))}시간 남음`
+    : diffH <= 72
+    ? `⚡ D-${Math.ceil(diffH / 24)}`
+    : `~${new Date(coupon.expires_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}`;
   const progress   = coupon.total_quantity
     ? Math.min(coupon.issued_count / coupon.total_quantity, 1) : 0;
   const remaining  = coupon.total_quantity !== null
@@ -202,8 +210,8 @@ function CouponStrip({ coupon, isUsed = false, onPress, onShare }: CouponStripPr
 
       {/* 할인 크기 + 만료일 */}
       <View style={cs.discRow}>
-        <Text style={[cs.discText, { color: isUsed ? '#666' : '#F5F5F5' }]}>{disc}</Text>
-        <Text style={cs.expiry}>~{expiry}</Text>
+        <Text style={[cs.discText, { color: isUsed ? '#BBBBBB' : '#101010' }]}>{disc}</Text>
+        <Text style={[cs.expiry, { color: expiryColor }]}>{expiryLabel}</Text>
       </View>
 
       {/* 수량 프로그레스 */}
@@ -239,15 +247,15 @@ function CouponStrip({ coupon, isUsed = false, onPress, onShare }: CouponStripPr
 
 const cs = StyleSheet.create({
   wrap: {
-    borderWidth: 1, borderRadius: 12,
-    backgroundColor: '#1C1C1C',
+    borderWidth: 1, borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 14, paddingVertical: 12,
     marginTop: 10, gap: 8,
-    shadowColor: 'rgba(50,50,93,1)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   wrapUsed:     { opacity: 0.5 },
   topRow:       { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -256,12 +264,12 @@ const cs = StyleSheet.create({
   getBtn:       { fontSize: 12, fontWeight: '800' },
   discRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   discText:     { fontSize: 15, fontWeight: '800', letterSpacing: -0.3 },
-  expiry:       { fontSize: 12, color: '#666' },
+  expiry:       { fontSize: 13, fontWeight: '700' },
   progressWrap: { gap: 5 },
-  progressBg:   { height: 3, borderRadius: 2, backgroundColor: '#2E2E2E' },
+  progressBg:   { height: 3, borderRadius: 2, backgroundColor: '#F0F0F0' },
   progressFill: { height: 3, borderRadius: 2 },
   progressMeta: { flexDirection: 'row', justifyContent: 'space-between' },
-  progressText: { fontSize: 11, color: '#666', fontWeight: '600' },
+  progressText: { fontSize: 11, color: '#8B95A1', fontWeight: '600' },
 });
 
 // ─── 게시물 피드 아이템 (텍스트 메인, 쿠폰은 하단 스트립) ─────────────
@@ -957,18 +965,14 @@ export default function CouponListScreen() {
         )}
       </View>
 
-      {/* 탭 */}
-      <View style={s.tabBar}>
-        {([
-          { key: 'feed', label: `피드  ${feedItems.length}` },
-          { key: 'mine', label: `내 쿠폰${myCoupons.length > 0 ? `  ${myCoupons.length}` : ''}` },
-        ] as { key: Tab; label: string }[]).map(tab => (
-          <TouchableOpacity key={tab.key}
-            style={[s.tab, activeTab === tab.key && s.tabActive]}
-            onPress={() => setActiveTab(tab.key)} activeOpacity={0.75}>
-            <Text style={[s.tabText, activeTab === tab.key && s.tabTextActive]}>{tab.label}</Text>
-          </TouchableOpacity>
-        ))}
+      {/* 내 쿠폰 섹션 헤더 */}
+      <View style={s.sectionHeader}>
+        <Text style={s.sectionTitle}>내 쿠폰</Text>
+        {myCoupons.length > 0 && (
+          <View style={s.sectionBadge}>
+            <Text style={s.sectionBadgeText}>{myCoupons.length}</Text>
+          </View>
+        )}
       </View>
 
       {/* 정렬 바 고정 (양쪽 탭 공통) */}
@@ -1006,96 +1010,50 @@ export default function CouponListScreen() {
           </ScrollView>
         </View>
 
-        {/* ── 피드 탭 ── */}
-        {activeTab === 'feed' ? (
-          sortedFeedItems.length === 0
-            ? <EmptyState message="아직 게시물이 없어요" />
-            : sortedFeedItems.map((item, i) => {
-                const isLast = i === sortedFeedItems.length - 1;
-                if (item.kind === 'coupon') {
-                  const c = item.data;
-                  return (
-                    <CouponFeedItem key={item.key}
-                      coupon={c} distText={getDistText(c)} isLast={isLast}
-                      isLiked={likedCoupons.has(c.id)} likeCount={couponLikes[c.id] ?? 0}
-                      isPicked={pickedCoupons.has(c.id)} pickCount={couponPicks[c.id] ?? c.pick_count ?? 0}
-                      onPress={() => {
-                        incrementCouponClick(c.id).catch(() => {});
-                        navigation.navigate('CouponDetail', { coupon: c });
-                      }}
-                      onStorePress={c.store?.id ? () => navigation.navigate('StoreHome', { storeId: c.store!.id }) : undefined}
-                      onLike={() => handleLike('coupon', c.id)}
-                      onPick={() => handlePick('coupon', c.id)}
-                      onShare={() => handleShare(c)}
-                    />
-                  );
-                } else {
-                  const p = item.data;
-                  return (
-                    <PostFeedItem key={item.key}
-                      post={p} isLast={isLast}
-                      likeCount={postLikes[p.id] ?? p.like_count}
-                      pickCount={postPicks[p.id]  ?? p.pick_count}
-                      isLiked={likedPosts.has(p.id)}
-                      isPicked={pickedPosts.has(p.id)}
-                      distText={getStoreDistText(p.store)}
-                      onLike={() => handleLike('post', p.id)}
-                      onPick={() => handlePick('post', p.id)}
-                      onStorePress={p.store?.id ? () => navigation.navigate('StoreHome', { storeId: p.store!.id }) : undefined}
-                      onCouponPress={c => {
-                        incrementCouponClick(c.id).catch(() => {});
-                        navigation.navigate('CouponDetail', { coupon: c });
-                      }}
-                      onCouponShare={p.linked_coupon ? c => handleShare(c) : undefined}
-                    />
-                  );
-                }
-              })
-        ) : (
-          /* ── 내 쿠폰 탭 ── */
-          sortedMyCoupons.length === 0
-            ? <EmptyState message={'받은 쿠폰이 없어요\n피드에서 쿠폰을 받아보세요!'} />
-            : sortedMyCoupons.map((uc, i) => {
-                const isOver  = uc.status === 'used' || uc.status === 'cancelled' || uc.status === 'noshow';
-                const canCancel = uc.status === 'available' && canCancelCoupon(uc.coupon.expires_at);
-                return (
-                  <View key={uc.id}>
-                    <CouponFeedItem
-                      coupon={uc.coupon} distText={getDistText(uc.coupon)}
-                      isLast={i === sortedMyCoupons.length - 1}
-                      isLiked={likedCoupons.has(uc.coupon.id)} likeCount={couponLikes[uc.coupon.id] ?? 0}
-                      isPicked={pickedCoupons.has(uc.coupon.id)} pickCount={couponPicks[uc.coupon.id] ?? uc.coupon.pick_count ?? 0}
-                      isUsed={isOver} userStatus={uc.status}
-                      onPress={() => uc.status === 'available' && navigation.navigate('MyCouponQR', { userCoupon: uc })}
-                      onStorePress={uc.coupon.store?.id ? () => navigation.navigate('StoreHome', { storeId: uc.coupon.store!.id }) : undefined}
-                      onLike={() => handleLike('coupon', uc.coupon.id)}
-                      onPick={() => handlePick('coupon', uc.coupon.id)}
-                      onShare={() => handleShare(uc.coupon)}
-                    />
-                    {/* 후기 */}
-                    {uc.status === 'used' && (
-                      <TouchableOpacity
-                        style={[s.reviewBtn, reviewedIds.has(uc.id) && s.reviewBtnDone]}
-                        onPress={() => openReview(uc)} activeOpacity={0.8}>
-                        <Text style={[s.reviewBtnText, reviewedIds.has(uc.id) && { color: '#999' }]}>
-                          {reviewedIds.has(uc.id) ? '⭐ 후기 수정하기' : '⭐ 후기 남기기'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {/* 취소 기한 */}
-                    {uc.status === 'available' && (
-                      <View style={[s.cancelBanner, !canCancel && s.cancelBannerExp]}>
-                        <Text style={[s.cancelText, !canCancel && s.cancelTextExp]}>
-                          {canCancel
-                            ? `🚫 ${cancelDeadlineText(uc.coupon.expires_at)} · 당일 취소 불가`
-                            : '🚫 취소 기한 초과 · 노쇼 적용'}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })
-        )}
+        {/* ── 내 쿠폰 ── */}
+        {sortedMyCoupons.length === 0
+          ? <EmptyState message={'받은 쿠폰이 없어요\n가게에서 쿠폰을 받아보세요!'} />
+          : sortedMyCoupons.map((uc, i) => {
+              const isOver    = uc.status === 'used' || uc.status === 'cancelled' || uc.status === 'noshow';
+              const canCancel = uc.status === 'available' && canCancelCoupon(uc.coupon.expires_at);
+              return (
+                <View key={uc.id}>
+                  <CouponFeedItem
+                    coupon={uc.coupon} distText={getDistText(uc.coupon)}
+                    isLast={i === sortedMyCoupons.length - 1}
+                    isLiked={likedCoupons.has(uc.coupon.id)} likeCount={couponLikes[uc.coupon.id] ?? 0}
+                    isPicked={pickedCoupons.has(uc.coupon.id)} pickCount={couponPicks[uc.coupon.id] ?? uc.coupon.pick_count ?? 0}
+                    isUsed={isOver} userStatus={uc.status}
+                    onPress={() => uc.status === 'available' && navigation.navigate('MyCouponQR', { userCoupon: uc })}
+                    onStorePress={uc.coupon.store?.id ? () => navigation.navigate('StoreHome', { storeId: uc.coupon.store!.id }) : undefined}
+                    onLike={() => handleLike('coupon', uc.coupon.id)}
+                    onPick={() => handlePick('coupon', uc.coupon.id)}
+                    onShare={() => handleShare(uc.coupon)}
+                  />
+                  {/* 후기 */}
+                  {uc.status === 'used' && (
+                    <TouchableOpacity
+                      style={[s.reviewBtn, reviewedIds.has(uc.id) && s.reviewBtnDone]}
+                      onPress={() => openReview(uc)} activeOpacity={0.8}>
+                      <Text style={[s.reviewBtnText, reviewedIds.has(uc.id) && { color: '#999' }]}>
+                        {reviewedIds.has(uc.id) ? '⭐ 후기 수정하기' : '⭐ 후기 남기기'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* 취소 기한 */}
+                  {uc.status === 'available' && (
+                    <View style={[s.cancelBanner, !canCancel && s.cancelBannerExp]}>
+                      <Text style={[s.cancelText, !canCancel && s.cancelTextExp]}>
+                        {canCancel
+                          ? `🚫 ${cancelDeadlineText(uc.coupon.expires_at)} · 당일 취소 불가`
+                          : '🚫 취소 기한 초과 · 노쇼 적용'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })
+        }
 
         {/* 배너 */}
         {!bannerDismissed && banners.length > 0 && (
@@ -1135,30 +1093,29 @@ function EmptyState({ message }: { message: string }) {
 }
 
 const s = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: '#FFFFFF' },
+  safe:        { flex: 1, backgroundColor: '#F0F2F5' },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                 paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#101010', letterSpacing: -0.5 },
+                 paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10,
+                 backgroundColor: '#F0F2F5' },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: '#191F28', letterSpacing: -0.5 },
   locBadge:    { fontSize: 12, color: '#2DB87A', fontWeight: '600' },
 
-  tabBar:       { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  tab:          { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive:    { borderBottomColor: '#101010' },
-  tabText:      { fontSize: 14, fontWeight: '600', color: '#AAAAAA' },
-  tabTextActive:{ color: '#101010', fontWeight: '800' },
+  sectionHeader:     { flexDirection: 'row', alignItems: 'center', gap: 8,
+                       paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#F0F2F5' },
+  sectionTitle:      { fontSize: 16, fontWeight: '800', color: '#191F28' },
+  sectionBadge:      { backgroundColor: '#FF6F0F', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  sectionBadgeText:  { fontSize: 12, fontWeight: '800', color: '#fff' },
 
   // 정렬 바 — sticky header이므로 배경색 + 그림자 필수
   sortBar: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F2F5',
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-    // iOS shadow
+    borderBottomColor: '#E8EAED',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04,
     shadowRadius: 4,
-    // Android elevation
-    elevation: 3,
+    elevation: 2,
     zIndex: 10,
   },
   sortBarInner: {
@@ -1166,10 +1123,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 10, gap: 8,
   },
   sortChip:      { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999,
-                   backgroundColor: '#F5F5F5', borderWidth: 1, borderColor: '#EBEBEB' },
-  sortChipActive:{ backgroundColor: '#101010', borderColor: '#101010' },
+                   backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8EAED' },
+  sortChipActive:{ backgroundColor: '#FF6F0F', borderColor: '#FF6F0F' },
   sortChipDisabled: { opacity: 0.45 },
-  sortChipText:  { fontSize: 12, fontWeight: '700', color: '#888' },
+  sortChipText:  { fontSize: 12, fontWeight: '700', color: '#8B95A1' },
   sortChipTextActive: { color: '#fff' },
 
   reviewBtn:     { marginHorizontal: 16, marginTop: -4, marginBottom: 8, paddingVertical: 9,

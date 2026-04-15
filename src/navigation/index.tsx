@@ -88,11 +88,6 @@ function CustomerTabs() {
         options={{ tabBarLabel: '쿠폰', tabBarIcon: () => <Text style={{ fontSize: 22 }}>🎟</Text> }}
       />
       <Tab.Screen
-        name="Interest"
-        component={InterestScreen}
-        options={{ tabBarLabel: '찜', tabBarIcon: () => <Text style={{ fontSize: 22 }}>⭐</Text> }}
-      />
-      <Tab.Screen
         name="Map"
         component={MapScreen}
         options={{ tabBarLabel: '지도', tabBarIcon: () => <Text style={{ fontSize: 22 }}>📍</Text> }}
