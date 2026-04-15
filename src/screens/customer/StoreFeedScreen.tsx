@@ -19,7 +19,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
+
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -43,6 +43,15 @@ import {
   StoreAnnouncement,
   fetchMyAnnouncements,
 } from '../../lib/services/musicService';
+
+// ── 빠른공지 샘플 ────────────────────────────────────────────────
+const SAMPLE_NOTICES = [
+  { id: 'sq1', text: '✅ 오늘 영업합니다! 잠시 후 쿠폰 발급 예정이에요 🎟' },
+  { id: 'sq2', text: '⚡ 타임세일 시작! 지금 바로 쿠폰 발급받으세요!' },
+  { id: 'sq3', text: '🍜 오늘 점심 특선 — 돈코츠 라멘+군만두 세트 8,900원!' },
+  { id: 'sq4', text: '⏰ 영업 마감 1시간 전입니다. 서두르세요!' },
+  { id: 'sq5', text: '🙏 오늘도 방문해주셔서 감사합니다!' },
+];
 
 // ── 테마 상수 ─────────────────────────────────────────────────────
 const C = {
@@ -512,70 +521,81 @@ export default function StoreFeedScreen() {
           </ScrollView>
         )}
 
-        {/* ── 입력창 + 빠른공지 버튼 ───────────────────────── */}
+        {/* ── 입력창 + 등록 버튼 ───────────────────────────── */}
         <View style={styles.inputBar}>
-          <TextInput
+          {/* 입력창 클릭 → 빠른공지 모달 */}
+          <TouchableOpacity
             style={styles.inputField}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="사장님만 공지를 올릴 수 있어요"
-            placeholderTextColor={C.text3}
-            multiline
-          />
+            onPress={() => setQnVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={{ fontSize: 13, color: C.text3 }}>
+              사장님만 공지를 올릴 수 있어요
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.qnBtn}
             onPress={() => setQnVisible(true)}
           >
-            <Text style={styles.qnBtnText}>⚡ 빠른공지</Text>
+            <Text style={styles.qnBtnText}>등록</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
 
-      {/* ── 빠른공지 바텀 시트 (Modal) ──────────────────────── */}
+      {/* ── 빠른공지 바텀 시트 (Modal · 배경 흐림 없음) ──────── */}
       <Modal
         visible={qnVisible}
         transparent
         animationType="slide"
         onRequestClose={() => setQnVisible(false)}
       >
-        <TouchableOpacity
-          style={styles.qnOverlay}
-          activeOpacity={1}
-          onPress={() => setQnVisible(false)}
-        >
+        {/* 배경 투명 — 흐리게 효과 없음 */}
+        <View style={styles.qnOverlay} pointerEvents="box-none">
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setQnVisible(false)}
+          />
           <View style={styles.qnSheet}>
             <View style={styles.qnHandle} />
             <View style={styles.qnHeader}>
-              <Text style={styles.qnTitle}>⚡ 빠른공지</Text>
+              <Text style={styles.qnTitle}>⚡ 자주 쓰는 공지</Text>
               <TouchableOpacity onPress={() => setQnVisible(false)}>
                 <Text style={styles.qnClose}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            {quickNotices.length === 0 ? (
-              <View style={styles.qnEmpty}>
-                <Text style={styles.qnEmptyText}>등록된 빠른공지가 없어요</Text>
-                <Text style={styles.qnEmptyHint}>사장님 대시보드에서 추가해주세요</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={quickNotices}
-                keyExtractor={item => item.id}
-                contentContainerStyle={{ paddingBottom: 32 }}
-                renderItem={({ item }) => (
+            <FlatList
+              data={quickNotices.length > 0 ? quickNotices : SAMPLE_NOTICES}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ paddingBottom: 8 }}
+              renderItem={({ item }) => (
+                <View style={styles.qnItem}>
                   <TouchableOpacity
-                    style={styles.qnItem}
-                    onPress={() => pickNotice(item.text)}
+                    style={{ flex: 1 }}
+                    onPress={() => { pickNotice(item.text); setQnVisible(false); }}
                   >
                     <Text style={styles.qnItemText}>{item.text}</Text>
-                    <Text style={styles.qnItemArrow}>›</Text>
                   </TouchableOpacity>
-                )}
-                ItemSeparatorComponent={() => <View style={styles.qnDivider} />}
-              />
-            )}
+                  <View style={styles.qnItemActs}>
+                    <TouchableOpacity style={styles.qnIe}>
+                      <Text style={styles.qnIeText}>✏️ 수정</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.qnId}>
+                      <Text style={styles.qnIdText}>🗑 삭제</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.qnDivider} />}
+              ListFooterComponent={() => (
+                <TouchableOpacity style={styles.qnAddRow}>
+                  <Text style={styles.qnAddText}>➕ 새 공지 추가</Text>
+                </TouchableOpacity>
+              )}
+            />
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -888,17 +908,24 @@ const styles = StyleSheet.create({
   },
   qnBtnText: { fontSize: 12, fontWeight: '800', color: '#B8A200' },
 
-  // ── 빠른공지 바텀 시트 (Modal) ─────────────────────────────
+  // ── 빠른공지 바텀 시트 (Modal · 배경 흐림 없음) ───────────
   qnOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'transparent', // 배경 흐리게 없음
     justifyContent: 'flex-end',
   },
   qnSheet: {
     backgroundColor: C.card,
     borderTopLeftRadius: 22, borderTopRightRadius: 22,
+    borderTopWidth: 1, borderTopColor: C.border,
     paddingBottom: 34,
-    maxHeight: '70%',
+    maxHeight: '72%',
+    // 그림자로 시각적 분리감
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 24,
   },
   qnHandle: {
     width: 36, height: 4,
@@ -914,22 +941,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: C.divider,
   },
-  qnTitle: { fontSize: 15, fontWeight: '800', color: C.text },
+  qnTitle: { fontSize: 14, fontWeight: '800', color: C.text },
   qnClose: { fontSize: 18, color: C.text3, padding: 4 },
   qnItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 18, paddingVertical: 13,
+    gap: 8,
   },
   qnItemText: {
-    flex: 1, fontSize: 14, color: C.text2, lineHeight: 20,
+    flex: 1, fontSize: 13, color: C.text2, lineHeight: 20,
   },
-  qnItemArrow: { fontSize: 18, color: C.text3 },
+  qnItemActs: { flexDirection: 'row', gap: 4, flexShrink: 0 },
+  qnIe: {
+    paddingHorizontal: 8, paddingVertical: 5,
+    borderRadius: 7,
+    backgroundColor: '#F2F4F6',
+    borderWidth: 1, borderColor: C.border,
+  },
+  qnIeText: { fontSize: 10, fontWeight: '700', color: C.text2 },
+  qnId: {
+    paddingHorizontal: 8, paddingVertical: 5,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255,59,48,0.06)',
+    borderWidth: 1, borderColor: 'rgba(255,59,48,0.2)',
+  },
+  qnIdText: { fontSize: 10, fontWeight: '700', color: '#FF3B30' },
   qnDivider: { height: 1, backgroundColor: C.divider, marginHorizontal: 18 },
-  qnEmpty: {
+  qnAddRow: {
+    paddingHorizontal: 18, paddingVertical: 14,
+    borderTopWidth: 1, borderTopColor: C.divider,
     alignItems: 'center',
-    paddingVertical: 36,
+    marginTop: 4,
   },
-  qnEmptyText: { fontSize: 15, color: C.text2, marginBottom: 6 },
-  qnEmptyHint: { fontSize: 12, color: C.text3 },
+  qnAddText: { fontSize: 13, fontWeight: '700', color: C.brand },
 });

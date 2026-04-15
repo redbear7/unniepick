@@ -1,9 +1,5 @@
 /**
- * NearbyFeedScreen — 위치 기반 가게 채팅 목록
- *
- * 모크업 v3 ① 위치 기반 채팅 목록을 React Native로 구현.
- * expo-location으로 현재 위치 취득 → Supabase get_nearby_stores RPC로 거리 정렬.
- * 각 가게 아이템 탭 → StoreFeedScreen으로 이동.
+ * NearbyFeedScreen — 위치 기반 가게 채팅 목록 (모크업 v3 ① 기준)
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -12,6 +8,7 @@ import {
   Alert,
   FlatList,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,26 +18,44 @@ import { useNavigation } from '@react-navigation/native';
 import * as Location from 'expo-location';
 
 import { supabase } from '../../lib/supabase';
-import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 import { useMiniPlayerPadding } from '../../hooks/useMiniPlayerPadding';
 
-// ── 테마 상수 ─────────────────────────────────────────────────────
+// ── 테마 ──────────────────────────────────────────────────────────
 const C = {
   bg:      '#F0F2F5',
   card:    '#FFFFFF',
   border:  'rgba(0,0,0,0.08)',
+  divider: 'rgba(0,0,0,0.06)',
   text:    '#191F28',
   text2:   '#4E5968',
   text3:   '#8B95A1',
   brand:   '#FF6F0F',
   yellow:  '#FEE500',
   green:   '#0AC86E',
-  red:     '#FF6B6B',
 };
 
-// ── 거리 반경 옵션 ─────────────────────────────────────────────────
-const RADIUS_OPTIONS = [1, 2, 5, 10] as const;
-type RadiusKm = (typeof RADIUS_OPTIONS)[number];
+// ── 거리 옵션 ─────────────────────────────────────────────────────
+const RADIUS_OPTS = [
+  { value: 1,  label: '1km'  },
+  { value: 2,  label: '2km'  },
+  { value: 5,  label: '5km'  },
+  { value: 10, label: '10km' },
+  { value: 50, label: '전체' },
+];
+
+// ── 카테고리 ──────────────────────────────────────────────────────
+const CATEGORIES = [
+  { key: 'all',     label: '전체',   emoji: '🗺' },
+  { key: 'food',    label: '음식점', emoji: '🍜' },
+  { key: 'cafe',    label: '카페',   emoji: '☕' },
+  { key: 'beauty',  label: '뷰티',   emoji: '💄' },
+  { key: 'shop',    label: '쇼핑',   emoji: '👗' },
+  { key: 'fitness', label: '운동',   emoji: '🏋️' },
+  { key: 'ent',     label: '엔터',   emoji: '🎮' },
+];
+
+// ── 정렬 ─────────────────────────────────────────────────────────
+const SORT_OPTS = ['거리순', '최신순', '인기순'];
 
 // ── 서버 응답 타입 ────────────────────────────────────────────────
 interface NearbyStore {
@@ -54,92 +69,225 @@ interface NearbyStore {
   active_coupon_count: number;
   latest_coupon_kind:  string;
   unread_post_count:   number;
+  category?:           string;
 }
 
-// ── 쿠폰 종류 → 배지 ─────────────────────────────────────────────
+// ── 쿠폰 뱃지 ────────────────────────────────────────────────────
 const COUPON_BADGES: Record<string, { label: string; color: string; bg: string }> = {
   timesale:   { label: '⚡ 타임세일', color: '#FF6B6B', bg: 'rgba(255,107,107,0.1)' },
-  regular:    { label: '🎟 할인쿠폰', color: '#FFD93D', bg: 'rgba(255,217,61,0.12)' },
+  regular:    { label: '🎟 할인쿠폰', color: '#B8A200', bg: 'rgba(254,229,0,0.12)'  },
   service:    { label: '🎁 서비스',   color: '#2DB87A', bg: 'rgba(45,184,122,0.1)'  },
   experience: { label: '🌟 체험단',   color: '#D946B0', bg: 'rgba(217,70,176,0.1)'  },
 };
 
-// ── 거리 표시 포맷 ────────────────────────────────────────────────
+// ── 거리 포맷 ────────────────────────────────────────────────────
 function formatDist(km: number): string {
   if (km < 1) return `${Math.round(km * 1000)}m`;
   return `${km.toFixed(1)}km`;
 }
 
-// ── 거리별 색상 ───────────────────────────────────────────────────
+// ── 거리 컬러 ────────────────────────────────────────────────────
 function distColor(km: number): string {
-  if (km < 0.5) return C.green;
-  if (km < 2)   return '#FFD93D';
+  if (km < 1) return C.green;
+  if (km < 3) return '#D4700A';
   return C.text3;
 }
 
-// ── 가게 아이템 ───────────────────────────────────────────────────
-interface StoreItemProps {
-  store: NearbyStore;
-  onPress: () => void;
+function distDot(km: number): string {
+  if (km < 1) return '🟢';
+  if (km < 3) return '🟡';
+  return '⚪';
 }
 
-function StoreItem({ store, onPress }: StoreItemProps) {
+// ── 아바타 배경 컬러 (가게명 기반) ──────────────────────────────
+const STORE_COLORS = ['#3a2525','#1a2025','#1f2a1f','#2a1f2a','#25202a','#1f2520','#2a221f'];
+function storeGrad(name: string): string {
+  return STORE_COLORS[name.charCodeAt(0) % STORE_COLORS.length];
+}
+
+// ── 가짜 멤버수 (store_id 해시) ──────────────────────────────────
+function fakeMemberCount(storeId: string): number {
+  let h = 0;
+  for (let i = 0; i < storeId.length; i++) h = (h * 31 + storeId.charCodeAt(i)) & 0xffffff;
+  return 100 + (h % 1900);
+}
+
+// ── 미니맵 (정적 시각화) ─────────────────────────────────────────
+function MiniMap({ radiusKm, dong }: { radiusKm: number; dong: string }) {
+  const PINS = [
+    { x: '38%', y: '52%', emoji: '🍜', hot: true  },
+    { x: '62%', y: '38%', emoji: '☕', hot: false },
+    { x: '30%', y: '32%', emoji: '💄', hot: false },
+    { x: '68%', y: '65%', emoji: '🥩', hot: false },
+  ];
+  return (
+    <View style={mm.wrap}>
+      {/* 그리드 배경 */}
+      <View style={mm.grid}>
+        {/* 반경 원 */}
+        <View style={mm.radiusCircle} />
+        {/* 도로 */}
+        <View style={[mm.roadH, { top: 55 }]} />
+        <View style={[mm.roadH, { top: 72 }]} />
+        <View style={[mm.roadV, { left: '35%' as any }]} />
+        <View style={[mm.roadV, { left: '65%' as any }]} />
+        {/* 내 위치 */}
+        <View style={mm.myPin}>
+          <View style={mm.myDot} />
+          <View style={mm.myLabel}>
+            <Text style={mm.myLabelText}>📍 {dong} (나)</Text>
+          </View>
+        </View>
+        {/* 가게 핀 */}
+        {PINS.map((p, i) => (
+          <View key={i} style={[mm.storePin, { left: p.x as any, top: p.y as any }]}>
+            <View style={[mm.spBubble, p.hot && mm.spBubbleHot]}>
+              <Text style={mm.spText}>{p.emoji}</Text>
+            </View>
+          </View>
+        ))}
+        {/* 반경 레이블 */}
+        <View style={mm.radiusLbl}>
+          <Text style={mm.radiusLblText}>{radiusKm >= 50 ? '전체' : `${radiusKm}km`} 반경</Text>
+        </View>
+        {/* 지도 크게 보기 */}
+        <TouchableOpacity style={mm.expandBtn}>
+          <Text style={mm.expandText}>지도 크게 보기 ↗</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+const mm = StyleSheet.create({
+  wrap: { height: 110, backgroundColor: '#1A1E24', overflow: 'hidden' },
+  grid: {
+    flex: 1,
+    position: 'relative',
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.06)',
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  roadH: {
+    position: 'absolute', left: 0, right: 0,
+    height: 8, backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  roadV: {
+    position: 'absolute', top: 0, bottom: 0,
+    width: 8, backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  radiusCircle: {
+    position: 'absolute',
+    width: 90, height: 90,
+    borderRadius: 45,
+    borderWidth: 1.5,
+    borderColor: 'rgba(254,229,0,0.35)',
+    borderStyle: 'dashed',
+    left: '50%', top: '50%',
+    marginLeft: -45, marginTop: -45,
+  },
+  myPin: {
+    position: 'absolute', left: '50%', top: '50%',
+    alignItems: 'center',
+    transform: [{ translateX: -6 }, { translateY: -6 }],
+  },
+  myDot: {
+    width: 12, height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4C9EFF',
+    borderWidth: 2, borderColor: '#fff',
+  },
+  myLabel: {
+    position: 'absolute',
+    top: 14,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 5, paddingVertical: 2,
+    borderRadius: 6,
+    width: 90,
+  },
+  myLabelText: { fontSize: 8, color: '#fff', textAlign: 'center' },
+  storePin: {
+    position: 'absolute',
+    alignItems: 'center',
+    transform: [{ translateX: -14 }, { translateY: -10 }],
+  },
+  spBubble: {
+    backgroundColor: 'rgba(30,34,40,0.85)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 6, paddingVertical: 3,
+  },
+  spBubbleHot: {
+    backgroundColor: 'rgba(255,107,107,0.2)',
+    borderColor: 'rgba(255,107,107,0.5)',
+  },
+  spText: { fontSize: 12 },
+  radiusLbl: {
+    position: 'absolute', bottom: 6, left: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
+  },
+  radiusLblText: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
+  expandBtn: {
+    position: 'absolute', bottom: 6, right: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8,
+  },
+  expandText: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
+});
+
+// ── 가게 아이템 ───────────────────────────────────────────────────
+function StoreItem({ store, onPress }: { store: NearbyStore; onPress: () => void }) {
   const badge = store.latest_coupon_kind
     ? COUPON_BADGES[store.latest_coupon_kind]
     : null;
+  const members = fakeMemberCount(store.store_id);
+  const catEntry = CATEGORIES.find(c => c.key === (store.category ?? 'all')) ?? CATEGORIES[0];
 
   return (
-    <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.75}>
+    <TouchableOpacity style={s.item} onPress={onPress} activeOpacity={0.75}>
       {/* 아바타 */}
-      <View style={styles.av}>
-        <Text style={{ fontSize: 24 }}>🏪</Text>
-        {/* 온라인 도트 (최근 포스트 있으면 활성) */}
-        {store.unread_post_count > 0 && <View style={styles.onlineDot} />}
+      <View style={[s.av, { backgroundColor: storeGrad(store.store_name) }]}>
+        <Text style={{ fontSize: 22 }}>
+          {catEntry.emoji === '🗺' ? '🏪' : catEntry.emoji}
+        </Text>
+        {store.unread_post_count > 0 && <View style={s.onlineDot} />}
       </View>
 
       {/* 본문 */}
-      <View style={styles.body}>
-        {/* 1행: 가게명 + 쿠폰 뱃지 + 거리 */}
-        <View style={styles.row1}>
-          <Text style={styles.storeName} numberOfLines={1}>
-            {store.store_name}
-          </Text>
+      <View style={s.body}>
+        {/* 행1: 가게명 + 쿠폰뱃지 + 거리 */}
+        <View style={s.r1}>
+          <Text style={s.name} numberOfLines={1}>{store.store_name}</Text>
           {badge && (
-            <View style={[styles.cpBadge, { backgroundColor: badge.bg }]}>
-              <Text style={[styles.cpBadgeText, { color: badge.color }]}>
-                {badge.label}
-              </Text>
+            <View style={[s.cpBadge, { backgroundColor: badge.bg }]}>
+              <Text style={[s.cpBadgeText, { color: badge.color }]}>{badge.label}</Text>
             </View>
           )}
-          <View style={styles.distCol}>
-            <Text style={[styles.dist, { color: distColor(store.distance_km) }]}>
-              {store.distance_km < 0.5 ? '🟢' : '🟡'} {formatDist(store.distance_km)}
+          <View style={s.distCol}>
+            <Text style={[s.dist, { color: distColor(store.distance_km) }]}>
+              {distDot(store.distance_km)} {formatDist(store.distance_km)}
             </Text>
             {store.unread_post_count > 0 && (
-              <View style={styles.postBadge}>
-                <Text style={styles.postBadgeText}>💬 {store.unread_post_count}</Text>
+              <View style={s.postBadge}>
+                <Text style={s.postBadgeText}>💬 {store.unread_post_count}</Text>
               </View>
             )}
           </View>
         </View>
 
-        {/* 2행: 미리보기 텍스트 */}
-        <Text style={styles.preview} numberOfLines={1}>
+        {/* 행2: 미리보기 */}
+        <Text style={s.preview} numberOfLines={1}>
           {store.active_coupon_count > 0
             ? `🎟 쿠폰 ${store.active_coupon_count}개 발행 중`
             : '최근 소식을 확인해보세요'}
         </Text>
 
-        {/* 3행: 태그 */}
-        <View style={styles.row3}>
+        {/* 행3: 카테고리 태그 + 동 + 멤버수 */}
+        <View style={s.r3}>
+          <View style={s.tag}><Text style={s.tagText}>{catEntry.label}</Text></View>
           {store.district_name && (
-            <Text style={styles.tag}>{store.district_name}</Text>
+            <Text style={s.dong}>{store.district_name}</Text>
           )}
-          {store.active_coupon_count > 0 && (
-            <View style={styles.yellowBadge}>
-              <Text style={styles.yellowBadgeText}>쿠폰 {store.active_coupon_count}개</Text>
-            </View>
-          )}
+          <Text style={s.members}>👥 {members.toLocaleString()}명</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -151,15 +299,17 @@ function StoreItem({ store, onPress }: StoreItemProps) {
 // ════════════════════════════════════════════════════════════════
 export default function NearbyFeedScreen() {
   const navigation = useNavigation<any>();
-  const bottomPad = useMiniPlayerPadding(true); // 탭바 있는 화면
+  const bottomPad = useMiniPlayerPadding(true);
 
-  const [stores, setStores]       = useState<NearbyStore[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [locating, setLocating]   = useState(true);
-  const [radiusKm, setRadiusKm]   = useState<RadiusKm>(5);
-  const [coords, setCoords]       = useState<{ lat: number; lng: number } | null>(null);
-  const [myDong, setMyDong]       = useState('내 위치');
-  const [distOpen, setDistOpen]   = useState(false);
+  const [stores,    setStores]    = useState<NearbyStore[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [locating,  setLocating]  = useState(true);
+  const [radiusKm,  setRadiusKm]  = useState(5);
+  const [coords,    setCoords]    = useState<{ lat: number; lng: number } | null>(null);
+  const [myDong,    setMyDong]    = useState('내 위치');
+  const [distOpen,  setDistOpen]  = useState(false);
+  const [activeCat, setActiveCat] = useState('all');
+  const [sortIdx,   setSortIdx]   = useState(0); // 0=거리순 1=최신순 2=인기순
 
   // ── 위치 취득 ────────────────────────────────────────────────
   useEffect(() => {
@@ -173,11 +323,8 @@ export default function NearbyFeedScreen() {
           return;
         }
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        const { latitude, longitude } = loc.coords;
-        setCoords({ lat: latitude, lng: longitude });
-
-        // 역지오코딩 (행정동 이름)
-        const [geo] = await Location.reverseGeocodeAsync({ latitude, longitude });
+        setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+        const [geo] = await Location.reverseGeocodeAsync(loc.coords);
         if (geo) {
           setMyDong(geo.district ?? geo.subregion ?? geo.city ?? '내 위치');
         }
@@ -197,8 +344,8 @@ export default function NearbyFeedScreen() {
       const { data, error } = await supabase.rpc('get_nearby_stores', {
         user_lat:  coords.lat,
         user_lng:  coords.lng,
-        radius_km: radiusKm,
-        max_count: 30,
+        radius_km: radiusKm >= 50 ? 9999 : radiusKm,
+        max_count: 50,
       });
       if (error) throw error;
       setStores((data ?? []) as NearbyStore[]);
@@ -209,107 +356,145 @@ export default function NearbyFeedScreen() {
     }
   }, [coords, radiusKm]);
 
-  useEffect(() => {
-    if (coords) loadStores();
-  }, [coords, loadStores]);
+  useEffect(() => { if (coords) loadStores(); }, [coords, loadStores]);
 
-  // ── 가게 탭 → StoreFeedScreen ─────────────────────────────────
-  const openStore = (store: NearbyStore) => {
-    navigation.navigate('StoreFeed', {
-      storeId:   store.store_id,
-      storeName: store.store_name,
-    });
-  };
+  // ── 카테고리 필터링 ──────────────────────────────────────────
+  const filtered = activeCat === 'all'
+    ? stores
+    : stores.filter(st => (st.category ?? 'all') === activeCat);
+
+  // ── 이동 ────────────────────────────────────────────────────
+  const openStore = (store: NearbyStore) =>
+    navigation.navigate('StoreFeed', { storeId: store.store_id, storeName: store.store_name });
+
+  const curRadius = RADIUS_OPTS.find(r => r.value === radiusKm) ?? RADIUS_OPTS[2];
 
   // ════════════════════════════════════════════════════════════
   //  렌더
   // ════════════════════════════════════════════════════════════
   return (
-    <SafeAreaView style={styles.root}>
-      {/* ── 위치 헤더 바 ─────────────────────────────────── */}
-      <View style={styles.locBar}>
-        <View style={styles.locLeft}>
-          <Text style={styles.locPin}>📍</Text>
+    <SafeAreaView style={s.root}>
+
+      {/* ── 위치 헤더 바 ───────────────────────────────────── */}
+      <View style={s.locBar}>
+        <View style={s.locLeft}>
+          <Text style={{ fontSize: 15 }}>📍</Text>
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={styles.locDong}>{myDong}</Text>
-              <Text style={styles.locArrow}>▾</Text>
+              <Text style={s.locDong}>{myDong}</Text>
+              <Text style={s.locArrow}>▾</Text>
             </View>
-            {locating && (
-              <Text style={styles.locSub}>위치 확인 중...</Text>
-            )}
+            {locating && <Text style={s.locSub}>위치 확인 중...</Text>}
           </View>
         </View>
-        {/* 거리 설정 버튼 */}
-        <TouchableOpacity
-          style={styles.distBtn}
-          onPress={() => setDistOpen(p => !p)}
-        >
-          <Text style={styles.distBtnText}>
-            📏 <Text style={{ color: C.yellow }}>{radiusKm}km</Text> 이내 ▾
-          </Text>
-        </TouchableOpacity>
+        <View style={s.locRight}>
+          <TouchableOpacity
+            style={s.distBtn}
+            onPress={() => setDistOpen(p => !p)}
+          >
+            <Text style={s.distBtnText}>
+              📏 <Text style={{ color: C.yellow }}>{curRadius.label}</Text> 이내 ▾
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.searchBtn}>
+            <Text style={{ fontSize: 17 }}>🔍</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* ── 거리 필터 패널 ─────────────────────────────────── */}
+      {/* ── 거리 패널 ──────────────────────────────────────── */}
       {distOpen && (
-        <View style={styles.distPanel}>
-          <Text style={styles.distPanelTitle}>📏 반경 거리 설정</Text>
-          <View style={styles.distChips}>
-            {RADIUS_OPTIONS.map(r => (
+        <View style={s.distPanel}>
+          <Text style={s.distPanelTitle}>📏 반경 거리 설정</Text>
+          <View style={s.distChips}>
+            {RADIUS_OPTS.map(r => (
               <TouchableOpacity
-                key={r}
-                style={[styles.chip, radiusKm === r && styles.chipOn]}
-                onPress={() => { setRadiusKm(r); setDistOpen(false); }}
+                key={r.value}
+                style={[s.chip, radiusKm === r.value && s.chipOn]}
+                onPress={() => { setRadiusKm(r.value); setDistOpen(false); }}
               >
-                <Text style={[styles.chipText, radiusKm === r && styles.chipTextOn]}>
-                  {r}km
+                <Text style={[s.chipText, radiusKm === r.value && s.chipTextOn]}>
+                  {r.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
+          <Text style={s.distPanelSub}>
+            현재 반경 <Text style={{ fontWeight: '700' }}>{curRadius.label}</Text> 이내 가게{' '}
+            <Text style={{ fontWeight: '700' }}>{stores.length}곳</Text> 표시 중
+          </Text>
         </View>
       )}
 
-      {/* ── 정렬 헤더 ─────────────────────────────────────── */}
-      <View style={styles.sortBar}>
-        <Text style={styles.sortCount}>
-          내 주변 <Text style={{ color: C.text2, fontWeight: '700' }}>{stores.length}곳</Text>
-        </Text>
-        <Text style={styles.sortLabel}>거리순</Text>
+      {/* ── 카테고리 탭 ────────────────────────────────────── */}
+      <View style={s.catWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8, gap: 8 }}>
+          {CATEGORIES.map(cat => (
+            <TouchableOpacity
+              key={cat.key}
+              style={[s.cat, activeCat === cat.key && s.catOn]}
+              onPress={() => setActiveCat(cat.key)}
+            >
+              <View style={[s.catIcon, activeCat === cat.key && s.catIconOn]}>
+                <Text style={{ fontSize: 18 }}>{cat.emoji}</Text>
+              </View>
+              <Text style={[s.catLabel, activeCat === cat.key && s.catLabelOn]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      {/* ── 리스트 ────────────────────────────────────────── */}
+      {/* ── 미니 맵 ────────────────────────────────────────── */}
+      <MiniMap radiusKm={radiusKm} dong={myDong} />
+
+      {/* ── 정렬 바 ────────────────────────────────────────── */}
+      <View style={s.sortBar}>
+        <Text style={s.sortCount}>
+          내 주변 <Text style={{ fontWeight: '700', color: C.text2 }}>{filtered.length}곳</Text>
+        </Text>
+        <View style={s.sortOpts}>
+          {SORT_OPTS.map((opt, i) => (
+            <TouchableOpacity key={opt} onPress={() => setSortIdx(i)}>
+              <Text style={[s.sortOpt, sortIdx === i && s.sortOptOn]}>{opt}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* ── 리스트 ─────────────────────────────────────────── */}
       {locating || loading ? (
-        <View style={styles.center}>
+        <View style={s.center}>
           <ActivityIndicator color={C.brand} size="large" />
-          <Text style={styles.loadingText}>
+          <Text style={s.loadingText}>
             {locating ? '위치를 확인하고 있어요...' : '주변 가게를 찾고 있어요...'}
           </Text>
         </View>
-      ) : stores.length === 0 ? (
-        <View style={styles.center}>
+      ) : filtered.length === 0 ? (
+        <View style={s.center}>
           <Text style={{ fontSize: 40, marginBottom: 12 }}>🗺</Text>
-          <Text style={styles.emptyText}>
-            반경 {radiusKm}km 이내에 가게가 없어요
+          <Text style={s.emptyText}>
+            반경 {curRadius.label} 이내에 가게가 없어요
           </Text>
           <TouchableOpacity
-            style={styles.expandBtn}
+            style={s.expandBtn}
             onPress={() => {
-              const next = RADIUS_OPTIONS.find(r => r > radiusKm);
-              if (next) setRadiusKm(next);
+              const next = RADIUS_OPTS.find(r => r.value > radiusKm);
+              if (next) setRadiusKm(next.value);
             }}
           >
-            <Text style={styles.expandBtnText}>범위 넓히기</Text>
+            <Text style={s.expandBtnText}>범위 넓히기</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
-          data={stores}
+          data={filtered}
           keyExtractor={item => item.store_id}
           contentContainerStyle={{ paddingBottom: bottomPad }}
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={styles.divider} />}
+          ItemSeparatorComponent={() => <View style={s.divider} />}
           onRefresh={loadStores}
           refreshing={loading}
           renderItem={({ item }) => (
@@ -324,139 +509,132 @@ export default function NearbyFeedScreen() {
 // ════════════════════════════════════════════════════════════════
 //  스타일
 // ════════════════════════════════════════════════════════════════
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
+const s = StyleSheet.create({
+  root:   { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
 
   // 위치 헤더
   locBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 14, paddingVertical: 9,
     backgroundColor: C.card,
     borderBottomWidth: 1, borderBottomColor: C.border,
   },
-  locLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  locPin: { fontSize: 15 },
-  locDong: { fontSize: 17, fontWeight: '900', color: C.text, letterSpacing: -0.3 },
-  locArrow: { fontSize: 11, color: C.text3, marginTop: 1 },
-  locSub: { fontSize: 10, color: C.text3, marginTop: 1 },
+  locLeft:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  locDong:  { fontSize: 16, fontWeight: '900', color: C.text, letterSpacing: -0.3 },
+  locArrow: { fontSize: 11, color: C.text3 },
+  locSub:   { fontSize: 10, color: C.text3, marginTop: 1 },
+  locRight: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   distBtn: {
     backgroundColor: '#F2F4F6',
     borderWidth: 1, borderColor: C.border,
-    borderRadius: 20, paddingHorizontal: 11, paddingVertical: 5,
+    borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
   },
   distBtnText: { fontSize: 11, fontWeight: '700', color: C.text2 },
+  searchBtn: { padding: 4 },
 
   // 거리 패널
   distPanel: {
     backgroundColor: C.card,
     borderBottomWidth: 1, borderBottomColor: C.border,
-    padding: 14,
+    paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10,
+    gap: 10,
   },
-  distPanelTitle: { fontSize: 12, fontWeight: '700', color: C.text2, marginBottom: 10 },
-  distChips: { flexDirection: 'row', gap: 6 },
+  distPanelTitle: { fontSize: 12, fontWeight: '700', color: C.text2 },
+  distChips:      { flexDirection: 'row', gap: 6 },
   chip: {
-    paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1.5, borderColor: C.border,
+    paddingHorizontal: 13, paddingVertical: 6,
+    borderRadius: 20, borderWidth: 1.5, borderColor: C.border,
   },
-  chipOn: { backgroundColor: C.yellow, borderColor: C.yellow },
-  chipText: { fontSize: 12, fontWeight: '700', color: C.text3 },
+  chipOn:     { backgroundColor: C.yellow, borderColor: C.yellow },
+  chipText:   { fontSize: 12, fontWeight: '700', color: C.text3 },
   chipTextOn: { color: '#1A1200' },
+  distPanelSub: { fontSize: 11, color: C.text3 },
 
-  // 정렬 헤더
+  // 카테고리
+  catWrap: {
+    backgroundColor: C.card,
+    borderBottomWidth: 1, borderBottomColor: C.border,
+  },
+  cat: { alignItems: 'center', gap: 4 },
+  catOn: {},
+  catIcon: {
+    width: 40, height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F2F4F6',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  catIconOn: { backgroundColor: 'rgba(254,229,0,0.2)' },
+  catLabel:   { fontSize: 10, color: C.text3, fontWeight: '600' },
+  catLabelOn: { color: '#B8A200', fontWeight: '700' },
+
+  // 정렬 바
   sortBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 14, paddingVertical: 7,
+    backgroundColor: C.bg,
   },
   sortCount: { fontSize: 12, color: C.text3 },
-  sortLabel: {
-    fontSize: 11, fontWeight: '700', color: C.brand,
+  sortOpts:  { flexDirection: 'row', gap: 4 },
+  sortOpt: {
+    fontSize: 11, fontWeight: '700', color: C.text3,
+    paddingHorizontal: 9, paddingVertical: 4,
+    borderRadius: 20, overflow: 'hidden',
+  },
+  sortOptOn: {
+    color: C.brand,
     backgroundColor: 'rgba(255,111,15,0.08)',
-    paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20,
   },
 
   // 리스트 아이템
   item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16, paddingVertical: 11,
+    flexDirection: 'row', gap: 12, alignItems: 'center',
+    paddingHorizontal: 14, paddingVertical: 12,
     backgroundColor: C.card,
   },
   av: {
-    width: 54, height: 54,
-    borderRadius: 16,
-    backgroundColor: '#F2F4F6',
+    width: 54, height: 54, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-    borderWidth: 1.5, borderColor: C.border,
-    position: 'relative',
+    flexShrink: 0, position: 'relative',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)',
   },
   onlineDot: {
     position: 'absolute', bottom: 2, right: 2,
-    width: 11, height: 11,
-    borderRadius: 6,
-    backgroundColor: C.green,
-    borderWidth: 2, borderColor: C.card,
+    width: 11, height: 11, borderRadius: 6,
+    backgroundColor: C.green, borderWidth: 2, borderColor: C.card,
   },
-  body: { flex: 1, minWidth: 0 },
-  row1: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 3,
-    gap: 4,
+  body:  { flex: 1, minWidth: 0 },
+  r1: {
+    flexDirection: 'row', alignItems: 'center',
+    marginBottom: 3, gap: 4,
   },
-  storeName: {
-    fontSize: 14, fontWeight: '700', color: C.text,
-    flexShrink: 1,
-  },
-  cpBadge: {
-    paddingHorizontal: 6, paddingVertical: 1.5,
-    borderRadius: 6, flexShrink: 0,
-  },
+  name:   { fontSize: 14, fontWeight: '700', color: C.text, flexShrink: 1 },
+  cpBadge: { paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 6, flexShrink: 0 },
   cpBadgeText: { fontSize: 9, fontWeight: '800' },
-  distCol: {
-    marginLeft: 'auto',
-    alignItems: 'flex-end',
-    gap: 3, flexShrink: 0,
-  },
+  distCol: { marginLeft: 'auto', alignItems: 'flex-end', gap: 3, flexShrink: 0 },
   dist: { fontSize: 11, fontWeight: '700' },
   postBadge: {
     backgroundColor: C.brand,
-    paddingHorizontal: 5, paddingVertical: 1,
-    borderRadius: 9,
+    paddingHorizontal: 5, paddingVertical: 1, borderRadius: 9,
   },
   postBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  preview: {
-    fontSize: 12, color: C.text2,
-    marginBottom: 3,
-  },
-  row3: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  preview: { fontSize: 12, color: C.text2, marginBottom: 3 },
+  r3: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   tag: {
-    fontSize: 10, color: C.text3,
     backgroundColor: '#F2F4F6',
     paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10,
   },
-  yellowBadge: {
-    backgroundColor: 'rgba(254,229,0,0.12)',
-    paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10,
-  },
-  yellowBadgeText: { fontSize: 10, fontWeight: '700', color: '#B8A200' },
+  tagText: { fontSize: 10, fontWeight: '600', color: C.text3 },
+  dong:    { fontSize: 10, color: C.text3 },
+  members: { fontSize: 10, color: C.text3, marginLeft: 'auto' },
 
-  divider: { height: 1, backgroundColor: C.border, marginHorizontal: 16 },
+  divider: { height: 1, backgroundColor: C.border, marginHorizontal: 14 },
 
-  // 빈 상태
   emptyText: { fontSize: 15, color: C.text3, textAlign: 'center' },
   expandBtn: {
-    backgroundColor: C.brand,
-    paddingHorizontal: 20, paddingVertical: 10,
+    backgroundColor: C.brand, paddingHorizontal: 20, paddingVertical: 10,
     borderRadius: 20, marginTop: 8,
   },
   expandBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  loadingText: { fontSize: 13, color: C.text3, marginTop: 8 },
+  loadingText:   { fontSize: 13, color: C.text3, marginTop: 8 },
 });
