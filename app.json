@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "언니픽",
+    "slug": "unniepick",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFF8F5"
+    },
+    "scheme": "unniepick",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bangju.unniepick",
+      "usesAppleSignIn": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "주변 맛집을 지도에서 보여주기 위해 위치 정보가 필요해요.",
+        "NSLocationAlwaysUsageDescription": "근처 맛집 알림을 받기 위해 위치 정보가 필요해요.",
+        "NSCameraUsageDescription": "QR코드 스캔을 위해 카메라 접근이 필요해요.",
+        "NSFaceIDUsageDescription": "관리자 인증을 위해 Face ID를 사용해요.",
+        "UIBackgroundModes": ["audio"]
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyDy_p9KW9g4gnnKLwjYzroP5S5-s8qj_pg"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFF8F5",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.bangju.unniepick",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDy_p9KW9g4gnnKLwjYzroP5S5-s8qj_pg"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "./plugins/removeRestrictedEntitlements",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "주변 맛집을 지도에서 보여주기 위해 위치 정보가 필요해요."
+        }
+      ],
+      "expo-secure-store",
+      "expo-asset",
+      "expo-web-browser"
+    ]
+  }
+}
