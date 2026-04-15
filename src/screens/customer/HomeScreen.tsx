@@ -5,9 +5,9 @@
  * (모크업 v3 ① 위치 기반 채팅 목록 디자인 적용)
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { MotiView } from 'moti';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
+  Animated,
   ActivityIndicator,
   Alert,
   FlatList,
@@ -198,17 +198,29 @@ const mm = StyleSheet.create({
 });
 
 // ── 가게 아이템 ───────────────────────────────────────────────────
+function FadeSlideIn({ index, children }: { index: number; children: React.ReactNode }) {
+  const opacity   = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(16)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity,    { toValue: 1, duration: 350, delay: index * 60, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 350, delay: index * 60, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
 function StoreItem({ store, onPress, index = 0 }: { store: NearbyStore; onPress: () => void; index?: number }) {
   const badge = store.latest_coupon_kind ? COUPON_BADGES[store.latest_coupon_kind] : null;
   const members = fakeMemberCount(store.store_id);
   const catEntry = CATEGORIES.find(c => c.key === (store.category ?? 'all')) ?? CATEGORIES[0];
 
   return (
-    <MotiView
-      from={{ opacity: 0, translateY: 16 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 350, delay: index * 60 }}
-    >
+    <FadeSlideIn index={index}>
     <TouchableOpacity style={s.item} onPress={onPress} activeOpacity={0.75}>
       <View style={[s.av, { backgroundColor: storeGrad(store.store_name) }]}>
         <Text style={{ fontSize: 22 }}>{catEntry.emoji === '🗺' ? '🏪' : catEntry.emoji}</Text>
@@ -245,7 +257,7 @@ function StoreItem({ store, onPress, index = 0 }: { store: NearbyStore; onPress:
         </View>
       </View>
     </TouchableOpacity>
-    </MotiView>
+    </FadeSlideIn>
   );
 }
 

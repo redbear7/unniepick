@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { MotiView } from 'moti';
 import {
   View, Text, StyleSheet, Animated, TextInput, Share,
   TouchableOpacity, ScrollView, ActivityIndicator,
-  RefreshControl, Alert, Platform,
+  RefreshControl, Alert, Platform, Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
@@ -193,12 +192,17 @@ function CouponStrip({ coupon, isUsed = false, onPress, onShare, index = 0 }: Co
   const remaining  = coupon.total_quantity !== null
     ? coupon.total_quantity - coupon.issued_count : null;
 
+  const opacity    = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity,    { toValue: 1, duration: 380, delay: index * 80, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 380, delay: index * 80, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
   return (
-    <MotiView
-      from={{ opacity: 0, translateY: 20, scale: 0.97 }}
-      animate={{ opacity: 1, translateY: 0, scale: 1 }}
-      transition={{ type: 'timing', duration: 380, delay: index * 80 }}
-    >
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
     <TouchableOpacity
       style={[cs.wrap, { borderColor: color + '44' }, isUsed && cs.wrapUsed]}
       onPress={onPress}
@@ -249,7 +253,7 @@ function CouponStrip({ coupon, isUsed = false, onPress, onShare, index = 0 }: Co
         <CountdownBadge expiresAt={coupon.expires_at} color={color} />
       )}
     </TouchableOpacity>
-    </MotiView>
+    </Animated.View>
   );
 }
 
@@ -1025,12 +1029,7 @@ export default function CouponListScreen() {
               const isOver    = uc.status === 'used' || uc.status === 'cancelled' || uc.status === 'noshow';
               const canCancel = uc.status === 'available' && canCancelCoupon(uc.coupon.expires_at);
               return (
-                <MotiView
-                  key={uc.id}
-                  from={{ opacity: 0, translateY: 24, scale: 0.97 }}
-                  animate={{ opacity: 1, translateY: 0, scale: 1 }}
-                  transition={{ type: 'timing', duration: 400, delay: i * 80 }}
-                >
+                <View key={uc.id}>
                   <CouponFeedItem
                     coupon={uc.coupon} distText={getDistText(uc.coupon)}
                     isLast={i === sortedMyCoupons.length - 1}
@@ -1063,7 +1062,7 @@ export default function CouponListScreen() {
                       </Text>
                     </View>
                   )}
-                </MotiView>
+                </View>
               );
             })
         }

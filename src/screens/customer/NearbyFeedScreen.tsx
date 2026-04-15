@@ -2,9 +2,9 @@
  * NearbyFeedScreen — 위치 기반 가게 채팅 목록 (모크업 v3 ① 기준)
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { MotiView } from 'moti';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
+  Animated,
   ActivityIndicator,
   Alert,
   FlatList,
@@ -235,6 +235,23 @@ const mm = StyleSheet.create({
   expandText: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
 });
 
+// ── 페이드+슬라이드 래퍼 ─────────────────────────────────────────
+function FadeSlideIn({ index, children }: { index: number; children: React.ReactNode }) {
+  const opacity    = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(16)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity,    { toValue: 1, duration: 350, delay: index * 60, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 350, delay: index * 60, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
 // ── 가게 아이템 ───────────────────────────────────────────────────
 function StoreItem({ store, onPress, index = 0 }: { store: NearbyStore; onPress: () => void; index?: number }) {
   const badge = store.latest_coupon_kind
@@ -244,11 +261,7 @@ function StoreItem({ store, onPress, index = 0 }: { store: NearbyStore; onPress:
   const catEntry = CATEGORIES.find(c => c.key === (store.category ?? 'all')) ?? CATEGORIES[0];
 
   return (
-    <MotiView
-      from={{ opacity: 0, translateY: 16 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 350, delay: index * 60 }}
-    >
+    <FadeSlideIn index={index}>
     <TouchableOpacity style={s.item} onPress={onPress} activeOpacity={0.75}>
       {/* 아바타 */}
       <View style={[s.av, { backgroundColor: storeGrad(store.store_name) }]}>
@@ -297,7 +310,7 @@ function StoreItem({ store, onPress, index = 0 }: { store: NearbyStore; onPress:
         </View>
       </View>
     </TouchableOpacity>
-    </MotiView>
+    </FadeSlideIn>
   );
 }
 
