@@ -3,6 +3,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { MotiView } from 'moti';
 import {
   ActivityIndicator,
   Alert,
@@ -235,7 +236,7 @@ const mm = StyleSheet.create({
 });
 
 // ── 가게 아이템 ───────────────────────────────────────────────────
-function StoreItem({ store, onPress }: { store: NearbyStore; onPress: () => void }) {
+function StoreItem({ store, onPress, index = 0 }: { store: NearbyStore; onPress: () => void; index?: number }) {
   const badge = store.latest_coupon_kind
     ? COUPON_BADGES[store.latest_coupon_kind]
     : null;
@@ -243,6 +244,11 @@ function StoreItem({ store, onPress }: { store: NearbyStore; onPress: () => void
   const catEntry = CATEGORIES.find(c => c.key === (store.category ?? 'all')) ?? CATEGORIES[0];
 
   return (
+    <MotiView
+      from={{ opacity: 0, translateY: 16 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: 'timing', duration: 350, delay: index * 60 }}
+    >
     <TouchableOpacity style={s.item} onPress={onPress} activeOpacity={0.75}>
       {/* 아바타 */}
       <View style={[s.av, { backgroundColor: storeGrad(store.store_name) }]}>
@@ -291,6 +297,7 @@ function StoreItem({ store, onPress }: { store: NearbyStore; onPress: () => void
         </View>
       </View>
     </TouchableOpacity>
+    </MotiView>
   );
 }
 
@@ -497,8 +504,8 @@ export default function NearbyFeedScreen() {
           ItemSeparatorComponent={() => <View style={s.divider} />}
           onRefresh={loadStores}
           refreshing={loading}
-          renderItem={({ item }) => (
-            <StoreItem store={item} onPress={() => openStore(item)} />
+          renderItem={({ item, index }) => (
+            <StoreItem store={item} onPress={() => openStore(item)} index={index ?? 0} />
           )}
         />
       )}
