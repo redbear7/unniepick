@@ -1,16 +1,18 @@
 /**
- * HomeScreen — 언니픽 홈
+ * HomeScreen — 언니픽 홈 피드 (디자인 목업 A1)
  *
- * 최상단 1줄 공지 롤링 배너 유지 + 아래는 위치 기반 가게 채팅 목록
- * (모크업 v3 ① 위치 기반 채팅 목록 디자인 적용)
+ * feed-card 기반 피드: 팔로우 가게의 쿠폰을 피드 형태로 보여줌
  */
 
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Animated,
   ActivityIndicator,
   Alert,
+  Animated,
+  Dimensions,
   FlatList,
+  Modal,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -20,450 +22,1217 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 import { supabase } from '../../lib/supabase';
-import { useMiniPlayerPadding } from '../../hooks/useMiniPlayerPadding';
-import RollingBanner from '../../components/RollingBanner';
+import {
+  getHomeFeed,
+  FeedCoupon,
+  HomeFeedResult,
+  formatExpiry,
+} from '../../lib/services/feedService';
 
-// ── 테마 ──────────────────────────────────────────────────────────
-const C = {
-  bg:      '#F0F2F5',
-  card:    '#FFFFFF',
-  border:  'rgba(0,0,0,0.08)',
-  text:    '#191F28',
-  text2:   '#4E5968',
-  text3:   '#8B95A1',
-  brand:   '#FF6F0F',
-  yellow:  '#FEE500',
-  green:   '#0AC86E',
-};
+const SCREEN_W = Dimensions.get('window').width;
+const BANNER_SKIP_KEY = 'banner_skip_until';
 
-// ── 거리 옵션 ─────────────────────────────────────────────────────
-const RADIUS_OPTS = [
-  { value: 1,  label: '1km'  },
-  { value: 2,  label: '2km'  },
-  { value: 5,  label: '5km'  },
-  { value: 10, label: '10km' },
-  { value: 50, label: '전체' },
-];
+// ── 배너 타입 ─────────────────────────────────────────────────────
+interface Banner {
+  id:            string;
+  title:         string;
+  subtitle:      string | null;
+  image_url:     string | null;
+  link_url:      string | null;
+  bg_color:      string;
+  display_order: number;
+}
 
-// ── 카테고리 ──────────────────────────────────────────────────────
-const CATEGORIES = [
-  { key: 'all',     label: '전체',   emoji: '🗺' },
-  { key: 'food',    label: '음식점', emoji: '🍜' },
-  { key: 'cafe',    label: '카페',   emoji: '☕' },
-  { key: 'beauty',  label: '뷰티',   emoji: '💄' },
-  { key: 'shop',    label: '쇼핑',   emoji: '👗' },
-  { key: 'fitness', label: '운동',   emoji: '🏋️' },
-  { key: 'ent',     label: '엔터',   emoji: '🎮' },
-];
-
-// ── 정렬 ─────────────────────────────────────────────────────────
-const SORT_OPTS = ['거리순', '최신순', '인기순'];
-
-// ── 서버 응답 타입 ────────────────────────────────────────────────
+// ── 주변 가게 타입 ────────────────────────────────────────────────
 interface NearbyStore {
   store_id:            string;
   store_name:          string;
-  latitude:            number;
-  longitude:           number;
-  district_id:         string | null;
-  district_name:       string | null;
   distance_km:         number;
   active_coupon_count: number;
-  latest_coupon_kind:  string;
-  unread_post_count:   number;
   category?:           string;
 }
 
-// ── 쿠폰 뱃지 ────────────────────────────────────────────────────
-const COUPON_BADGES: Record<string, { label: string; color: string; bg: string }> = {
-  timesale:   { label: '⚡ 타임세일', color: '#FF6B6B', bg: 'rgba(255,107,107,0.1)' },
-  regular:    { label: '🎟 할인쿠폰', color: '#B8A200', bg: 'rgba(254,229,0,0.12)'  },
-  service:    { label: '🎁 서비스',   color: '#2DB87A', bg: 'rgba(45,184,122,0.1)'  },
-  experience: { label: '🌟 체험단',   color: '#D946B0', bg: 'rgba(217,70,176,0.1)'  },
+// ── 테마 ──────────────────────────────────────────────────────────
+const C = {
+  brand:    '#FF6F0F',
+  brand2:   '#FF9A3D',
+  brandBg:  '#FFF3EB',
+  g900:     '#191F28',
+  g800:     '#333D4B',
+  g700:     '#4E5968',
+  g600:     '#6B7684',
+  g500:     '#8B95A1',
+  g400:     '#ADB5BD',
+  g300:     '#D1D6DB',
+  g200:     '#E5E8EB',
+  g150:     '#EAECEF',
+  g100:     '#F2F4F6',
+  g50:      '#F9FAFB',
+  green:    '#0AC86E',
+  red:      '#E53935',
+  white:    '#FFFFFF',
 };
 
-// ── 거리 포맷 ────────────────────────────────────────────────────
-function formatDist(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)}m`;
-  return `${km.toFixed(1)}km`;
-}
-function distColor(km: number): string {
-  if (km < 1) return C.green;
-  if (km < 3) return '#D4700A';
-  return C.text3;
-}
-function distDot(km: number): string {
-  if (km < 1) return '🟢';
-  if (km < 3) return '🟡';
-  return '⚪';
+// ── 카테고리 설정 ─────────────────────────────────────────────────
+const CAT_EMOJI: Record<string, string> = {
+  cafe: '☕', food: '🍽', beauty: '✂️', nail: '💅', etc: '🏪',
+};
+const THUMB_BG: Record<string, string> = {
+  cafe: '#FFF0E6', food: '#FFF8E6', beauty: '#F0EEFF', nail: '#FFE6F5', etc: '#E6F5FF',
+};
+
+// ── 가게 아바타 그라디언트 색상 ───────────────────────────────────
+const AVATAR_COLORS = [
+  '#FF6F0F', '#FF9A3D', '#5B67CA', '#2DB87A',
+  '#D946B0', '#FF6B6B', '#4C9EFF', '#F59E0B',
+];
+function avatarColor(name: string): string {
+  const code = name.charCodeAt(0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[code];
 }
 
-// ── 아바타 배경 ──────────────────────────────────────────────────
-const STORE_COLORS = ['#3a2525','#1a2025','#1f2a1f','#2a1f2a','#25202a','#1f2520','#2a221f'];
-function storeGrad(name: string): string {
-  return STORE_COLORS[name.charCodeAt(0) % STORE_COLORS.length];
-}
-function fakeMemberCount(storeId: string): number {
-  let h = 0;
-  for (let i = 0; i < storeId.length; i++) h = (h * 31 + storeId.charCodeAt(i)) & 0xffffff;
-  return 100 + (h % 1900);
+// ── 쿠폰 뱃지 레이블 ─────────────────────────────────────────────
+function urgencyBadgeLabel(coupon: FeedCoupon): string | null {
+  if (!coupon.urgency_label) return null;
+  const msLeft = new Date(coupon.expires_at).getTime() - Date.now();
+  const hoursLeft = msLeft / 3_600_000;
+  if (hoursLeft <= 24) return '오늘만';
+  if (coupon.remaining !== null && coupon.remaining <= 10) return '인기';
+  const daysSince = (Date.now() - new Date(coupon.created_at).getTime()) / 86_400_000;
+  if (daysSince <= 2) return 'NEW';
+  return null;
 }
 
-// ── 미니맵 ───────────────────────────────────────────────────────
-function MiniMap({ radiusKm, dong }: { radiusKm: number; dong: string }) {
-  const PINS = [
-    { x: '38%', y: '52%', emoji: '🍜', hot: true  },
-    { x: '62%', y: '38%', emoji: '☕', hot: false },
-    { x: '30%', y: '32%', emoji: '💄', hot: false },
-    { x: '68%', y: '65%', emoji: '🥩', hot: false },
-  ];
+// ── 팔로우 버튼 (피드용) ─────────────────────────────────────────
+function FollowButton({
+  followed,
+  onPress,
+}: {
+  followed: boolean;
+  onPress: () => void;
+}) {
   return (
-    <View style={mm.wrap}>
-      <View style={mm.grid}>
-        <View style={mm.radiusCircle} />
-        <View style={[mm.roadH, { top: 55 }]} />
-        <View style={[mm.roadH, { top: 72 }]} />
-        <View style={[mm.roadV, { left: '35%' as any }]} />
-        <View style={[mm.roadV, { left: '65%' as any }]} />
-        <View style={mm.myPin}>
-          <View style={mm.myDot} />
-          <View style={mm.myLabel}>
-            <Text style={mm.myLabelText}>📍 {dong} (나)</Text>
+    <TouchableOpacity
+      style={[fbs.btn, followed && fbs.btnOn]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Text style={[fbs.text, followed && fbs.textOn]}>
+        {followed ? '팔로잉' : '+ 팔로우'}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+const fbs = StyleSheet.create({
+  btn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: C.brand,
+    backgroundColor: C.white,
+  },
+  btnOn: {
+    backgroundColor: C.brand,
+    borderColor: C.brand,
+  },
+  text: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.brand,
+  },
+  textOn: {
+    color: C.white,
+  },
+});
+
+// ── 쿠폰 인라인 카드 (목업 B 스타일) ─────────────────────────────
+function CouponInline({
+  coupon,
+  saved,
+  onClaim,
+}: {
+  coupon: FeedCoupon;
+  saved: boolean;
+  onClaim: () => void;
+}) {
+  const badge    = urgencyBadgeLabel(coupon);
+  const remaining = coupon.remaining;
+  const hasLimit  = coupon.total_quantity !== null && coupon.total_quantity > 0;
+  const isUrgent  = remaining !== null && remaining <= 10;
+
+  const msLeft    = new Date(coupon.expires_at).getTime() - Date.now();
+  const dDay      = Math.ceil(msLeft / 86_400_000);
+  const expiryStr = dDay <= 0 ? '오늘 마감' : dDay === 1 ? '내일 마감' : `D-${dDay}`;
+  const isToday   = dDay <= 1;
+
+  return (
+    <View style={ci.wrap}>
+      {/* 제목 행 + 뱃지 */}
+      <View style={ci.titleRow}>
+        <Text style={ci.title} numberOfLines={1}>{coupon.title}</Text>
+        {badge && (
+          <View style={ci.badge}>
+            <Text style={ci.badgeText}>{badge}</Text>
           </View>
+        )}
+      </View>
+
+      {/* 설명 */}
+      {!!coupon.description && (
+        <Text style={ci.desc} numberOfLines={1}>{coupon.description}</Text>
+      )}
+
+      {/* 하단 행 */}
+      <View style={ci.footer}>
+        <View style={ci.footerLeft}>
+          <Text style={[ci.expiry, isToday && ci.expiryUrgent]}>
+            {isToday ? '⏰' : '📅'} {expiryStr}
+          </Text>
+          {hasLimit && remaining !== null && (
+            <Text style={[ci.remain, isUrgent && ci.remainUrgent]}>
+              {isUrgent ? '🔥' : '·'} 잔여 {remaining}장
+            </Text>
+          )}
         </View>
-        {PINS.map((p, i) => (
-          <View key={i} style={[mm.storePin, { left: p.x as any, top: p.y as any }]}>
-            <View style={[mm.spBubble, p.hot && mm.spBubbleHot]}>
-              <Text style={mm.spText}>{p.emoji}</Text>
-            </View>
-          </View>
-        ))}
-        <View style={mm.radiusLbl}>
-          <Text style={mm.radiusLblText}>{radiusKm >= 50 ? '전체' : `${radiusKm}km`} 반경</Text>
-        </View>
-        <TouchableOpacity style={mm.expandBtn}>
-          <Text style={mm.expandText}>지도 크게 보기 ↗</Text>
+
+        {/* 받기 / 저장됨 */}
+        <TouchableOpacity
+          style={[ci.claimBtn, saved && ci.claimBtnSaved]}
+          onPress={onClaim}
+          disabled={saved}
+          activeOpacity={0.85}
+        >
+          <Text style={[ci.claimText, saved && ci.claimTextSaved]}>
+            {saved ? '저장됨' : '받기'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
-const mm = StyleSheet.create({
-  wrap: { height: 110, backgroundColor: '#1A1E24', overflow: 'hidden' },
-  grid: {
-    flex: 1, position: 'relative',
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.06)',
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.06)',
+const ci = StyleSheet.create({
+  wrap: {
+    marginTop: 10,
+    marginHorizontal: 14,
+    backgroundColor: C.brandBg,
+    borderWidth: 1.5,
+    borderColor: C.brand,
+    borderStyle: 'dashed',
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
   },
-  roadH: { position: 'absolute', left: 0, right: 0, height: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
-  roadV: { position: 'absolute', top: 0, bottom: 0, width: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
-  radiusCircle: {
-    position: 'absolute', width: 90, height: 90, borderRadius: 45,
-    borderWidth: 1.5, borderColor: 'rgba(254,229,0,0.35)', borderStyle: 'dashed',
-    left: '50%', top: '50%', marginLeft: -45, marginTop: -45,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  myPin: {
-    position: 'absolute', left: '50%', top: '50%', alignItems: 'center',
-    transform: [{ translateX: -6 }, { translateY: -6 }],
+  title: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '800',
+    color: C.g900,
+    letterSpacing: -0.4,
   },
-  myDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#4C9EFF', borderWidth: 2, borderColor: '#fff' },
-  myLabel: {
-    position: 'absolute', top: 14,
-    backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6, width: 90,
+  badge: {
+    backgroundColor: C.brand,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    flexShrink: 0,
   },
-  myLabelText: { fontSize: 8, color: '#fff', textAlign: 'center' },
-  storePin: {
-    position: 'absolute', alignItems: 'center',
-    transform: [{ translateX: -14 }, { translateY: -10 }],
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: C.white,
+    letterSpacing: 0.3,
   },
-  spBubble: {
-    backgroundColor: 'rgba(30,34,40,0.85)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 10, paddingHorizontal: 6, paddingVertical: 3,
+  desc: {
+    fontSize: 13,
+    color: C.g600,
+    lineHeight: 18,
   },
-  spBubbleHot: { backgroundColor: 'rgba(255,107,107,0.2)', borderColor: 'rgba(255,107,107,0.5)' },
-  spText: { fontSize: 12 },
-  radiusLbl: {
-    position: 'absolute', bottom: 6, left: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
   },
-  radiusLblText: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
-  expandBtn: {
-    position: 'absolute', bottom: 6, right: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8,
+  footerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
   },
-  expandText: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
+  expiry: {
+    fontSize: 13,
+    color: C.g500,
+    fontWeight: '500',
+  },
+  expiryUrgent: {
+    color: C.g700,
+  },
+  remain: {
+    fontSize: 13,
+    color: C.g500,
+    fontWeight: '500',
+  },
+  remainUrgent: {
+    color: C.brand,
+    fontWeight: '700',
+  },
+  claimBtn: {
+    backgroundColor: C.brand,
+    paddingHorizontal: 20,
+    paddingVertical: 9,
+    borderRadius: 22,
+    flexShrink: 0,
+  },
+  claimBtnSaved: {
+    backgroundColor: C.g200,
+  },
+  claimText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: C.white,
+  },
+  claimTextSaved: {
+    color: C.g500,
+  },
 });
 
-// ── 가게 아이템 ───────────────────────────────────────────────────
-function FadeSlideIn({ index, children }: { index: number; children: React.ReactNode }) {
-  const opacity   = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(16)).current;
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity,    { toValue: 1, duration: 350, delay: index * 60, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 350, delay: index * 60, useNativeDriver: true }),
-    ]).start();
-  }, []);
-  return (
-    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-      {children}
-    </Animated.View>
-  );
-}
+// ── 피드 카드 ─────────────────────────────────────────────────────
+function FeedCard({
+  coupon,
+  followed,
+  saved,
+  onFollow,
+  onClaim,
+  onPress,
+}: {
+  coupon: FeedCoupon;
+  followed: boolean;
+  saved: boolean;
+  onFollow: () => void;
+  onClaim: () => void;
+  onPress: () => void;
+}) {
+  const timeAgo = (() => {
+    const diff = Date.now() - new Date(coupon.created_at).getTime();
+    const mins  = Math.floor(diff / 60_000);
+    if (mins < 1)   return '방금';
+    if (mins < 60)  return `${mins}분 전`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}시간 전`;
+    if (hours < 48) return '어제';
+    return `${Math.floor(hours / 24)}일 전`;
+  })();
 
-function StoreItem({ store, onPress, index = 0 }: { store: NearbyStore; onPress: () => void; index?: number }) {
-  const badge = store.latest_coupon_kind ? COUPON_BADGES[store.latest_coupon_kind] : null;
-  const members = fakeMemberCount(store.store_id);
-  const catEntry = CATEGORIES.find(c => c.key === (store.category ?? 'all')) ?? CATEGORIES[0];
+  // 카테고리 이모지 매핑
+  const catKey    = (coupon.store_category ?? 'etc').toLowerCase();
+  const catEmoji  = CAT_EMOJI[catKey] ?? '';
+  const catLabel  = catEmoji ? `${catEmoji} ${coupon.store_category ?? ''}` : (coupon.store_category ?? '');
 
   return (
-    <FadeSlideIn index={index}>
-    <TouchableOpacity style={s.item} onPress={onPress} activeOpacity={0.75}>
-      <View style={[s.av, { backgroundColor: storeGrad(store.store_name) }]}>
-        <Text style={{ fontSize: 22 }}>{catEntry.emoji === '🗺' ? '🏪' : catEntry.emoji}</Text>
-        {store.unread_post_count > 0 && <View style={s.onlineDot} />}
+    <TouchableOpacity style={fcs.card} onPress={onPress} activeOpacity={0.97}>
+      {/* 헤더 */}
+      <View style={fcs.header}>
+        {/* 사각형 아바타 */}
+        <View style={[fcs.avatar, { backgroundColor: avatarColor(coupon.store_name) }]}>
+          <Text style={fcs.avatarText}>
+            {coupon.store_name.charAt(0)}
+          </Text>
+        </View>
+
+        {/* 가게명 + 카테고리·시간 */}
+        <View style={fcs.headerInfo}>
+          <Text style={fcs.storeName}>{coupon.store_name}</Text>
+          <Text style={fcs.storeMeta}>{catLabel} · {timeAgo}</Text>
+        </View>
+
+        {/* 팔로우 버튼 */}
+        <FollowButton followed={followed} onPress={onFollow} />
       </View>
-      <View style={s.body}>
-        <View style={s.r1}>
-          <Text style={s.name} numberOfLines={1}>{store.store_name}</Text>
-          {badge && (
-            <View style={[s.cpBadge, { backgroundColor: badge.bg }]}>
-              <Text style={[s.cpBadgeText, { color: badge.color }]}>{badge.label}</Text>
-            </View>
-          )}
-          <View style={s.distCol}>
-            <Text style={[s.dist, { color: distColor(store.distance_km) }]}>
-              {distDot(store.distance_km)} {formatDist(store.distance_km)}
-            </Text>
-            {store.unread_post_count > 0 && (
-              <View style={s.postBadge}>
-                <Text style={s.postBadgeText}>💬 {store.unread_post_count}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-        <Text style={s.preview} numberOfLines={1}>
-          {store.active_coupon_count > 0
-            ? `🎟 쿠폰 ${store.active_coupon_count}개 발행 중`
-            : '최근 소식을 확인해보세요'}
+
+      {/* 캡션 */}
+      {coupon.description ? (
+        <Text style={fcs.caption} numberOfLines={2}>
+          ⚡ {coupon.description}
         </Text>
-        <View style={s.r3}>
-          <View style={s.tag}><Text style={s.tagText}>{catEntry.label}</Text></View>
-          {store.district_name && <Text style={s.dong}>{store.district_name}</Text>}
-          <Text style={s.members}>👥 {members.toLocaleString()}명</Text>
-        </View>
+      ) : null}
+
+      {/* 쿠폰 카드 */}
+      <CouponInline coupon={coupon} saved={saved} onClaim={onClaim} />
+
+      {/* 액션 row */}
+      <View style={fcs.actionRow}>
+        <Text style={fcs.actionItem}>🎫 쿠폰 1개</Text>
+        <Text style={fcs.actionItem}>❤️ {coupon.pick_count}</Text>
+        <Text style={fcs.actionItem}>💬 {coupon.click_count}</Text>
       </View>
     </TouchableOpacity>
-    </FadeSlideIn>
   );
 }
+const fcs = StyleSheet.create({
+  card: {
+    backgroundColor: C.white,
+    paddingTop: 16,
+    paddingBottom: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.g200,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+    marginBottom: 8,
+  },
+  // 사각형 아바타 (목업 일치)
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: C.white,
+  },
+  headerInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  storeName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: C.g900,
+    letterSpacing: -0.3,
+  },
+  storeMeta: {
+    fontSize: 13,
+    color: C.g500,
+    fontWeight: '400',
+  },
+  caption: {
+    fontSize: 14,
+    color: C.g700,
+    lineHeight: 20,
+    paddingHorizontal: 16,
+    marginBottom: 2,
+    fontWeight: '500',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.g100,
+  },
+  actionItem: {
+    fontSize: 13,
+    color: C.g500,
+    fontWeight: '500',
+  },
+});
 
-// ════════════════════════════════════════════════════════════════
+// ── 바텀 배너 모달 ────────────────────────────────────────────────
+function BannerModal({
+  banners,
+  onClose,
+  onSkipToday,
+}: {
+  banners:      Banner[];
+  onClose:      () => void;
+  onSkipToday:  () => void;
+}) {
+  const slideY  = useRef(new Animated.Value(400)).current;
+  const [page, setPage] = useState(0);
+  const flatRef = useRef<FlatList<Banner>>(null);
+
+  useEffect(() => {
+    Animated.spring(slideY, {
+      toValue: 0,
+      useNativeDriver: true,
+      speed: 16,
+      bounciness: 4,
+    }).start();
+  }, []);
+
+  const dismiss = (cb: () => void) => {
+    Animated.timing(slideY, {
+      toValue: 500,
+      duration: 220,
+      useNativeDriver: true,
+    }).start(cb);
+  };
+
+  return (
+    <Modal transparent animationType="none" statusBarTranslucent>
+      {/* 딤 배경 */}
+      <TouchableOpacity
+        style={bm.dim}
+        activeOpacity={1}
+        onPress={() => dismiss(onClose)}
+      />
+
+      {/* 바텀 시트 */}
+      <Animated.View style={[bm.sheet, { transform: [{ translateY: slideY }] }]}>
+        {/* 캐러셀 */}
+        <FlatList
+          ref={flatRef}
+          data={banners}
+          keyExtractor={b => b.id}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={e => {
+            setPage(Math.round(e.nativeEvent.contentOffset.x / SCREEN_W));
+          }}
+          renderItem={({ item }) => (
+            <View style={[bm.slide, { backgroundColor: item.bg_color, width: SCREEN_W }]}>
+              {/* AD 뱃지 + 페이지 */}
+              <View style={bm.topRow}>
+                <View style={bm.adBadge}>
+                  <Text style={bm.adText}>AD</Text>
+                </View>
+                <Text style={bm.pageText}>{page + 1} / {banners.length}</Text>
+              </View>
+
+              {/* 텍스트 */}
+              <Text style={bm.title}>{item.title}</Text>
+              {item.subtitle ? (
+                <Text style={bm.subtitle}>{item.subtitle}</Text>
+              ) : null}
+            </View>
+          )}
+        />
+
+        {/* 페이지 도트 */}
+        {banners.length > 1 && (
+          <View style={bm.dots}>
+            {banners.map((_, i) => (
+              <View key={i} style={[bm.dot, i === page && bm.dotActive]} />
+            ))}
+          </View>
+        )}
+
+        {/* 하단 버튼 */}
+        <View style={bm.footer}>
+          <TouchableOpacity onPress={() => dismiss(onSkipToday)} style={bm.footerBtn}>
+            <Text style={bm.footerBtnText}>오늘 그만 보기</Text>
+          </TouchableOpacity>
+          <View style={bm.footerDivider} />
+          <TouchableOpacity onPress={() => dismiss(onClose)} style={bm.footerBtn}>
+            <Text style={[bm.footerBtnText, { color: C.g900, fontWeight: '700' }]}>닫기</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </Modal>
+  );
+}
+const bm = StyleSheet.create({
+  dim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: C.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+  slide: {
+    minHeight: 200,
+    padding: 24,
+    paddingTop: 20,
+    justifyContent: 'flex-end',
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  adBadge: {
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  adText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.white,
+    letterSpacing: 1,
+  },
+  pageText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(0,0,0,0.4)',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: C.g900,
+    lineHeight: 30,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: C.g600,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    backgroundColor: C.white,
+  },
+  dot: {
+    width: 6, height: 6,
+    borderRadius: 3,
+    backgroundColor: C.g300,
+  },
+  dotActive: {
+    backgroundColor: C.brand,
+    width: 16,
+  },
+  footer: {
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.g200,
+  },
+  footerBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerDivider: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: C.g200,
+  },
+  footerBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: C.g500,
+  },
+});
+
+// ── 주변 추천 가게 섹션 ───────────────────────────────────────────
+function NearbySection({
+  stores,
+  followMap,
+  onFollow,
+  onPress,
+}: {
+  stores:    NearbyStore[];
+  followMap: Record<string, boolean>;
+  onFollow:  (id: string) => void;
+  onPress:   (store: NearbyStore) => void;
+}) {
+  if (stores.length === 0) return null;
+  return (
+    <View style={ns.wrap}>
+      <Text style={ns.title}>📍 주변 추천 가게</Text>
+      {stores.map((store, idx) => {
+        const catKey  = store.category ?? 'etc';
+        const emoji   = CAT_EMOJI[catKey] ?? '🏪';
+        const thumbBg = THUMB_BG[catKey] ?? C.g100;
+        const followed = !!followMap[store.store_id];
+        return (
+          <React.Fragment key={store.store_id}>
+            <TouchableOpacity
+              style={ns.item}
+              onPress={() => onPress(store)}
+              activeOpacity={0.8}
+            >
+              {/* 썸네일 */}
+              <View style={[ns.thumb, { backgroundColor: thumbBg }]}>
+                <Text style={ns.thumbEmoji}>{emoji}</Text>
+              </View>
+
+              {/* 본문 */}
+              <View style={ns.body}>
+                <Text style={ns.name} numberOfLines={1}>{store.store_name}</Text>
+                {store.active_coupon_count > 0 && (
+                  <View style={ns.couponChip}>
+                    <Text style={ns.couponChipText}>🎟 쿠폰 {store.active_coupon_count}개</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* 팔로우 */}
+              <TouchableOpacity
+                style={[ns.followBtn, followed && ns.followBtnOn]}
+                onPress={() => onFollow(store.store_id)}
+                activeOpacity={0.8}
+              >
+                <Text style={[ns.followText, followed && ns.followTextOn]}>
+                  {followed ? '팔로잉' : '+ 팔로우'}
+                </Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+            {idx < stores.length - 1 && <View style={ns.divider} />}
+          </React.Fragment>
+        );
+      })}
+    </View>
+  );
+}
+const ns = StyleSheet.create({
+  wrap: {
+    backgroundColor: C.white,
+    marginTop: 8,
+    paddingTop: 14,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.g150,
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: C.g900,
+    paddingHorizontal: 16,
+    marginBottom: 4,
+    letterSpacing: -0.2,
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  thumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  thumbEmoji: { fontSize: 34 },
+  body: { flex: 1, minWidth: 0, gap: 3 },
+  name: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: C.g900,
+    letterSpacing: -0.2,
+  },
+  couponChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: C.brandBg,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  couponChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: C.brand,
+  },
+  followBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: C.g300,
+    flexShrink: 0,
+  },
+  followBtnOn: { backgroundColor: C.g100, borderColor: C.g300 },
+  followText:  { fontSize: 13, fontWeight: '600', color: C.g700 },
+  followTextOn: { color: C.g700 },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: C.g200,
+    marginHorizontal: 0,
+  },
+});
+
+// ── 빈 상태 ───────────────────────────────────────────────────────
+function EmptyFeed({ onSearch }: { onSearch: () => void }) {
+  return (
+    <View style={es.wrap}>
+      <Text style={es.emoji}>🎟</Text>
+      <Text style={es.title}>팔로우한 가게의 쿠폰이 여기 뜹니다</Text>
+      <Text style={es.sub}>가게를 팔로우하면 새 쿠폰을 즉시 알려드려요</Text>
+      <TouchableOpacity style={es.btn} onPress={onSearch}>
+        <Text style={es.btnText}>🔍 주변 가게 찾기</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+const es = StyleSheet.create({
+  wrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    gap: 8,
+  },
+  emoji: {
+    fontSize: 56,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: C.g900,
+    textAlign: 'center',
+  },
+  sub: {
+    fontSize: 13,
+    color: C.g500,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 16,
+  },
+  btn: {
+    backgroundColor: C.brand,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  btnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.white,
+  },
+});
+
+// ══════════════════════════════════════════════════════════════════
 //  메인 화면
-// ════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const bottomPad  = useMiniPlayerPadding(true);
 
-  const [stores,    setStores]    = useState<NearbyStore[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [locating,  setLocating]  = useState(true);
-  const [radiusKm,  setRadiusKm]  = useState(5);
-  const [coords,    setCoords]    = useState<{ lat: number; lng: number } | null>(null);
-  const [myDong,    setMyDong]    = useState('내 위치');
-  const [distOpen,  setDistOpen]  = useState(false);
-  const [activeCat, setActiveCat] = useState('all');
-  const [sortIdx,   setSortIdx]   = useState(0);
+  const [userId,        setUserId]        = useState<string | null>(null);
+  const [feed,          setFeed]          = useState<HomeFeedResult | null>(null);
+  const [loading,       setLoading]       = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
+  const [newBadge,      setNewBadge]      = useState(false);
+  const [locationName,  setLocationName]  = useState<string>('');
+  const [totalCoupons,  setTotalCoupons]  = useState<number>(0);
+  const [myCoupons,     setMyCoupons]     = useState<number>(0);
+  const [nearbyStores,  setNearbyStores]  = useState<NearbyStore[]>([]);
+  const [nearbyFollowMap, setNearbyFollowMap] = useState<Record<string, boolean>>({});
+  const [banners,       setBanners]       = useState<Banner[]>([]);
+  const [bannerVisible, setBannerVisible] = useState(false);
 
-  // ── 위치 취득 ────────────────────────────────────────────────
+  // 팔로우 상태 (store_id → boolean)
+  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
+  // 저장된 쿠폰 (coupon_id → boolean)
+  const [savedMap,  setSavedMap]  = useState<Record<string, boolean>>({});
+
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const userIdRef  = useRef<string | null>(null);
+  const followedStoreIdsRef = useRef<Set<string>>(new Set());
+
+  // ── 인증 ────────────────────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id ?? null);
+      userIdRef.current = data.user?.id ?? null;
+    });
+  }, []);
+
+  // ── 현재 위치 + 주변 가게 fetch ─────────────────────────────────
   useEffect(() => {
     (async () => {
-      setLocating(true);
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setLocating(false);
-          return;
+        if (status !== 'granted') return;
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const { latitude: lat, longitude: lng } = loc.coords;
+
+        // 위치명
+        const [geo] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+        if (geo) {
+          const district = geo.district ?? geo.subregion ?? '';
+          const city     = geo.city ?? geo.region ?? '';
+          setLocationName(district ? `${city} ${district}`.trim() : city);
         }
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
-        setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
-        const [geo] = await Location.reverseGeocodeAsync(loc.coords);
-        if (geo) setMyDong(geo.district ?? geo.subregion ?? geo.city ?? '내 위치');
-      } catch {}
-      finally { setLocating(false); }
+
+        // 주변 가게 top 3
+        const { data } = await supabase.rpc('get_nearby_stores', {
+          user_lat:  lat,
+          user_lng:  lng,
+          radius_km: 9999,
+          max_count: 3,
+        });
+        if (data && data.length > 0) {
+          setNearbyStores(data as NearbyStore[]);
+          // 팔로우 상태
+          const { data: favData } = await supabase
+            .from('store_favorites')
+            .select('store_id')
+            .in('store_id', (data as NearbyStore[]).map(s => s.store_id));
+          const favSet = new Set((favData ?? []).map((r: any) => r.store_id));
+          const fm: Record<string, boolean> = {};
+          (data as NearbyStore[]).forEach(s => { fm[s.store_id] = favSet.has(s.store_id); });
+          setNearbyFollowMap(fm);
+        }
+      } catch (_) {}
     })();
   }, []);
 
-  // ── 가게 로드 ────────────────────────────────────────────────
-  const loadStores = useCallback(async () => {
-    if (!coords) return;
-    setLoading(true);
+  // ── 배너 로드 + 오늘 그만보기 체크 ──────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        // 오늘 그만보기 체크
+        const skipUntil = await AsyncStorage.getItem(BANNER_SKIP_KEY);
+        if (skipUntil && new Date(skipUntil) > new Date()) return;
+
+        const { data } = await supabase
+          .from('banners')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (data && data.length > 0) {
+          setBanners(data as Banner[]);
+          // 0.8초 후 슬라이드업 (앱 로딩 후 자연스럽게)
+          setTimeout(() => setBannerVisible(true), 800);
+        }
+      } catch (_) {}
+    })();
+  }, []);
+
+  const handleBannerClose = () => setBannerVisible(false);
+  const handleBannerSkipToday = async () => {
+    const tomorrow = new Date();
+    tomorrow.setHours(23, 59, 59, 999);
+    await AsyncStorage.setItem(BANNER_SKIP_KEY, tomorrow.toISOString());
+    setBannerVisible(false);
+  };
+
+  // ── 전체 쿠폰수 + 내 쿠폰수 ─────────────────────────────────────
+  useEffect(() => {
+    // 전체 활성 쿠폰수
+    supabase
+      .from('coupons')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .then(({ count }) => setTotalCoupons(count ?? 0));
+
+    // 내 사용가능 쿠폰수 (로그인 시만)
+    if (!userId) { setMyCoupons(0); return; }
+    supabase
+      .from('user_coupons')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'available')
+      .then(({ count }) => setMyCoupons(count ?? 0));
+  }, [userId]);
+
+  // ── 피드 로드 ────────────────────────────────────────────────────
+  const loadFeed = useCallback(async (silent = false) => {
+    if (!userId) return;
+    if (!silent) setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_nearby_stores', {
-        user_lat:  coords.lat,
-        user_lng:  coords.lng,
-        radius_km: radiusKm >= 50 ? 9999 : radiusKm,
-        max_count: 50,
+      const result = await getHomeFeed({ userId, limit: 60 });
+      setFeed(result);
+      setNewBadge(false);
+
+      // 팔로우맵 + 팔로우 가게 ID 세트 업데이트
+      const fm: Record<string, boolean> = {};
+      const followed = new Set<string>();
+      [...result.z1, ...result.z2, ...result.z3].forEach(c => {
+        fm[c.store_id] = c.is_followed;
+        if (c.is_followed) followed.add(c.store_id);
       });
-      if (error) throw error;
-      setStores((data ?? []) as NearbyStore[]);
-    } catch (e) {
-      console.error('HomeScreen get_nearby_stores error:', e);
+      setFollowMap(fm);
+      followedStoreIdsRef.current = followed;
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [coords, radiusKm]);
+  }, [userId]);
 
-  useEffect(() => { if (coords) loadStores(); }, [coords, loadStores]);
+  useEffect(() => {
+    if (userId) loadFeed();
+  }, [userId, loadFeed]);
 
-  const filtered = activeCat === 'all'
-    ? stores
-    : stores.filter(st => (st.category ?? 'all') === activeCat);
+  // ── Supabase Realtime — 팔로우 가게 쿠폰 신규 발행 감지 ──────────
+  useEffect(() => {
+    if (!userId) return;
 
-  const openStore = (store: NearbyStore) =>
-    navigation.navigate('StoreFeed', { storeId: store.store_id, storeName: store.store_name });
+    // 기존 채널 정리
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
 
-  const curRadius = RADIUS_OPTS.find(r => r.value === radiusKm) ?? RADIUS_OPTS[2];
+    const channel = supabase
+      .channel(`home-feed-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event:  'INSERT',
+          schema: 'public',
+          table:  'coupons',
+          filter: 'is_active=eq.true',
+        },
+        (payload) => {
+          const newCoupon = payload.new as { store_id: string; is_active: boolean };
+          // 팔로우 가게에서 발행한 쿠폰이면 즉시 피드 갱신
+          if (followedStoreIdsRef.current.has(newCoupon.store_id)) {
+            setNewBadge(true);
+            // 1초 딜레이 후 자동 갱신 (DB 반영 시간)
+            setTimeout(() => {
+              loadFeed(true);
+            }, 1000);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event:  'UPDATE',
+          schema: 'public',
+          table:  'coupons',
+        },
+        () => {
+          // 잔여 수량 변경 등 — 조용히 갱신
+          loadFeed(true);
+        }
+      )
+      .subscribe();
 
-  // ── Header + List sections (FlatList ListHeaderComponent) ───
-  const ListHeader = () => (
-    <>
-      {/* 위치 헤더 */}
-      <View style={s.locBar}>
-        <View style={s.locLeft}>
-          <Text style={{ fontSize: 15 }}>📍</Text>
-          <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={s.locDong}>{myDong}</Text>
-              <Text style={s.locArrow}>▾</Text>
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
+  }, [userId, loadFeed]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadFeed(true);
+  };
+
+  // ── 팔로우 토글 ──────────────────────────────────────────────────
+  const toggleFollow = async (storeId: string) => {
+    if (!userId) return;
+    const current = !!followMap[storeId];
+    setFollowMap(prev => ({ ...prev, [storeId]: !current }));
+    if (current) {
+      await supabase
+        .from('store_favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('store_id', storeId);
+    } else {
+      await supabase
+        .from('store_favorites')
+        .insert({ user_id: userId, store_id: storeId });
+    }
+  };
+
+  // ── 쿠폰 저장 토글 ───────────────────────────────────────────────
+  const toggleSaved = async (couponId: string) => {
+    if (!userId) return;
+    const current = !!savedMap[couponId];
+    setSavedMap(prev => ({ ...prev, [couponId]: !current }));
+    if (current) {
+      await supabase
+        .from('coupon_picks')
+        .delete()
+        .eq('user_id', userId)
+        .eq('coupon_id', couponId);
+    } else {
+      await supabase
+        .from('coupon_picks')
+        .insert({ user_id: userId, coupon_id: couponId });
+    }
+  };
+
+  // ── 주변 가게 팔로우 토글 ────────────────────────────────────────
+  const toggleNearbyFollow = async (storeId: string) => {
+    if (!userId) return;
+    const current = !!nearbyFollowMap[storeId];
+    setNearbyFollowMap(prev => ({ ...prev, [storeId]: !current }));
+    if (current) {
+      await supabase.from('store_favorites').delete()
+        .eq('user_id', userId).eq('store_id', storeId);
+    } else {
+      await supabase.from('store_favorites').insert({ user_id: userId, store_id: storeId });
+    }
+  };
+
+  // ── 쿠폰 상세 이동 ───────────────────────────────────────────────
+  const openCoupon = (coupon: FeedCoupon) => {
+    navigation.navigate('CouponDetail', { couponId: coupon.id });
+  };
+
+  // ── 피드 아이템 조합 ─────────────────────────────────────────────
+  const allCoupons: FeedCoupon[] = feed
+    ? [...feed.z1, ...feed.z2, ...feed.z3]
+    : [];
+
+  // ── 앱바 ────────────────────────────────────────────────────────
+  const AppBar = () => (
+    <View style={s.appBar}>
+      {/* 1행: 로고 + 현재위치 + 우측 아이콘 */}
+      <View style={s.appBarRow1}>
+        {/* 로고 + 위치 */}
+        <View style={s.logoGroup}>
+          <Text style={s.logo}>언니픽</Text>
+          {locationName ? (
+            <View style={s.locationChip}>
+              <Text style={s.locationChipText}>📍 {locationName}</Text>
             </View>
-            {locating && <Text style={s.locSub}>위치 확인 중...</Text>}
-          </View>
+          ) : null}
         </View>
-        <View style={s.locRight}>
-          <TouchableOpacity style={s.distBtn} onPress={() => setDistOpen(p => !p)}>
-            <Text style={s.distBtnText}>
-              📏 <Text style={{ color: C.yellow }}>{curRadius.label}</Text> 이내 ▾
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.searchBtn} onPress={() => navigation.navigate('CouponList')}>
-            <Text style={{ fontSize: 17 }}>🔍</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
 
-      {/* 거리 패널 */}
-      {distOpen && (
-        <View style={s.distPanel}>
-          <Text style={s.distPanelTitle}>📏 반경 거리 설정</Text>
-          <View style={s.distChips}>
-            {RADIUS_OPTS.map(r => (
-              <TouchableOpacity
-                key={r.value}
-                style={[s.chip, radiusKm === r.value && s.chipOn]}
-                onPress={() => { setRadiusKm(r.value); setDistOpen(false); }}
-              >
-                <Text style={[s.chipText, radiusKm === r.value && s.chipTextOn]}>{r.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={s.distPanelSub}>
-            현재 반경 <Text style={{ fontWeight: '700' }}>{curRadius.label}</Text> 이내 가게{' '}
-            <Text style={{ fontWeight: '700' }}>{stores.length}곳</Text> 표시 중
-          </Text>
-        </View>
-      )}
-
-      {/* 카테고리 탭 */}
-      <View style={s.catWrap}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 14, paddingVertical: 8, gap: 8 }}>
-          {CATEGORIES.map(cat => (
+        {/* 우측 버튼들 */}
+        <View style={s.appBarRight}>
+          {newBadge && (
             <TouchableOpacity
-              key={cat.key}
-              style={s.cat}
-              onPress={() => setActiveCat(cat.key)}
+              style={s.newBadgeBtn}
+              onPress={() => { setNewBadge(false); loadFeed(true); }}
             >
-              <View style={[s.catIcon, activeCat === cat.key && s.catIconOn]}>
-                <Text style={{ fontSize: 18 }}>{cat.emoji}</Text>
-              </View>
-              <Text style={[s.catLabel, activeCat === cat.key && s.catLabelOn]}>
-                {cat.label}
-              </Text>
+              <Text style={s.newBadgeText}>🎟 새 쿠폰 ↑</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* 미니맵 */}
-      <MiniMap radiusKm={radiusKm} dong={myDong} />
-
-      {/* 정렬 바 */}
-      <View style={s.sortBar}>
-        <Text style={s.sortCount}>
-          내 주변 <Text style={{ fontWeight: '700', color: C.text2 }}>{filtered.length}곳</Text>
-        </Text>
-        <View style={s.sortOpts}>
-          {SORT_OPTS.map((opt, i) => (
-            <TouchableOpacity key={opt} onPress={() => setSortIdx(i)}>
-              <Text style={[s.sortOpt, sortIdx === i && s.sortOptOn]}>{opt}</Text>
+          )}
+          {userId ? (
+            <TouchableOpacity
+              style={s.iconBtn}
+              onLongPress={() => {
+                Alert.alert('계정', '로그아웃 하시겠습니까?', [
+                  { text: '취소', style: 'cancel' },
+                  { text: '로그아웃', style: 'destructive', onPress: () => supabase.auth.signOut() },
+                ]);
+              }}
+            >
+              <Text style={{ fontSize: 16 }}>🔔</Text>
             </TouchableOpacity>
-          ))}
+          ) : (
+            <TouchableOpacity
+              style={s.signupBtn}
+              onPress={() => navigation.navigate('PhoneAuth')}
+            >
+              <Text style={s.signupBtnText}>회원가입</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={s.iconBtn} onPress={() => navigation.navigate('NearbyFeed')}>
+            <Text style={{ fontSize: 16 }}>🔍</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </>
+
+      {/* 2행: 쿠폰 카운트 (패셔너블 숫자) */}
+      <View style={s.appBarRow2}>
+        <View style={s.statBox}>
+          <Text style={s.statNum}>{totalCoupons}</Text>
+          <Text style={s.statLabel}>지역 쿠폰</Text>
+        </View>
+        <View style={s.statDivider} />
+        <View style={s.statBox}>
+          <Text style={[s.statNum, { color: C.brand }]}>{myCoupons}</Text>
+          <Text style={s.statLabel}>내 쿠폰</Text>
+        </View>
+      </View>
+    </View>
   );
+
+  // ── 로딩 ─────────────────────────────────────────────────────────
+  if (loading && !feed) {
+    return (
+      <SafeAreaView style={s.root}>
+        <StatusBar style="dark" />
+        <AppBar />
+        <View style={s.center}>
+          <ActivityIndicator color={C.brand} size="large" />
+          <Text style={s.loadingText}>쿠폰을 불러오는 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={s.root}>
       <StatusBar style="dark" />
+      <AppBar />
 
-      {/* 공지 롤링 배너 (1줄 유지) */}
-      <RollingBanner />
+      {/* 바텀 배너 모달 */}
+      {bannerVisible && banners.length > 0 && (
+        <BannerModal
+          banners={banners}
+          onClose={handleBannerClose}
+          onSkipToday={handleBannerSkipToday}
+        />
+      )}
 
-      {/* 로딩 상태 */}
-      {(locating || loading) ? (
-        <>
-          <ListHeader />
-          <View style={s.center}>
-            <ActivityIndicator color={C.brand} size="large" />
-            <Text style={s.loadingText}>
-              {locating ? '위치를 확인하고 있어요...' : '주변 가게를 찾고 있어요...'}
-            </Text>
-          </View>
-        </>
-      ) : filtered.length === 0 ? (
-        <>
-          <ListHeader />
-          <View style={s.center}>
-            <Text style={{ fontSize: 40, marginBottom: 12 }}>🗺</Text>
-            <Text style={s.emptyText}>반경 {curRadius.label} 이내에 가게가 없어요</Text>
-            <TouchableOpacity
-              style={s.expandBtn}
-              onPress={() => {
-                const next = RADIUS_OPTS.find(r => r.value > radiusKm);
-                if (next) setRadiusKm(next.value);
-              }}
-            >
-              <Text style={s.expandBtnText}>범위 넓히기</Text>
-            </TouchableOpacity>
-          </View>
-        </>
+      {allCoupons.length === 0 ? (
+        // 빈 피드: EmptyFeed + 주변 추천 가게
+        <FlatList
+          data={[]}
+          keyExtractor={() => ''}
+          renderItem={null}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
+          }
+          ListHeaderComponent={
+            <>
+              <EmptyFeed onSearch={() => navigation.navigate('NearbyFeed')} />
+              <NearbySection
+                stores={nearbyStores}
+                followMap={nearbyFollowMap}
+                onFollow={toggleNearbyFollow}
+                onPress={store => navigation.navigate('StoreFeed', { storeId: store.store_id, storeName: store.store_name, distanceKm: store.distance_km })}
+              />
+            </>
+          }
+        />
       ) : (
         <FlatList
-          data={filtered}
-          keyExtractor={item => item.store_id}
-          ListHeaderComponent={<ListHeader />}
-          contentContainerStyle={{ paddingBottom: bottomPad }}
+          data={allCoupons}
+          keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={s.divider} />}
-          onRefresh={loadStores}
-          refreshing={loading}
-          renderItem={({ item, index }) => (
-            <StoreItem store={item} onPress={() => openStore(item)} index={index ?? 0} />
+          contentContainerStyle={s.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
+          }
+          ListFooterComponent={
+            <NearbySection
+              stores={nearbyStores}
+              followMap={nearbyFollowMap}
+              onFollow={toggleNearbyFollow}
+              onPress={store => navigation.navigate('StoreFeed', { storeId: store.store_id, storeName: store.store_name, distanceKm: store.distance_km })}
+            />
+          }
+          renderItem={({ item }) => (
+            <FeedCard
+              coupon={item}
+              followed={!!followMap[item.store_id]}
+              saved={!!savedMap[item.id]}
+              onFollow={() => toggleFollow(item.store_id)}
+              onClaim={() => toggleSaved(item.id)}
+              onPress={() => openCoupon(item)}
+            />
           )}
         />
       )}
@@ -471,93 +1240,136 @@ export default function HomeScreen() {
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-//  스타일
-// ════════════════════════════════════════════════════════════════
+// ── 스타일 ────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: C.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-
-  locBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 14, paddingVertical: 9,
-    backgroundColor: C.card, borderBottomWidth: 1, borderBottomColor: C.border,
+  root: {
+    flex: 1,
+    backgroundColor: C.g50,
   },
-  locLeft:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  locDong:  { fontSize: 16, fontWeight: '900', color: C.text, letterSpacing: -0.3 },
-  locArrow: { fontSize: 11, color: C.text3 },
-  locSub:   { fontSize: 10, color: C.text3, marginTop: 1 },
-  locRight: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  distBtn: {
-    backgroundColor: '#F2F4F6', borderWidth: 1, borderColor: C.border,
-    borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5,
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
   },
-  distBtnText: { fontSize: 11, fontWeight: '700', color: C.text2 },
-  searchBtn: { padding: 4 },
-
-  distPanel: {
-    backgroundColor: C.card, borderBottomWidth: 1, borderBottomColor: C.border,
-    paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10, gap: 10,
+  loadingText: {
+    fontSize: 13,
+    color: C.g500,
+    marginTop: 8,
   },
-  distPanelTitle: { fontSize: 12, fontWeight: '700', color: C.text2 },
-  distChips:      { flexDirection: 'row', gap: 6 },
-  chip: { paddingHorizontal: 13, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: C.border },
-  chipOn:     { backgroundColor: C.yellow, borderColor: C.yellow },
-  chipText:   { fontSize: 12, fontWeight: '700', color: C.text3 },
-  chipTextOn: { color: '#1A1200' },
-  distPanelSub: { fontSize: 11, color: C.text3 },
 
-  catWrap: { backgroundColor: C.card, borderBottomWidth: 1, borderBottomColor: C.border },
-  cat:     { alignItems: 'center', gap: 4 },
-  catIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#F2F4F6', alignItems: 'center', justifyContent: 'center' },
-  catIconOn:  { backgroundColor: 'rgba(254,229,0,0.2)' },
-  catLabel:   { fontSize: 10, color: C.text3, fontWeight: '600' },
-  catLabelOn: { color: '#B8A200', fontWeight: '700' },
-
-  sortBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 14, paddingVertical: 7, backgroundColor: C.bg,
+  // 앱바
+  appBar: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: C.white,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.g150,
+    gap: 10,
   },
-  sortCount: { fontSize: 12, color: C.text3 },
-  sortOpts:  { flexDirection: 'row', gap: 4 },
-  sortOpt: { fontSize: 11, fontWeight: '700', color: C.text3, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, overflow: 'hidden' },
-  sortOptOn: { color: C.brand, backgroundColor: 'rgba(255,111,15,0.08)' },
 
-  item: {
-    flexDirection: 'row', gap: 12, alignItems: 'center',
-    paddingHorizontal: 14, paddingVertical: 12, backgroundColor: C.card,
+  // 1행
+  appBarRow1: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  av: {
-    width: 54, height: 54, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0, position: 'relative',
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)',
+  logoGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
   },
-  onlineDot: {
-    position: 'absolute', bottom: 2, right: 2,
-    width: 11, height: 11, borderRadius: 6,
-    backgroundColor: C.green, borderWidth: 2, borderColor: C.card,
+  logo: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: C.brand,
+    letterSpacing: -0.5,
   },
-  body: { flex: 1, minWidth: 0 },
-  r1:   { flexDirection: 'row', alignItems: 'center', marginBottom: 3, gap: 4 },
-  name: { fontSize: 14, fontWeight: '700', color: C.text, flexShrink: 1 },
-  cpBadge: { paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 6, flexShrink: 0 },
-  cpBadgeText: { fontSize: 9, fontWeight: '800' },
-  distCol: { marginLeft: 'auto', alignItems: 'flex-end', gap: 3, flexShrink: 0 },
-  dist:    { fontSize: 11, fontWeight: '700' },
-  postBadge: { backgroundColor: C.brand, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 9 },
-  postBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
-  preview: { fontSize: 12, color: C.text2, marginBottom: 3 },
-  r3:      { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  tag:     { backgroundColor: '#F2F4F6', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 },
-  tagText: { fontSize: 10, fontWeight: '600', color: C.text3 },
-  dong:    { fontSize: 10, color: C.text3 },
-  members: { fontSize: 10, color: C.text3, marginLeft: 'auto' },
+  locationChip: {
+    backgroundColor: C.g100,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  locationChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: C.g700,
+  },
+  appBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
+  },
+  iconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: C.g100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signupBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: C.brand,
+  },
+  signupBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.white,
+  },
 
-  divider: { height: 1, backgroundColor: C.border, marginHorizontal: 14 },
+  // 2행 — 쿠폰 카운트
+  appBarRow2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 1,
+  },
+  statNum: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: C.g900,
+    letterSpacing: -1,
+    lineHeight: 32,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: C.g500,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: C.g200,
+    marginHorizontal: 8,
+  },
 
-  emptyText: { fontSize: 15, color: C.text3, textAlign: 'center' },
-  expandBtn: { backgroundColor: C.brand, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, marginTop: 8 },
-  expandBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  loadingText:   { fontSize: 13, color: C.text3, marginTop: 8 },
+  // 새 쿠폰 알림 뱃지
+  newBadgeBtn: {
+    backgroundColor: C.brand,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  newBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: C.white,
+  },
+
+  listContent: {
+    paddingBottom: 24,
+  },
 });

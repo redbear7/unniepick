@@ -1,17 +1,29 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TextInput, TouchableOpacity, Alert, KeyboardAvoidingView,
   Platform, Modal, ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import * as Location from 'expo-location';
-import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 import { submitStoreApplication } from '../../lib/services/storeApplicationService';
 
-const CATEGORIES = ['한식', '중식', '일식', '양식', '카페', '분식', '치킨', '피자', '기타'];
+const C = {
+  brand: '#FF6F0F', brandBg: '#FFF3EB',
+  g900: '#191F28', g700: '#4E5968', g500: '#8B95A1', g400: '#ADB5BD',
+  g300: '#D1D6DB', g200: '#E5E8EB', g150: '#EAECEF', g100: '#F2F4F6',
+  white: '#FFFFFF', red: '#E53935',
+};
+
+const CATEGORY_CHIPS = [
+  { key: 'cafe',   emoji: '☕', label: '카페'  },
+  { key: 'food',   emoji: '🍽', label: '음식'  },
+  { key: 'beauty', emoji: '✂️', label: '미용'  },
+  { key: 'nail',   emoji: '💅', label: '네일'  },
+  { key: 'etc',    emoji: '',    label: '기타'  },
+];
 
 // ─── 다음 우편번호 서비스 HTML ────────────────────────────────
 const POSTCODE_HTML = `
@@ -56,96 +68,64 @@ new daum.Postcode({
 
 export default function StoreApplyScreen() {
   const navigation = useNavigation<any>();
-  const insets = useSafeAreaInsets();
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
-  // 가게 정보
-  const [storeName, setStoreName]         = useState('');
-  const [category, setCategory]           = useState('한식');
-  const [description, setDescription]     = useState('');
-  const [postcode, setPostcode]           = useState('');
-  const [address, setAddress]             = useState('');
-  const [addressDetail, setAddressDetail] = useState('');
-  const [phone, setPhone]                 = useState('');
-  const [instagramUrl, setInstagramUrl]   = useState('');
-  const [naverPlaceUrl, setNaverPlaceUrl] = useState('');
+  const [storeName,        setStoreName]        = useState('');
+  const [category,         setCategory]         = useState('cafe');
+  const [address,          setAddress]          = useState('');
+  const [postcode,         setPostcode]         = useState('');
+  const [latitude,         setLatitude]         = useState<number | undefined>();
+  const [longitude,        setLongitude]        = useState<number | undefined>();
+  const [description,      setDescription]      = useState('');
+  const [preferredCallTime, setPreferredCallTime] = useState('');
+  const [loading,          setLoading]          = useState(false);
+  const [submitted,        setSubmitted]        = useState(false);
+  const [postcodeModal,    setPostcodeModal]    = useState(false);
 
-  // 좌표 (우편번호 → 자동 지오코딩)
-  const [latitude, setLatitude]   = useState<number | undefined>();
-  const [longitude, setLongitude] = useState<number | undefined>();
-
-  // 신청자 정보
-  const [ownerName, setOwnerName]   = useState('');
-  const [ownerPhone, setOwnerPhone] = useState('');
-  const [ownerEmail, setOwnerEmail] = useState('');
-  const [message, setMessage]       = useState('');
-
-  // 우편번호 모달
-  const [postcodeModal, setPostcodeModal] = useState(false);
-  const [geocoding, setGeocoding]         = useState(false);
+  // ─── 포커스 상태 ─────────────────────────────────────────────
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // ─── 우편번호 WebView 메시지 처리 ─────────────────────────
   const handlePostcodeMessage = async (e: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(e.nativeEvent.data);
-      if (msg.type === 'close') {
-        setPostcodeModal(false);
-        return;
-      }
+      if (msg.type === 'close') { setPostcodeModal(false); return; }
       if (msg.type === 'address') {
         setPostcodeModal(false);
         setPostcode(msg.postcode ?? '');
         setAddress(msg.address ?? '');
-        setAddressDetail('');
-        // 지오코딩
-        setGeocoding(true);
         try {
           const results = await Location.geocodeAsync(msg.address);
           if (results.length > 0) {
             setLatitude(results[0].latitude);
             setLongitude(results[0].longitude);
           }
-        } catch {
-          // 지오코딩 실패는 무시 (직접 주소만 저장)
-        } finally {
-          setGeocoding(false);
-        }
+        } catch { /* 지오코딩 실패 무시 */ }
       }
     } catch { /* JSON 파싱 오류 무시 */ }
   };
 
   // ─── 유효성 검사 ──────────────────────────────────────────
-  const validate = () => {
-    if (!storeName.trim())      { Alert.alert('가게 이름을 입력해주세요'); return false; }
-    if (!address.trim())        { Alert.alert('주소를 검색해주세요'); return false; }
-    if (!phone.trim())          { Alert.alert('가게 전화번호를 입력해주세요'); return false; }
-    if (!ownerName.trim())      { Alert.alert('대표자 이름을 입력해주세요'); return false; }
-    if (!ownerPhone.trim())     { Alert.alert('대표자 연락처를 입력해주세요'); return false; }
-    return true;
-  };
+  const isValid = storeName.trim() && address.trim() && category;
 
   // ─── 신청 제출 ────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!validate()) return;
+    if (!isValid) {
+      Alert.alert('필수 항목을 입력해주세요', '가게 이름, 카테고리, 주소는 필수입니다.');
+      return;
+    }
     setLoading(true);
     try {
       await submitStoreApplication({
-        store_name:      storeName.trim(),
+        store_name:   storeName.trim(),
         category,
-        description:     description.trim() || undefined,
-        address:         address.trim(),
-        phone:           phone.trim(),
+        description:  description.trim() || undefined,
+        address:      address.trim(),
+        phone:        '',
         latitude,
         longitude,
-        owner_name:      ownerName.trim(),
-        owner_phone:     ownerPhone.trim(),
-        owner_email:     ownerEmail.trim() || undefined,
-        message:         message.trim() || undefined,
-        instagram_url:   instagramUrl.trim() || undefined,
-        naver_place_url: naverPlaceUrl.trim(),
-        postcode:        postcode || undefined,
-        address_detail:  addressDetail.trim() || undefined,
+        owner_name:   '',
+        owner_phone:  '',
+        message:      preferredCallTime.trim() || undefined,
       });
       setSubmitted(true);
     } catch {
@@ -160,17 +140,12 @@ export default function StoreApplyScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.successContainer}>
-          <Text style={styles.successEmoji}>🎉</Text>
-          <Text style={styles.successTitle}>신청이 완료됐어요!</Text>
+          <Text style={{ fontSize: 64 }}>🎉</Text>
+          <Text style={styles.successTitle}>가게 등록 신청 완료!</Text>
+          <Text style={styles.successCallTitle}>해피콜 전화 드립니다 📞</Text>
           <Text style={styles.successDesc}>
-            최고관리자 검토 후{'\n'}승인 결과를 안내해 드릴게요.{'\n'}보통 1~3일 내 처리됩니다.
+            {'담당자가 확인 후 연락드릴게요.\n보통 1~2일 내 처리됩니다.'}
           </Text>
-          <View style={styles.successCard}>
-            <Row label="가게명" value={storeName} />
-            <Row label="주소" value={postcode ? `[${postcode}] ${address}` : address} />
-            <Row label="대표자" value={ownerName} />
-            <Row label="연락처" value={ownerPhone} />
-          </View>
           <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.doneBtnText}>확인</Text>
           </TouchableOpacity>
@@ -181,222 +156,122 @@ export default function StoreApplyScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+
         {/* 헤더 */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>← 뒤로</Text>
+            <Text style={{ fontSize: 22 }}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>사장님 가입신청</Text>
-          <View style={{ width: 40 }} />
+          <Text style={styles.headerTitle}>사장님 가입</Text>
+          <Text style={styles.headerStep}>2 / 2</Text>
         </View>
+        {/* 진행바 */}
+        <View style={styles.progressBar} />
 
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <View style={styles.banner}>
-            <Text style={styles.bannerEmoji}>🍖</Text>
-            <View>
-              <Text style={styles.bannerTitle}>가게 등록 신청</Text>
-              <Text style={styles.bannerSub}>최고관리자 승인 후 앱에 등록됩니다</Text>
-            </View>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* 제목 */}
+          <Text style={styles.pageTitle}>{'가게 정보를\n입력해주세요'}</Text>
+          <Text style={styles.pageSubtitle}>나중에 수정할 수 있어요</Text>
+
+          {/* ① 가게 이름 */}
+          <Text style={styles.fieldLabel}>가게 이름 *</Text>
+          <TextInput
+            style={[styles.input, focusedField === 'storeName' && styles.inputFocused]}
+            value={storeName}
+            onChangeText={setStoreName}
+            placeholder="예) 역삼동 맛집"
+            placeholderTextColor={C.g400}
+            autoFocus
+            onFocus={() => setFocusedField('storeName')}
+            onBlur={() => setFocusedField(null)}
+          />
+
+          {/* ② 카테고리 */}
+          <Text style={[styles.fieldLabel, { marginTop: 20 }]}>카테고리 *</Text>
+          <View style={styles.chipWrap}>
+            {CATEGORY_CHIPS.map(chip => {
+              const selected = category === chip.key;
+              return (
+                <TouchableOpacity
+                  key={chip.key}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => setCategory(chip.key)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    {chip.emoji ? `${chip.emoji} ${chip.label}` : chip.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
-          {/* ── 가게 정보 ─────────────────────────────── */}
-          <SectionCard title="📍 가게 정보">
-
-            <Field label="가게 이름 *" hint="네이버 업체정보 상호와 동일하게 입력해주세요">
-              <TextInput
-                style={styles.input}
-                value={storeName}
-                onChangeText={setStoreName}
-                placeholder="예) 우리동네 맛집"
-                placeholderTextColor={COLORS.textMuted}
-              />
-            </Field>
-
-            <Field label="업종 카테고리 *">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.categoryRow}>
-                  {CATEGORIES.map(c => (
-                    <TouchableOpacity
-                      key={c}
-                      style={[styles.categoryBtn, category === c && styles.categoryBtnActive]}
-                      onPress={() => setCategory(c)}
-                    >
-                      <Text style={[styles.categoryText, category === c && styles.categoryTextActive]}>
-                        {c}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </Field>
-
-            <Field label="가게 소개">
-              <TextInput
-                style={[styles.input, styles.inputMulti]}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="가게를 간단히 소개해주세요"
-                placeholderTextColor={COLORS.textMuted}
-                multiline
-                numberOfLines={3}
-              />
-            </Field>
-
-            {/* 주소 – 우편번호 검색 */}
-            <Field label="주소 *">
-              <TouchableOpacity
-                style={[styles.input, styles.addressSearchBtn]}
-                onPress={() => setPostcodeModal(true)}
-                activeOpacity={0.7}
-              >
-                {postcode ? (
-                  <View style={{ gap: 2 }}>
-                    <Text style={styles.postcodeText}>[{postcode}]</Text>
-                    <Text style={styles.addressText}>{address}</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.addressPlaceholder}>🔍 우편번호 검색</Text>
-                )}
-                {geocoding && (
-                  <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 8 }} />
-                )}
-              </TouchableOpacity>
-              {address ? (
-                <TextInput
-                  style={[styles.input, { marginTop: 8 }]}
-                  value={addressDetail}
-                  onChangeText={setAddressDetail}
-                  placeholder="상세주소 (동, 호수 등)"
-                  placeholderTextColor={COLORS.textMuted}
-                />
-              ) : null}
-              {latitude !== undefined && (
-                <Text style={styles.geoTag}>
-                  📍 위치 등록됨 ({latitude.toFixed(5)}, {longitude?.toFixed(5)})
-                </Text>
-              )}
-            </Field>
-
-            <Field label="가게 전화번호 *">
-              <TextInput
-                style={styles.input}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="예) 02-1234-5678"
-                placeholderTextColor={COLORS.textMuted}
-                keyboardType="phone-pad"
-              />
-            </Field>
-
-            {/* 네이버 업체정보 (필수) */}
-            <Field label="네이버 업체정보 링크 (선택)" hint="네이버 지도에서 업체 페이지 링크를 복사해주세요">
-              <TextInput
-                style={styles.input}
-                value={naverPlaceUrl}
-                onChangeText={setNaverPlaceUrl}
-                placeholder="https://naver.me/..."
-                placeholderTextColor={COLORS.textMuted}
-                autoCapitalize="none"
-                keyboardType="url"
-              />
-            </Field>
-
-            {/* 인스타그램 (선택) */}
-            <Field label="인스타그램 링크 (선택)">
-              <TextInput
-                style={styles.input}
-                value={instagramUrl}
-                onChangeText={setInstagramUrl}
-                placeholder="https://instagram.com/..."
-                placeholderTextColor={COLORS.textMuted}
-                autoCapitalize="none"
-                keyboardType="url"
-              />
-            </Field>
-
-          </SectionCard>
-
-          {/* ── 대표자 정보 ───────────────────────────── */}
-          <SectionCard title="👤 대표자 정보">
-            <Field label="대표자 이름 *">
-              <TextInput
-                style={styles.input}
-                value={ownerName}
-                onChangeText={setOwnerName}
-                placeholder="예) 홍길동"
-                placeholderTextColor={COLORS.textMuted}
-              />
-            </Field>
-
-            <Field label="대표자 연락처 *">
-              <TextInput
-                style={styles.input}
-                value={ownerPhone}
-                onChangeText={setOwnerPhone}
-                placeholder="예) 010-1234-5678"
-                placeholderTextColor={COLORS.textMuted}
-                keyboardType="phone-pad"
-              />
-            </Field>
-
-            <Field label="이메일 (선택)">
-              <TextInput
-                style={styles.input}
-                value={ownerEmail}
-                onChangeText={setOwnerEmail}
-                placeholder="예) owner@email.com"
-                placeholderTextColor={COLORS.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </Field>
-
-            <Field label="하고 싶은 말 (선택)">
-              <TextInput
-                style={[styles.input, styles.inputMulti]}
-                value={message}
-                onChangeText={setMessage}
-                placeholder="관리자에게 전하고 싶은 말을 자유롭게 작성해주세요"
-                placeholderTextColor={COLORS.textMuted}
-                multiline
-                numberOfLines={3}
-              />
-            </Field>
-          </SectionCard>
-
-          <View style={styles.notice}>
-            <Text style={styles.noticeText}>
-              📌 신청 후 최고관리자 검토를 거쳐 1~3일 내 처리됩니다.{'\n'}
-              승인 시 앱 지도에 가게가 등록됩니다.
+          {/* ③ 가게 주소 */}
+          <Text style={[styles.fieldLabel, { marginTop: 20 }]}>가게 주소 *</Text>
+          <View style={styles.addressRow}>
+            <Text style={[styles.addressText, !address && { color: C.g400 }]}>
+              {address || '주소를 입력해주세요'}
             </Text>
+            <TouchableOpacity
+              style={styles.addressChangeBtn}
+              onPress={() => setPostcodeModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.addressChangeBtnText}>변경</Text>
+            </TouchableOpacity>
           </View>
 
+          {/* ④ 한 줄 소개 */}
+          <Text style={[styles.fieldLabel, { marginTop: 20 }]}>한 줄 소개 (선택)</Text>
+          <TextInput
+            style={[styles.input, styles.inputMulti, focusedField === 'description' && styles.inputFocused]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="역삼동 감성 카페, 매일 신선한 원두"
+            placeholderTextColor={C.g400}
+            multiline
+            onFocus={() => setFocusedField('description')}
+            onBlur={() => setFocusedField(null)}
+          />
+
+          {/* ⑤ 전화통화 편한 시간대 */}
+          <Text style={[styles.fieldLabel, { marginTop: 20 }]}>전화통화 편한 시간대</Text>
+          <TextInput
+            style={[styles.input, focusedField === 'callTime' && styles.inputFocused]}
+            value={preferredCallTime}
+            onChangeText={setPreferredCallTime}
+            placeholder="예) 오후 2시~5시 사이"
+            placeholderTextColor={C.g400}
+            onFocus={() => setFocusedField('callTime')}
+            onBlur={() => setFocusedField(null)}
+          />
+
+          {/* 제출 버튼 */}
           <TouchableOpacity
-            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, (loading || !isValid) && { opacity: 0.6 }]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || !isValid}
             activeOpacity={0.85}
           >
-            <Text style={styles.submitBtnText}>
-              {loading ? '신청 중...' : '🍖 가입 신청하기'}
-            </Text>
+            {loading
+              ? <ActivityIndicator color={C.white} />
+              : <Text style={styles.submitBtnText}>가게 등록 완료 ✓</Text>
+            }
           </TouchableOpacity>
-
-          <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ── 우편번호 검색 모달 ─────────────────────────── */}
+      {/* 우편번호 검색 모달 */}
       <Modal
         visible={postcodeModal}
         animationType="slide"
         onRequestClose={() => setPostcodeModal(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: C.white }}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>우편번호 검색</Text>
             <TouchableOpacity onPress={() => setPostcodeModal(false)}>
@@ -418,136 +293,89 @@ export default function StoreApplyScreen() {
   );
 }
 
-// ─── 서브 컴포넌트 ────────────────────────────────────────────
-
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={[sectionStyles.card, SHADOW.card]}>
-      <Text style={sectionStyles.title}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function Field({
-  label, hint, children,
-}: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <View style={fieldStyles.wrap}>
-      <Text style={fieldStyles.label}>{label}</Text>
-      {hint ? <Text style={fieldStyles.hint}>{hint}</Text> : null}
-      {children}
-    </View>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={rowStyles.row}>
-      <Text style={rowStyles.label}>{label}</Text>
-      <Text style={rowStyles.value}>{value}</Text>
-    </View>
-  );
-}
-
-// ─── StyleSheets ─────────────────────────────────────────────
-
-const sectionStyles = StyleSheet.create({
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.lg,
-    padding: 20,
-    gap: 16,
-  },
-  title: { fontSize: 15, fontWeight: '800', color: COLORS.text },
-});
-
-const fieldStyles = StyleSheet.create({
-  wrap:  { gap: 4 },
-  label: { fontSize: 13, fontWeight: '700', color: COLORS.text },
-  hint:  { fontSize: 11, color: COLORS.textMuted, lineHeight: 16 },
-});
-
-const rowStyles = StyleSheet.create({
-  row:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  label: { fontSize: 13, color: COLORS.textMuted },
-  value: { fontSize: 13, fontWeight: '600', color: COLORS.text, flex: 1, textAlign: 'right' },
-});
-
 const styles = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: COLORS.background },
-  header:      {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 20, paddingBottom: 8,
-  },
-  backText:    { fontSize: 16, color: COLORS.primary, fontWeight: '600' },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text },
-  container:   { padding: 20, gap: 16 },
-  banner:      {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.lg, padding: 16,
-  },
-  bannerEmoji: { fontSize: 36 },
-  bannerTitle: { fontSize: 16, fontWeight: '800', color: COLORS.text },
-  bannerSub:   { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+  safe: { flex: 1, backgroundColor: C.white },
 
+  // 헤더
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14,
+  },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: C.g900 },
+  headerStep:  { fontSize: 13, color: C.g500 },
+  progressBar: { height: 3, backgroundColor: C.brand, width: '100%' },
+
+  // 폼
+  container: {
+    paddingHorizontal: 20, paddingTop: 28, paddingBottom: 40,
+  },
+  pageTitle: {
+    fontSize: 26, fontWeight: '900', color: C.g900,
+    letterSpacing: -0.5, lineHeight: 34,
+  },
+  pageSubtitle: { fontSize: 14, color: C.g500, marginTop: 6, marginBottom: 28 },
+
+  // 필드
+  fieldLabel: { fontSize: 13, fontWeight: '700', color: C.g900, marginBottom: 8 },
   input: {
-    borderWidth: 1.5, borderColor: COLORS.border, borderRadius: RADIUS.md,
-    padding: 12, fontSize: 15, color: COLORS.text, backgroundColor: COLORS.background,
+    borderWidth: 1.5, borderColor: C.g200, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: C.g900,
   },
-  inputMulti:       { minHeight: 80, textAlignVertical: 'top' },
-  addressSearchBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    minHeight: 48,
-  },
-  postcodeText:     { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
-  addressText:      { fontSize: 15, color: COLORS.text },
-  addressPlaceholder: { fontSize: 15, color: COLORS.textMuted },
-  geoTag:           { fontSize: 11, color: '#2DB87A', marginTop: 4 },
+  inputFocused: { borderColor: C.brand },
+  inputMulti:   { minHeight: 52, textAlignVertical: 'top' },
 
-  categoryRow: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
-  categoryBtn: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: RADIUS.md,
-    backgroundColor: COLORS.background, borderWidth: 1.5, borderColor: COLORS.border,
+  // 카테고리 칩
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    backgroundColor: C.g100,
   },
-  categoryBtnActive:   { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  categoryText:        { fontSize: 13, fontWeight: '600', color: COLORS.textMuted },
-  categoryTextActive:  { color: COLORS.white },
+  chipSelected:     { backgroundColor: C.brand },
+  chipText:         { fontSize: 14, fontWeight: '600', color: C.g700 },
+  chipTextSelected: { color: C.white },
 
-  notice: {
-    backgroundColor: COLORS.secondary, borderRadius: RADIUS.md, padding: 14,
+  // 주소
+  addressRow: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5, borderColor: C.g200, borderRadius: 12,
   },
-  noticeText: { fontSize: 12, color: COLORS.textMuted, lineHeight: 20 },
+  addressText: {
+    flex: 1, paddingHorizontal: 14, paddingVertical: 13,
+    fontSize: 15, color: C.g900,
+  },
+  addressChangeBtn: {
+    paddingHorizontal: 12, paddingVertical: 13,
+    borderLeftWidth: 1, borderLeftColor: C.g200,
+  },
+  addressChangeBtnText: { fontSize: 14, fontWeight: '600', color: C.brand },
 
-  submitBtn:         {
-    backgroundColor: COLORS.primary, borderRadius: RADIUS.lg, padding: 18, alignItems: 'center',
+  // 제출 버튼
+  submitBtn: {
+    marginTop: 32, backgroundColor: C.brand, borderRadius: 14,
+    paddingVertical: 17, alignItems: 'center',
   },
-  submitBtnDisabled: { opacity: 0.6 },
-  submitBtnText:     { color: COLORS.white, fontSize: 17, fontWeight: '800' },
+  submitBtnText: { fontSize: 17, fontWeight: '800', color: C.white },
 
   // 완료 화면
   successContainer: {
-    flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 16,
+    flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12,
   },
-  successEmoji: { fontSize: 64 },
-  successTitle: { fontSize: 24, fontWeight: '800', color: COLORS.text },
-  successDesc:  { fontSize: 15, color: COLORS.textMuted, textAlign: 'center', lineHeight: 24 },
-  successCard:  {
-    backgroundColor: COLORS.white, borderRadius: RADIUS.lg,
-    padding: 20, width: '100%', gap: 4, ...SHADOW.card,
+  successTitle:    { fontSize: 24, fontWeight: '900', color: C.g900 },
+  successCallTitle: { fontSize: 18, fontWeight: '700', color: C.brand, marginTop: 8 },
+  successDesc:     {
+    fontSize: 14, color: C.g500, textAlign: 'center', lineHeight: 22, marginTop: 8,
   },
   doneBtn:     {
-    backgroundColor: COLORS.primary, borderRadius: RADIUS.lg,
-    padding: 16, alignItems: 'center', width: '100%',
+    marginTop: 16, backgroundColor: C.brand, borderRadius: 14,
+    paddingVertical: 16, paddingHorizontal: 48, alignItems: 'center',
   },
-  doneBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
+  doneBtnText: { color: C.white, fontSize: 16, fontWeight: '800' },
 
   // 모달
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 16, borderBottomWidth: 1, borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
+    padding: 16, borderBottomWidth: 1, borderColor: C.g200, backgroundColor: C.white,
   },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text },
-  modalClose: { fontSize: 20, color: COLORS.textMuted, padding: 4 },
+  modalTitle: { fontSize: 17, fontWeight: '800', color: C.g900 },
+  modalClose: { fontSize: 20, color: C.g500, padding: 4 },
 });
