@@ -55,7 +55,16 @@
     },
     "plugins": [
       "./plugins/removeRestrictedEntitlements",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Pretendard-Black.ttf",
+            "./assets/fonts/Pretendard-Bold.ttf",
+            "./assets/fonts/Pretendard-Regular.ttf"
+          ]
+        }
+      ],
       [
         "expo-location",
         {
