@@ -1334,11 +1334,10 @@ const s = StyleSheet.create({
     flexShrink: 1,
   },
   logo: {
-    fontSize: 30,
-    fontWeight: '900',
-    fontFamily: 'Pretendard-Black',
+    fontSize: 32,
+    fontFamily: 'KCC-Ganpan',
     color: C.brand,
-    letterSpacing: -1,
+    letterSpacing: 0,
   },
   locationChip: {
     backgroundColor: C.g100,

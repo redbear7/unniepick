@@ -344,10 +344,10 @@ const s = StyleSheet.create({
     borderBottomColor: C.g150,
   },
   appBarTitle: {
-    fontSize: 26,
-    fontWeight: '900',
+    fontSize: 28,
+    fontFamily: 'KCC-Ganpan',
     color: C.g900,
-    letterSpacing: -0.6,
+    letterSpacing: 0,
   },
   appBarIcon: {
     width: 38,

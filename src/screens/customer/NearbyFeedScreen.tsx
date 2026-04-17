@@ -573,10 +573,10 @@ const s = StyleSheet.create({
     borderBottomColor: C.g150,
   },
   appBarTitle: {
-    fontSize: 28,
-    fontWeight: '900',
+    fontSize: 30,
+    fontFamily: 'KCC-Ganpan',
     color: C.g900,
-    letterSpacing: -0.6,
+    letterSpacing: 0,
   },
 
   // 위치 + 검색바
