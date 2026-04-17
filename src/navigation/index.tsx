@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
 import { ToastProvider } from '../contexts/ToastContext';
 import { navigationRef } from './navigationRef';
@@ -110,12 +111,12 @@ function CustomerTabs() {
 export default function Navigation() {
   const [authLoading,  setAuthLoading]  = useState(true);
   const [initialRoute, setInitialRoute] = useState<string>('PhoneAuth');
+  const notifResponseRef = useRef<Notifications.Subscription | null>(null);
 
   useEffect(() => {
     // 초기 세션 확인 — Refresh Token 만료 시 자동 정리
     supabase.auth.getSession().then(async ({ data, error }) => {
       if (error?.message?.includes('Refresh Token')) {
-        // 만료된 토큰 → 강제 로그아웃 후 인증 화면
         await clearInvalidSession();
         setInitialRoute('PhoneAuth');
       } else {
@@ -127,14 +128,40 @@ export default function Navigation() {
     // 로그인/로그아웃 이벤트
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || (!session && event === 'TOKEN_REFRESHED')) {
-        // 로그아웃 or 토큰 갱신 실패 → PhoneAuth 로 스택 리셋
         if (navigationRef.isReady()) {
           navigationRef.reset({ index: 0, routes: [{ name: 'PhoneAuth' }] });
         }
       }
     });
 
-    return () => subscription.unsubscribe();
+    // ── 푸시 알림 탭 핸들러 ────────────────────────────────────────
+    notifResponseRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as Record<string, string>;
+      if (!navigationRef.isReady()) return;
+
+      switch (data?.type) {
+        // 가게 등록 승인 → 사장님 로그인 화면으로 이동
+        case 'store_approved':
+          navigationRef.navigate('OwnerLogin' as never);
+          break;
+        // 슈퍼어드민 공지 → 홈
+        case 'superadmin':
+          navigationRef.navigate('CustomerTabs' as never);
+          break;
+        // 쿠폰/타임세일 → 쿠폰함
+        case 'owner':
+        case 'coupon':
+          navigationRef.navigate('CustomerTabs' as never);
+          break;
+        default:
+          break;
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      notifResponseRef.current?.remove();
+    };
   }, []);
 
   // ── 인증 확인 중 — 오렌지 스플래시 ──────────────────────────────
