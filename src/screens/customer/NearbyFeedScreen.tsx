@@ -129,23 +129,25 @@ function FollowButton({
 }
 const fbs = StyleSheet.create({
   btn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: C.g300,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: C.brand,
+    backgroundColor: C.white,
+    flexShrink: 0,
   },
   btnOn: {
-    backgroundColor: C.g100,
-    borderColor: C.g300,
+    backgroundColor: C.brand,
+    borderColor: C.brand,
   },
   text: {
     fontSize: 13,
-    fontWeight: '600',
-    color: C.g700,
+    fontWeight: '700',
+    color: C.brand,
   },
   textOn: {
-    color: C.g700,
+    color: C.white,
   },
 });
 
@@ -226,7 +228,7 @@ const si = StyleSheet.create({
   thumb: {
     width: 80,
     height: 80,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -240,10 +242,10 @@ const si = StyleSheet.create({
     gap: 3,
   },
   name: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: C.g900,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   meta: {
     fontSize: 13,
@@ -253,23 +255,23 @@ const si = StyleSheet.create({
   chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 3,
+    gap: 8,
+    marginTop: 4,
   },
   couponChip: {
-    backgroundColor: C.brandBg,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    backgroundColor: '#FFEAEA',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   couponChipText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: C.brand,
+    fontWeight: '700',
+    color: '#E53935',
   },
   followers: {
     fontSize: 13,
-    color: C.g400,
+    color: C.g500,
     fontWeight: '400',
   },
 });
@@ -571,10 +573,10 @@ const s = StyleSheet.create({
     borderBottomColor: C.g150,
   },
   appBarTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '900',
     color: C.g900,
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
 
   // 위치 + 검색바
@@ -665,7 +667,7 @@ const s = StyleSheet.create({
     gap: 4,
   },
   sortOpt: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: C.g500,
     paddingHorizontal: 8,

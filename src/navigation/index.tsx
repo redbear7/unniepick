@@ -3,18 +3,16 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
 
 import { ToastProvider } from '../contexts/ToastContext';
 import { navigationRef } from './navigationRef';
-import { supabase } from '../lib/supabase';
+import { supabase, clearInvalidSession } from '../lib/supabase';
 
 // ── 고객 화면 ──────────────────────────────────────────────────────
 import HomeScreen              from '../screens/customer/HomeScreen';
 import CouponDetailScreen      from '../screens/customer/CouponDetailScreen';
 import MyCouponQRScreen        from '../screens/customer/MyCouponQRScreen';
 import StampCardScreen         from '../screens/customer/StampCardScreen';
-import MapScreen               from '../screens/customer/MapScreen';
 import ReceiptScanScreen       from '../screens/customer/ReceiptScanScreen';
 import RankingScreen           from '../screens/customer/RankingScreen';
 import LoginScreen             from '../screens/customer/LoginScreen';
@@ -24,6 +22,7 @@ import StoreHomeScreen         from '../screens/customer/StoreHomeScreen';
 import WalletScreen            from '../screens/customer/WalletScreen';
 import StoreCheckinScreen      from '../screens/customer/StoreCheckinScreen';
 import SpinWheelScreen         from '../screens/customer/SpinWheelScreen';
+import MapScreen               from '../screens/customer/MapScreen';
 import NearbyFeedScreen        from '../screens/customer/NearbyFeedScreen';
 import StoreFeedScreen         from '../screens/customer/StoreFeedScreen';
 
@@ -50,75 +49,13 @@ const Tab       = createBottomTabNavigator();
 
 export const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 82 : 64;
 
-const ACTIVE   = '#191F28';  // 활성: 진한 차콜 (당근마켓식)
+const ACTIVE   = '#FF6F0F';  // 활성: 오렌지
 const INACTIVE = '#ADB5BD';  // 비활성: 회색
 
-// ── 탭 아이콘 모음 ────────────────────────────────────────────────
-function IconHome({ color }: { color: string }) {
-  const filled = color === ACTIVE;
+// ── 탭 아이콘 (이모지) ────────────────────────────────────────────
+function TabIcon({ emoji, active }: { emoji: string; active: boolean }) {
   return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      {filled ? (
-        <Path
-          d="M10.55 2.533a2 2 0 0 1 2.9 0l7 7.467A2 2 0 0 1 21 11.467V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8.533a2 2 0 0 1 .55-1.387l7-7.467Z"
-          fill={color}
-        />
-      ) : (
-        <Path
-          d="M10.55 2.533a2 2 0 0 1 2.9 0l7 7.467A2 2 0 0 1 21 11.467V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8.533a2 2 0 0 1 .55-1.387l7-7.467Z"
-          stroke={color} strokeWidth={1.7} fill="none"
-        />
-      )}
-      <Path d="M9 22v-6h6v6" stroke={filled ? '#fff' : color} strokeWidth={1.7} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function IconSearch({ color }: { color: string }) {
-  const filled = color === ACTIVE;
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Circle cx={11} cy={11} r={7.5}
-        fill={filled ? color : 'none'}
-        stroke={color} strokeWidth={filled ? 0 : 1.7}
-      />
-      {filled && <Circle cx={11} cy={11} r={5} fill="#fff" />}
-      <Path d="M17 17l3.5 3.5" stroke={color} strokeWidth={2} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function IconCoupon({ color }: { color: string }) {
-  const filled = color === ACTIVE;
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M2 9a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v1.5a1.5 1.5 0 0 0 0 3V15a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-1.5a1.5 1.5 0 0 0 0-3V9Z"
-        fill={filled ? color : 'none'}
-        stroke={color} strokeWidth={filled ? 0 : 1.7}
-      />
-      {filled
-        ? <Path d="M8 8v8M8 12h8" stroke="#fff" strokeWidth={1.5} strokeLinecap="round" />
-        : <Path d="M8 8v8M8 12h8" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      }
-    </Svg>
-  );
-}
-
-function IconMap({ color }: { color: string }) {
-  const filled = color === ACTIVE;
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"
-        fill={filled ? color : 'none'}
-        stroke={color} strokeWidth={filled ? 0 : 1.7}
-      />
-      <Circle cx={12} cy={9} r={2.5}
-        fill={filled ? '#fff' : 'none'}
-        stroke={filled ? 'none' : color} strokeWidth={1.7}
-      />
-    </Svg>
+    <Text style={{ fontSize: 22, opacity: active ? 1 : 0.5 }}>{emoji}</Text>
   );
 }
 
@@ -134,11 +71,11 @@ function CustomerTabs() {
           borderTopWidth:  StyleSheet.hairlineWidth,
           borderTopColor:  '#E5E8EB',
           height: TAB_BAR_HEIGHT,
-          paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 22 : 10,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: '600',
           marginTop: 2,
         },
@@ -146,13 +83,20 @@ function CustomerTabs() {
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen}
-        options={{ tabBarLabel: '홈', tabBarIcon: ({ color }) => <IconHome color={color} /> }} />
+        options={{
+          tabBarLabel: '홈',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" active={focused} />,
+        }} />
       <Tab.Screen name="NearbyFeed" component={NearbyFeedScreen}
-        options={{ tabBarLabel: '탐색', tabBarIcon: ({ color }) => <IconSearch color={color} /> }} />
+        options={{
+          tabBarLabel: '탐색',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🔍" active={focused} />,
+        }} />
       <Tab.Screen name="Wallet" component={WalletScreen}
-        options={{ tabBarLabel: '쿠폰함', tabBarIcon: ({ color }) => <IconCoupon color={color} /> }} />
-      <Tab.Screen name="Map" component={MapScreen}
-        options={{ tabBarLabel: '지도', tabBarIcon: ({ color }) => <IconMap color={color} /> }} />
+        options={{
+          tabBarLabel: '쿠폰함',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🎟" active={focused} />,
+        }} />
     </Tab.Navigator>
   );
 }
@@ -168,16 +112,22 @@ export default function Navigation() {
   const [initialRoute, setInitialRoute] = useState<string>('PhoneAuth');
 
   useEffect(() => {
-    // 초기 세션 확인
-    supabase.auth.getSession().then(({ data }) => {
-      setInitialRoute(data.session ? 'CustomerTabs' : 'PhoneAuth');
+    // 초기 세션 확인 — Refresh Token 만료 시 자동 정리
+    supabase.auth.getSession().then(async ({ data, error }) => {
+      if (error?.message?.includes('Refresh Token')) {
+        // 만료된 토큰 → 강제 로그아웃 후 인증 화면
+        await clearInvalidSession();
+        setInitialRoute('PhoneAuth');
+      } else {
+        setInitialRoute(data.session ? 'CustomerTabs' : 'PhoneAuth');
+      }
       setAuthLoading(false);
     });
 
     // 로그인/로그아웃 이벤트
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        // 로그아웃 → PhoneAuth 로 스택 리셋
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || (!session && event === 'TOKEN_REFRESHED')) {
+        // 로그아웃 or 토큰 갱신 실패 → PhoneAuth 로 스택 리셋
         if (navigationRef.isReady()) {
           navigationRef.reset({ index: 0, routes: [{ name: 'PhoneAuth' }] });
         }
@@ -221,6 +171,7 @@ export default function Navigation() {
           <RootStack.Screen name="ReceiptScan"       component={ReceiptScanScreen} />
           <RootStack.Screen name="Ranking"           component={RankingScreen} />
           <RootStack.Screen name="AnnouncementBoard" component={AnnouncementBoardScreen} />
+          <RootStack.Screen name="Map"               component={MapScreen} />
 
           {/* ── 사장님 ────────────────────────────────────────────── */}
           <RootStack.Screen name="OwnerLogin"     component={OwnerLoginScreen} />
