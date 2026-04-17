@@ -1,0 +1,3 @@
+# Auth Hook은 service_role JWT로 호출되므로 자체 JWT 검증 비활성화
+[functions.send-sms]
+verify_jwt = false

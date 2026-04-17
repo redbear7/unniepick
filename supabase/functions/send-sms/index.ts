@@ -13,7 +13,6 @@
 const SOLAPI_API_KEY    = Deno.env.get("SOLAPI_API_KEY")    ?? "";
 const SOLAPI_API_SECRET = Deno.env.get("SOLAPI_API_SECRET") ?? "";
 const FROM_NUMBER       = Deno.env.get("SOLAPI_FROM_NUMBER") ?? "01085757863";
-
 const CORS = {
   "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-webhook-signature",
