@@ -55,6 +55,7 @@ interface NearbyStore {
   distance_km:         number;
   active_coupon_count: number;
   category?:           string;
+  follower_count?:     number;
 }
 
 // ── 테마 ──────────────────────────────────────────────────────────
@@ -639,6 +640,10 @@ const bm = StyleSheet.create({
 });
 
 // ── 주변 추천 가게 섹션 ───────────────────────────────────────────
+const CAT_LABEL: Record<string, string> = {
+  cafe: '카페', food: '음식', beauty: '미용', nail: '네일', etc: '기타',
+};
+
 function NearbySection({
   stores,
   followMap,
@@ -655,10 +660,16 @@ function NearbySection({
     <View style={ns.wrap}>
       <Text style={ns.title}>📍 주변 추천 가게</Text>
       {stores.map((store, idx) => {
-        const catKey  = store.category ?? 'etc';
-        const emoji   = CAT_EMOJI[catKey] ?? '🏪';
-        const thumbBg = THUMB_BG[catKey] ?? C.g100;
-        const followed = !!followMap[store.store_id];
+        const catKey    = store.category ?? 'etc';
+        const emoji     = CAT_EMOJI[catKey] ?? '🏪';
+        const thumbBg   = THUMB_BG[catKey] ?? C.g100;
+        const catLabel  = CAT_LABEL[catKey] ?? '기타';
+        const followed  = !!followMap[store.store_id];
+        const distText  = store.distance_km < 1
+          ? `${Math.round(store.distance_km * 1000)}m`
+          : `${store.distance_km.toFixed(1)}km`;
+        const followers = store.follower_count ?? 0;
+
         return (
           <React.Fragment key={store.store_id}>
             <TouchableOpacity
@@ -673,15 +684,26 @@ function NearbySection({
 
               {/* 본문 */}
               <View style={ns.body}>
+                {/* 가게명 */}
                 <Text style={ns.name} numberOfLines={1}>{store.store_name}</Text>
-                {store.active_coupon_count > 0 && (
-                  <View style={ns.couponChip}>
-                    <Text style={ns.couponChipText}>🎟 쿠폰 {store.active_coupon_count}개</Text>
-                  </View>
-                )}
+
+                {/* 카테고리 · 거리 */}
+                <Text style={ns.meta}>{catLabel} · 📍 {distText}</Text>
+
+                {/* 쿠폰 뱃지 + 팔로워 수 */}
+                <View style={ns.statsRow}>
+                  {store.active_coupon_count > 0 && (
+                    <View style={ns.couponChip}>
+                      <Text style={ns.couponChipText}>🎟 쿠폰 {store.active_coupon_count}개</Text>
+                    </View>
+                  )}
+                  {followers > 0 && (
+                    <Text style={ns.followers}>팔로워 {followers.toLocaleString()}</Text>
+                  )}
+                </View>
               </View>
 
-              {/* 팔로우 */}
+              {/* 팔로우 버튼 (오렌지 pill) */}
               <TouchableOpacity
                 style={[ns.followBtn, followed && ns.followBtnOn]}
                 onPress={() => onFollow(store.store_id)}
@@ -703,69 +725,95 @@ const ns = StyleSheet.create({
   wrap: {
     backgroundColor: C.white,
     marginTop: 8,
-    paddingTop: 14,
-    paddingBottom: 4,
+    paddingTop: 18,
+    paddingBottom: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.g150,
   },
   title: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: C.g900,
     paddingHorizontal: 16,
-    marginBottom: 4,
-    letterSpacing: -0.2,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 12,
+    paddingVertical: 14,
+    gap: 14,
   },
   thumb: {
     width: 80,
     height: 80,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   thumbEmoji: { fontSize: 34 },
-  body: { flex: 1, minWidth: 0, gap: 3 },
+  body: { flex: 1, minWidth: 0, gap: 4 },
   name: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: C.g900,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
+  },
+  meta: {
+    fontSize: 13,
+    color: C.g500,
+    fontWeight: '400',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
   },
   couponChip: {
     alignSelf: 'flex-start',
-    backgroundColor: C.brandBg,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    backgroundColor: '#FFEAEA',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   couponChipText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: C.brand,
+    fontWeight: '700',
+    color: '#E53935',
   },
+  followers: {
+    fontSize: 13,
+    color: C.g500,
+    fontWeight: '400',
+  },
+  // 팔로우 버튼 — 오렌지 pill
   followBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: C.g300,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: C.brand,
+    backgroundColor: C.white,
     flexShrink: 0,
   },
-  followBtnOn: { backgroundColor: C.g100, borderColor: C.g300 },
-  followText:  { fontSize: 13, fontWeight: '600', color: C.g700 },
-  followTextOn: { color: C.g700 },
+  followBtnOn: {
+    backgroundColor: C.brand,
+    borderColor: C.brand,
+  },
+  followText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.brand,
+  },
+  followTextOn: {
+    color: C.white,
+  },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: C.g200,
-    marginHorizontal: 0,
   },
 });
 
@@ -774,9 +822,9 @@ function EmptyFeed({ onSearch }: { onSearch: () => void }) {
   return (
     <View style={es.wrap}>
       <Text style={es.emoji}>🎟</Text>
-      <Text style={es.title}>팔로우한 가게의 쿠폰이 여기 뜹니다</Text>
-      <Text style={es.sub}>가게를 팔로우하면 새 쿠폰을 즉시 알려드려요</Text>
-      <TouchableOpacity style={es.btn} onPress={onSearch}>
+      <Text style={es.title}>팔로우한 가게의{'\n'}쿠폰이 여기 뜹니다</Text>
+      <Text style={es.sub}>가게를 팔로우하면{'\n'}새 쿠폰을 즉시 알려드려요</Text>
+      <TouchableOpacity style={es.btn} onPress={onSearch} activeOpacity={0.85}>
         <Text style={es.btnText}>🔍 주변 가게 찾기</Text>
       </TouchableOpacity>
     </View>
@@ -784,39 +832,43 @@ function EmptyFeed({ onSearch }: { onSearch: () => void }) {
 }
 const es = StyleSheet.create({
   wrap: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-    gap: 8,
+    paddingHorizontal: 32,
+    paddingVertical: 48,
+    gap: 10,
   },
   emoji: {
-    fontSize: 56,
-    marginBottom: 8,
+    fontSize: 60,
+    marginBottom: 4,
   },
   title: {
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: '800',
     color: C.g900,
     textAlign: 'center',
+    lineHeight: 32,
+    letterSpacing: -0.4,
   },
   sub: {
-    fontSize: 13,
+    fontSize: 15,
     color: C.g500,
     textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: 8,
   },
   btn: {
     backgroundColor: C.brand,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingHorizontal: 36,
+    paddingVertical: 16,
+    borderRadius: 32,
+    marginTop: 4,
   },
   btnText: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: '700',
     color: C.white,
+    letterSpacing: -0.2,
   },
 });
 
