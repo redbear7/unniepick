@@ -1,13 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import { ToastProvider } from '../contexts/ToastContext';
 import { navigationRef } from './navigationRef';
-import { supabase, clearInvalidSession } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // ── 고객 화면 ──────────────────────────────────────────────────────
 import HomeV1Screen            from '../screens/Home';
@@ -26,6 +26,9 @@ import SpinWheelScreen         from '../screens/customer/SpinWheelScreen';
 import MapScreen               from '../screens/customer/MapScreen';
 import NearbyFeedScreen        from '../screens/customer/NearbyFeedScreen';
 import StoreFeedScreen         from '../screens/customer/StoreFeedScreen';
+
+// ── 스플래시 ──────────────────────────────────────────────────────
+import SplashScreen            from '../screens/Splash/SplashScreen';
 
 // ── 인증 화면 ──────────────────────────────────────────────────────
 import PhoneAuthScreen         from '../screens/auth/PhoneAuthScreen';
@@ -109,22 +112,10 @@ function CustomerTabs() {
 //  로그아웃 시: onAuthStateChange → navigationRef.reset → PhoneAuth
 // ══════════════════════════════════════════════════════════════════
 export default function Navigation() {
-  const [authLoading,  setAuthLoading]  = useState(true);
-  const [initialRoute, setInitialRoute] = useState<string>('PhoneAuth');
+  // 초기 세션 확인 → SplashScreen 이 담당 (항상 Splash 먼저)
   const notifResponseRef = useRef<Notifications.Subscription | null>(null);
 
   useEffect(() => {
-    // 초기 세션 확인 — Refresh Token 만료 시 자동 정리
-    supabase.auth.getSession().then(async ({ data, error }) => {
-      if (error?.message?.includes('Refresh Token')) {
-        await clearInvalidSession();
-        setInitialRoute('PhoneAuth');
-      } else {
-        setInitialRoute(data.session ? 'CustomerTabs' : 'PhoneAuth');
-      }
-      setAuthLoading(false);
-    });
-
     // 로그인/로그아웃 이벤트
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || (!session && event === 'TOKEN_REFRESHED')) {
@@ -164,23 +155,16 @@ export default function Navigation() {
     };
   }, []);
 
-  // ── 인증 확인 중 — 오렌지 스플래시 ──────────────────────────────
-  if (authLoading) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FF6F0F' }}>
-        <Text style={{ fontSize: 52, marginBottom: 20 }}>🎟</Text>
-        <ActivityIndicator color="#FFFFFF" size="large" />
-      </View>
-    );
-  }
-
   return (
     <ToastProvider>
       <NavigationContainer ref={navigationRef}>
         <RootStack.Navigator
-          initialRouteName={initialRoute}
+          initialRouteName="Splash"
           screenOptions={{ headerShown: false }}
         >
+          {/* ── 스플래시 ─────────────────────────────────────────── */}
+          <RootStack.Screen name="Splash"    component={SplashScreen} />
+
           {/* ── 인증 ─────────────────────────────────────────────── */}
           <RootStack.Screen name="PhoneAuth" component={PhoneAuthScreen} />
           <RootStack.Screen name="Login"     component={LoginScreen} />
