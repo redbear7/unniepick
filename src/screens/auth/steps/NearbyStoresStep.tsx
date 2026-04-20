@@ -151,6 +151,19 @@ export default function NearbyStoresStep({ loadStores, onDone, loading }: Props)
           <ActivityIndicator color={PALETTE.orange500} />
           <Text style={ns.loadingText}>주변 가게를 불러오는 중…</Text>
         </View>
+      ) : stores.length === 0 ? (
+        <View style={ns.emptyBox}>
+          <Text style={ns.emptyEmoji}>🏪</Text>
+          <Text style={ns.emptyTitle}>주변에 등록된 가게가 없어요</Text>
+          <Text style={ns.emptySub}>
+            {locDenied
+              ? '위치 권한을 허용하면 주변 가게를 볼 수 있어요'
+              : '반경을 넓혀 다시 시도해볼게요'}
+          </Text>
+          <TouchableOpacity style={ns.retryBtn} onPress={fetchStores} activeOpacity={0.8}>
+            <Text style={ns.retryBtnText}>다시 시도</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={stores}
@@ -258,6 +271,27 @@ const ns = StyleSheet.create({
   },
   loadingText: {
     fontFamily: FONT_FAMILY, fontSize: 13, color: PALETTE.gray500,
+  },
+  emptyBox: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 40, gap: 8,
+  },
+  emptyEmoji: { fontSize: 48, marginBottom: 4 },
+  emptyTitle: {
+    fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: '800',
+    color: PALETTE.gray800, letterSpacing: -0.3,
+  },
+  emptySub: {
+    fontFamily: FONT_FAMILY, fontSize: 13, color: PALETTE.gray500,
+    textAlign: 'center', lineHeight: 20,
+  },
+  retryBtn: {
+    marginTop: 12, paddingVertical: 10, paddingHorizontal: 24,
+    backgroundColor: PALETTE.gray100, borderRadius: 999,
+  },
+  retryBtnText: {
+    fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: '700',
+    color: PALETTE.gray700,
   },
   listContent: { padding: 16, gap: 8 },
 

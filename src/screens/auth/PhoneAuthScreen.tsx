@@ -125,6 +125,7 @@ export default function PhoneAuthScreen() {
   }, []);
 
   // ── Step 3 → Step 4: 프로필 저장 ─────────────────────────────────
+  // DB 스키마 불일치 시에도 Step 4 진입은 반드시 보장
   const saveProfile = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -135,22 +136,34 @@ export default function PhoneAuthScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('인증이 필요해요');
 
-      // user_metadata 업데이트
+      // user_metadata 닉네임 (실패해도 계속)
       if (trimmed) {
-        const { error: e } = await supabase.auth.updateUser({ data: { nickname: trimmed } });
-        if (e) throw e;
+        try {
+          await supabase.auth.updateUser({ data: { nickname: trimmed } });
+        } catch { /* ignore */ }
       }
 
-      // profiles upsert
-      await supabase.from('profiles').upsert(
-        {
-          id:          user.id,
-          nickname:    trimmed || null,
-          birth_month: (!birthSkip && birthMonth) ? +birthMonth : null,
-          birth_day:   (!birthSkip && birthDay)   ? +birthDay   : null,
-        },
-        { onConflict: 'id' },
-      );
+      // profiles upsert — 기본 닉네임만 (birth 컬럼 없어도 안전)
+      try {
+        await supabase.from('profiles').upsert(
+          { id: user.id, nickname: trimmed || null },
+          { onConflict: 'id' },
+        );
+      } catch { /* ignore */ }
+
+      // birth 컬럼이 있는 경우 추가 저장 시도
+      if (!birthSkip && (birthMonth || birthDay)) {
+        try {
+          await supabase.from('profiles').upsert(
+            {
+              id:          user.id,
+              birth_month: birthMonth ? +birthMonth : null,
+              birth_day:   birthDay   ? +birthDay   : null,
+            },
+            { onConflict: 'id' },
+          );
+        } catch { /* 컬럼 없으면 무시 */ }
+      }
 
       setStep(4);
     } catch (e: any) {
@@ -162,11 +175,14 @@ export default function PhoneAuthScreen() {
 
   // ── Step 4: 주변 가게 조회 ────────────────────────────────────────
   const loadStores = useCallback(async (lat: number, lng: number): Promise<NearbyStore[]> => {
-    // PostGIS RPC 우선 시도
+    const RADIUS_M = 500;
+    const LIMIT    = 10;
+
+    // PostGIS RPC 우선 시도 (반경 500m, 10개)
     if (lat !== 0 && lng !== 0) {
       try {
         const { data, error } = await supabase.rpc('nearby_stores_auth', {
-          lat, lng, radius_km: 3, limit_n: 20,
+          lat, lng, radius_km: RADIUS_M / 1000, limit_n: LIMIT,
         });
         if (!error && data?.length) {
           return (data as any[]).map(r => ({
@@ -180,29 +196,37 @@ export default function PhoneAuthScreen() {
       } catch { /* fallback */ }
     }
 
-    // Fallback: 전체 활성 가게 클라이언트 거리 계산
+    // Fallback: 활성 가게 전체 조회 후 클라이언트 거리 계산
     const { data: stores } = await supabase
       .from('stores')
       .select('id, name, category, emoji, latitude, longitude')
       .eq('is_active', true)
-      .limit(20);
+      .limit(50); // 충분히 가져온 뒤 거리 필터
 
-    if (!stores) return [];
+    if (!stores?.length) return [];
 
-    return stores
-      .map(s => ({
-        id:       String(s.id),
-        name:     s.name,
-        category: s.category ?? '',
-        emoji:    s.emoji    ?? '🏪',
-        distance: (lat && lng)
-          ? haversine(lat, lng, s.latitude, s.longitude)
-          : 0,
-      }))
-      .sort((a, b) => a.distance - b.distance);
+    const withDist = stores.map(s => ({
+      id:       String(s.id),
+      name:     s.name,
+      category: s.category ?? '',
+      emoji:    s.emoji    ?? '🏪',
+      distance: (lat && lng && s.latitude && s.longitude)
+        ? haversine(lat, lng, s.latitude, s.longitude)
+        : 0,
+    }));
+
+    // 위치 있으면 500m 필터 후 가까운 순 10개, 없으면 그냥 10개
+    const sorted = withDist.sort((a, b) => a.distance - b.distance);
+    const filtered = (lat && lng)
+      ? sorted.filter(s => s.distance <= RADIUS_M)
+      : sorted;
+
+    // 500m 내 가게가 5개 미만이면 반경 확장 (폴백)
+    return (filtered.length >= 5 ? filtered : sorted).slice(0, LIMIT);
   }, []);
 
   // ── Step 4 → 홈: 팔로우 + 약관 저장 ─────────────────────────────
+  // DB 오류가 있어도 홈 진입은 반드시 보장
   const completeSignup = useCallback(async (followed: string[], terms: TermsState) => {
     setLoading(true);
     setError('');
@@ -210,24 +234,28 @@ export default function PhoneAuthScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('인증이 필요해요');
 
-      // 팔로우 저장
+      // 팔로우 저장 (follows 테이블 없으면 무시)
       if (followed.length > 0) {
-        await supabase.from('follows').upsert(
-          followed.map(storeId => ({ user_id: user.id, store_id: storeId })),
-          { onConflict: 'user_id,store_id', ignoreDuplicates: true },
-        );
+        try {
+          await supabase.from('follows').upsert(
+            followed.map(storeId => ({ user_id: user.id, store_id: storeId })),
+            { onConflict: 'user_id,store_id', ignoreDuplicates: true },
+          );
+        } catch { /* 테이블 없으면 무시 */ }
       }
 
-      // 약관 동의 기록
-      await supabase.from('profiles').upsert(
-        {
-          id:              user.id,
-          terms_agreed:    true,
-          marketing_agreed: terms.marketing,
-          terms_agreed_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' },
-      );
+      // 약관 동의 기록 (컬럼 없으면 무시)
+      try {
+        await supabase.from('profiles').upsert(
+          {
+            id:               user.id,
+            terms_agreed:     true,
+            marketing_agreed: terms.marketing,
+            terms_agreed_at:  new Date().toISOString(),
+          },
+          { onConflict: 'id' },
+        );
+      } catch { /* 컬럼 없으면 무시 */ }
 
       navigation.reset({ index: 0, routes: [{ name: 'CustomerTabs' }] });
     } catch (e: any) {
