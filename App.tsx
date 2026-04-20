@@ -1,20 +1,17 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { LogBox } from 'react-native';
+import { LogBox, Text, View } from 'react-native';
+import { useFonts } from 'expo-font';
 import Navigation from './src/navigation';
 
 LogBox.ignoreLogs([
-  // expo-file-system legacy API 경고
   'Method readAsStringAsync',
-  // React Navigation 직렬화 경고
   'Non-serializable values were found in the navigation state',
-  // react-native-track-player 미지원 메서드 경고
   'setSleepTimer',
   'sleepWhenActiveTrackReachesEnd',
   'clearSleepTimer',
   'can not be found in the ObjecitveC definition',
-  // 기타 서드파티 라이브러리 경고
   'Sending `onAnimatedValueUpdate`',
   'ReactImageView: Image source',
   'new NativeEventEmitter',
@@ -22,6 +19,13 @@ LogBox.ignoreLogs([
 ]);
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'WantedSans': require('./assets/fonts/WantedSans-1.0.3/variable/WantedSansVariable.ttf'),
+  });
+
+  // 폰트 로드 전 스플래쉬 유지
+  if (!fontsLoaded) return null;
+
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />

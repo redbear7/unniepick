@@ -59,10 +59,7 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/KCC-Ganpan.otf",
-            "./assets/fonts/Pretendard-Black.ttf",
-            "./assets/fonts/Pretendard-Bold.ttf",
-            "./assets/fonts/Pretendard-Regular.ttf"
+            "./assets/fonts/WantedSans-1.0.3/variable/WantedSansVariable.ttf"
           ]
         }
       ],
