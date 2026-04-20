@@ -1,4 +1,9 @@
 // BirthdayPicker — iOS 스타일 휠 피커 바텀시트 (월 · 일)
+//
+// 핵심 수정사항:
+//  1. onLayout 으로 초기 위치 설정 (mounted + timeout 제거)
+//  2. lastSettled ref → onScrollEndDrag + onMomentumScrollEnd 중복 onChange 방지
+//  3. settling ref → 프로그래매틱 scrollTo 가 onChange 재호출하는 것 방지
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -12,14 +17,13 @@ import {
 import { FONT_FAMILY } from '../../../constants/theme';
 
 const ITEM_H  = 44;
-const VISIBLE = 5;          // 보이는 아이템 수
-const PADDING = ITEM_H * 2; // 상하 패딩 → 선택 항목이 중앙으로
+const VISIBLE = 5;
 
 interface Props {
   initialMonth: number;
-  initialDay: number;
+  initialDay:   number;
   onConfirm: (month: number, day: number) => void;
-  onCancel: () => void;
+  onCancel:  () => void;
 }
 
 function daysInMonth(m: number) {
@@ -27,56 +31,66 @@ function daysInMonth(m: number) {
 }
 
 // ── Wheel ─────────────────────────────────────────────────────────
-function Wheel({
-  values,
-  value,
-  onChange,
-  suffix,
-}: {
-  values: number[];
-  value: number;
+interface WheelProps {
+  values:   number[];
+  value:    number;
   onChange: (v: number) => void;
-  suffix: string;
-}) {
-  const ref       = useRef<ScrollView>(null);
-  const mounted   = useRef(false);
-  const scrolling = useRef(false);
+  suffix:   string;
+}
 
-  // 외부 value 변경 시 스크롤
-  useEffect(() => {
+function Wheel({ values, value, onChange, suffix }: WheelProps) {
+  const ref          = useRef<ScrollView>(null);
+  const settling     = useRef(false);   // 프로그래매틱 scrollTo 중
+  const lastSettled  = useRef(value);   // 중복 onChange 방지
+  const prevValue    = useRef(value);
+
+  // ── 프로그래매틱 scrollTo (settling 플래그로 감싸기) ───────────
+  const scrollToIdx = useCallback((idx: number, animated: boolean) => {
+    settling.current = true;
+    ref.current?.scrollTo({ y: idx * ITEM_H, animated });
+    // 애니메이션 끝날 때까지 대기 (animated=true → 350ms, false → 50ms)
+    setTimeout(() => { settling.current = false; }, animated ? 400 : 80);
+  }, []);
+
+  // ── 1) 마운트 시 초기 위치: onLayout 에서 설정 ─────────────────
+  const handleLayout = useCallback(() => {
     const idx = values.indexOf(value);
-    if (idx < 0) return;
-    const delay = mounted.current ? 0 : 60;
-    const t = setTimeout(() => {
-      ref.current?.scrollTo({ y: idx * ITEM_H, animated: mounted.current });
-      mounted.current = true;
-    }, delay);
-    return () => clearTimeout(t);
-  }, [value, values]);
+    if (idx >= 0) scrollToIdx(idx, false);
+  }, []); // 최초 1회만
 
-  const handleScrollEnd = useCallback(
-    (e: any) => {
-      if (scrolling.current) return;
-      const raw    = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
-      const clamped = Math.max(0, Math.min(values.length - 1, raw));
-      // 스냅 보정
-      ref.current?.scrollTo({ y: clamped * ITEM_H, animated: true });
-      const next = values[clamped];
-      if (next !== value) onChange(next);
-    },
-    [values, value, onChange],
-  );
+  // ── 2) 외부 value 변경 (예: 월 변경 → 일 클램프) ───────────────
+  useEffect(() => {
+    if (prevValue.current === value) return;
+    prevValue.current = value;
+    lastSettled.current = value;
+    const idx = values.indexOf(value);
+    if (idx >= 0) scrollToIdx(idx, true);
+  }, [value, values, scrollToIdx]);
+
+  // ── 3) 유저 스크롤 완료 → 스냅 + onChange ─────────────────────
+  const handleSettle = useCallback((offsetY: number) => {
+    if (settling.current) return;
+
+    const raw     = Math.round(offsetY / ITEM_H);
+    const idx     = Math.max(0, Math.min(values.length - 1, raw));
+    const next    = values[idx];
+
+    // 이미 같은 값이면 스킵 (이중 이벤트 방지)
+    if (next === lastSettled.current) return;
+    lastSettled.current = next;
+    onChange(next);
+  }, [values, onChange]);
 
   return (
     <ScrollView
       ref={ref}
+      onLayout={handleLayout}
       showsVerticalScrollIndicator={false}
       snapToInterval={ITEM_H}
       decelerationRate="fast"
-      onScrollBeginDrag={() => { scrolling.current = false; }}
-      onMomentumScrollEnd={handleScrollEnd}
-      onScrollEndDrag={handleScrollEnd}
-      contentContainerStyle={{ paddingVertical: PADDING }}
+      onMomentumScrollEnd={(e) => handleSettle(e.nativeEvent.contentOffset.y)}
+      onScrollEndDrag={(e)      => handleSettle(e.nativeEvent.contentOffset.y)}
+      contentContainerStyle={{ paddingVertical: ITEM_H * 2 }}
       style={s.wheel}
     >
       {values.map((v) => (
@@ -97,9 +111,15 @@ export default function BirthdayPicker({ initialMonth, initialDay, onConfirm, on
   const slideAnim = useRef(new Animated.Value(300)).current;
 
   const maxDay = daysInMonth(month);
-  useEffect(() => {
-    if (day > maxDay) setDay(maxDay);
-  }, [month, maxDay]);
+
+  // 월 변경 시 일 클램프
+  const handleMonthChange = useCallback((m: number) => {
+    setMonth(m);
+    setDay(d => {
+      const max = daysInMonth(m);
+      return d > max ? max : d;
+    });
+  }, []);
 
   useEffect(() => {
     Animated.spring(slideAnim, {
@@ -107,10 +127,8 @@ export default function BirthdayPicker({ initialMonth, initialDay, onConfirm, on
     }).start();
   }, []);
 
-  const months = Array.from({ length: 12 },  (_, i) => i + 1);
+  const months = Array.from({ length: 12 },   (_, i) => i + 1);
   const days   = Array.from({ length: maxDay }, (_, i) => i + 1);
-
-  const handleConfirm = () => onConfirm(month, day);
 
   return (
     <Modal transparent animationType="none" onRequestClose={onCancel}>
@@ -128,7 +146,7 @@ export default function BirthdayPicker({ initialMonth, initialDay, onConfirm, on
               <Text style={s.cancelText}>취소</Text>
             </TouchableOpacity>
             <Text style={s.toolbarTitle}>{month}월 {day}일</Text>
-            <TouchableOpacity onPress={handleConfirm} style={s.toolbarBtn}>
+            <TouchableOpacity onPress={() => onConfirm(month, day)} style={s.toolbarBtn}>
               <Text style={s.confirmText}>확인</Text>
             </TouchableOpacity>
           </View>
@@ -137,8 +155,19 @@ export default function BirthdayPicker({ initialMonth, initialDay, onConfirm, on
           <View style={s.wheels}>
             {/* 선택 하이라이트 */}
             <View style={s.selectionBar} pointerEvents="none" />
-            <Wheel values={months} value={month} onChange={setMonth} suffix="월" />
-            <Wheel values={days}   value={day}   onChange={setDay}   suffix="일" />
+            <Wheel
+              values={months}
+              value={month}
+              onChange={handleMonthChange}
+              suffix="월"
+            />
+            <Wheel
+              key={maxDay}        // maxDay 바뀌면 day 휠 완전 리마운트
+              values={days}
+              value={day}
+              onChange={setDay}
+              suffix="일"
+            />
           </View>
         </Animated.View>
       </TouchableOpacity>
@@ -174,9 +203,9 @@ const s = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.15)',
   },
-  toolbarBtn: { padding: 4 },
-  cancelText:  { fontSize: 17, color: '#007AFF', fontFamily: FONT_FAMILY },
-  confirmText: { fontSize: 17, fontWeight: '600', color: '#007AFF', fontFamily: FONT_FAMILY },
+  toolbarBtn:   { padding: 4 },
+  cancelText:   { fontSize: 17, color: '#007AFF', fontFamily: FONT_FAMILY },
+  confirmText:  { fontSize: 17, fontWeight: '600', color: '#007AFF', fontFamily: FONT_FAMILY },
   toolbarTitle: { fontSize: 15, fontWeight: '600', color: '#191F28', fontFamily: FONT_FAMILY },
   wheels: {
     flexDirection: 'row',
