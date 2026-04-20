@@ -2,6 +2,8 @@
 // 한글 가중치(x1.6): 한글 5자 = 영문 8자, 닉네임 중복 확인 버튼
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -100,6 +102,10 @@ export default function ProfileStep({
     : `${nickname.length}/8`;
 
   return (
+    <KeyboardAvoidingView
+      style={s.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <ScrollView
       style={s.flex}
       contentContainerStyle={s.body}
@@ -187,9 +193,10 @@ export default function ProfileStep({
       </View>
 
       {error ? <Text style={s.error}>{error}</Text> : null}
+    </ScrollView>
 
-      <View style={{ flex: 1, minHeight: 24 }} />
-
+    {/* 키보드 위 고정 버튼 */}
+    <View style={s.footer}>
       <TouchableOpacity
         style={[s.btn, !isValid && s.btnDisabled]}
         onPress={onNext}
@@ -198,17 +205,18 @@ export default function ProfileStep({
       >
         <Text style={s.btnText}>다음</Text>
       </TouchableOpacity>
+    </View>
 
-      {/* 생일 피커 */}
-      {pickerOpen && (
-        <BirthdayPicker
-          initialMonth={birthMonth ? +birthMonth : 1}
-          initialDay={birthDay   ? +birthDay   : 1}
-          onConfirm={handleBirthConfirm}
-          onCancel={() => setPickerOpen(false)}
-        />
-      )}
-    </ScrollView>
+    {/* 생일 피커 */}
+    {pickerOpen && (
+      <BirthdayPicker
+        initialMonth={birthMonth ? +birthMonth : 1}
+        initialDay={birthDay   ? +birthDay   : 1}
+        onConfirm={handleBirthConfirm}
+        onCancel={() => setPickerOpen(false)}
+      />
+    )}
+    </KeyboardAvoidingView>
   );
 }
 
@@ -217,7 +225,13 @@ const s = StyleSheet.create({
   body: {
     paddingHorizontal: 24,
     paddingTop: 20,
+    paddingBottom: 12,
+  },
+  footer: {
+    paddingHorizontal: 24,
     paddingBottom: 32,
+    paddingTop: 8,
+    backgroundColor: '#FFFFFF',
   },
   title: {
     fontFamily: FONT_FAMILY,
