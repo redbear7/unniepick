@@ -10,7 +10,6 @@ import { navigationRef } from './navigationRef';
 import { supabase, clearInvalidSession } from '../lib/supabase';
 
 // ── 고객 화면 ──────────────────────────────────────────────────────
-import HomeScreen              from '../screens/customer/HomeScreen';
 import HomeV1Screen            from '../screens/Home';
 import CouponDetailScreen      from '../screens/customer/CouponDetailScreen';
 import MyCouponQRScreen        from '../screens/customer/MyCouponQRScreen';
@@ -84,7 +83,7 @@ function CustomerTabs() {
         headerShown: false,
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen}
+      <Tab.Screen name="Home" component={HomeV1Screen}
         options={{
           tabBarLabel: '홈',
           tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" active={focused} />,
@@ -201,7 +200,6 @@ export default function Navigation() {
           <RootStack.Screen name="AnnouncementBoard" component={AnnouncementBoardScreen} />
           <RootStack.Screen name="Map"               component={MapScreen} />
           <RootStack.Screen name="CouponList"        component={NearbyFeedScreen} />
-          <RootStack.Screen name="HomeV1"            component={HomeV1Screen} />
 
           {/* ── 사장님 ────────────────────────────────────────────── */}
           <RootStack.Screen name="OwnerLogin"     component={OwnerLoginScreen} />
