@@ -128,11 +128,13 @@ export default function CodeStep({ phone, onNext, onResend, loading, error }: Pr
                 shake    && s.boxShake,
               ]}
             >
-              {loading && i === 0
-                ? <ActivityIndicator size="small" color={PALETTE.orange500} />
-                : <Text style={s.boxText}>{ch}</Text>
-              }
-              {isActive && !ch && <View style={s.cursor} />}
+              {loading && i === 0 ? (
+                <ActivityIndicator size="small" color={PALETTE.orange500} />
+              ) : isActive && !ch ? (
+                <View style={s.cursor} />
+              ) : (
+                <Text style={s.boxText}>{ch}</Text>
+              )}
             </View>
           );
         })}
