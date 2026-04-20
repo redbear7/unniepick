@@ -28,13 +28,13 @@ export default function PhoneStep({ phone, setPhone, onNext, loading, error }: P
   const rest    = phone.replace(/\D/g, '').replace(/^010/, '').slice(0, 8);
   const isValid = rest.length === 8;
 
-  // 표시용: 0000-0000
+  // 표시용: 1234 - 5678 (공백 포함)
   const display = rest.length > 4
-    ? `${rest.slice(0, 4)}-${rest.slice(4)}`
+    ? `${rest.slice(0, 4)} - ${rest.slice(4)}`
     : rest;
 
   const handleChange = (text: string) => {
-    const d = text.replace(/\D/g, '').replace(/\-/g, '').slice(0, 8);
+    const d = text.replace(/[^\d]/g, '').slice(0, 8);
     setPhone('010' + d);
   };
 
@@ -54,17 +54,17 @@ export default function PhoneStep({ phone, setPhone, onNext, loading, error }: P
           style={[s.inputRow, rest.length > 0 && s.inputRowActive]}
         >
           <Text style={s.prefix}>010</Text>
-          <Text style={s.dash}>-</Text>
+          <Text style={s.dash}> - </Text>
           <TextInput
             ref={inputRef}
             keyboardType="number-pad"
-            placeholder="0000-0000"
+            placeholder="1234 - 5678"
             placeholderTextColor={PALETTE.gray400}
             value={display}
             onChangeText={handleChange}
             autoFocus
             style={s.input}
-            maxLength={9} // 4+1+4
+            maxLength={11} // "1234 - 5678"
           />
         </TouchableOpacity>
 
