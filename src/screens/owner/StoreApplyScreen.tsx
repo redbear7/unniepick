@@ -128,8 +128,8 @@ const cc = StyleSheet.create({
   row:    { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   emoji:  { fontSize: 22, marginTop: 2 },
   body:   { flex: 1, gap: 3 },
-  title:  { fontSize: 15, fontWeight: '700', color: C.g900 },
-  meta:   { fontSize: 12, color: C.g500, fontWeight: '500' },
+  title:  { fontSize: 15, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: C.g900 },
+  meta:   { fontSize: 12, color: C.g500, fontFamily: 'WantedSans-Medium', fontWeight: '500' },
   desc:   { fontSize: 12, color: C.g600 },
   deleteBtn: { padding: 4 },
   deleteText: { fontSize: 16, color: C.g400 },
@@ -612,8 +612,8 @@ const s = StyleSheet.create({
   },
   backBtn:     { padding: 4 },
   backArrow:   { fontSize: 22, color: C.g900 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: C.g900 },
-  headerStep:  { fontSize: 13, color: C.g500, fontWeight: '600' },
+  headerTitle: { fontSize: 17, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: C.g900 },
+  headerStep:  { fontSize: 13, color: C.g500, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
 
   // 진행바
   progressTrack: { height: 3, backgroundColor: C.g150 },
@@ -623,13 +623,13 @@ const s = StyleSheet.create({
   formContainer: { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 48 },
 
   pageTitle: {
-    fontSize: 26, fontWeight: '900', color: C.g900,
+    fontSize: 26, fontFamily: 'WantedSans-Black', fontWeight: '900', color: C.g900,
     letterSpacing: -0.5, lineHeight: 34,
   },
   pageSubtitle: { fontSize: 14, color: C.g500, marginTop: 6, marginBottom: 28 },
 
   // 필드
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: C.g900, marginBottom: 8 },
+  fieldLabel: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: C.g900, marginBottom: 8 },
   input: {
     borderWidth: 1.5, borderColor: C.g200, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 13,
@@ -646,7 +646,7 @@ const s = StyleSheet.create({
     backgroundColor: C.g100,
   },
   chipOn:     { backgroundColor: C.brand },
-  chipText:   { fontSize: 14, fontWeight: '600', color: C.g700 },
+  chipText:   { fontSize: 14, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: C.g700 },
   chipTextOn: { color: C.white },
 
   // 주소
@@ -664,7 +664,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 13,
     borderLeftWidth: 1, borderLeftColor: C.g200,
   },
-  addressBtnText: { fontSize: 13, fontWeight: '700', color: C.brand },
+  addressBtnText: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: C.brand },
 
   // 다음 버튼
   nextBtn: {
@@ -676,10 +676,10 @@ const s = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: C.white },
+  nextBtnText: { fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: C.white },
 
   skipBtn: { marginTop: 14, alignItems: 'center', paddingVertical: 10 },
-  skipBtnText: { fontSize: 14, color: C.g500, fontWeight: '500' },
+  skipBtnText: { fontSize: 14, color: C.g500, fontFamily: 'WantedSans-Medium', fontWeight: '500' },
 
   // 가게 요약
   storeSummary: {
@@ -688,7 +688,7 @@ const s = StyleSheet.create({
     padding: 14, marginBottom: 24,
   },
   storeSummaryEmoji: { fontSize: 28 },
-  storeSummaryName:  { fontSize: 16, fontWeight: '800', color: C.g900 },
+  storeSummaryName:  { fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: C.g900 },
   storeSummaryAddr:  { fontSize: 12, color: C.g500, marginTop: 2 },
 
   // 쿠폰 목록
@@ -700,7 +700,7 @@ const s = StyleSheet.create({
     borderRadius: 14, paddingVertical: 16, alignItems: 'center',
     backgroundColor: C.brandBg,
   },
-  addCouponBtnText: { fontSize: 15, fontWeight: '700', color: C.brand },
+  addCouponBtnText: { fontSize: 15, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: C.brand },
 
   couponEmptyHint: {
     marginTop: 14, paddingVertical: 12, paddingHorizontal: 16,
@@ -710,32 +710,32 @@ const s = StyleSheet.create({
 
   // 완료 화면
   successWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 10 },
-  successTitle: { fontSize: 26, fontWeight: '900', color: C.g900, textAlign: 'center' },
+  successTitle: { fontSize: 26, fontFamily: 'WantedSans-Black', fontWeight: '900', color: C.g900, textAlign: 'center' },
   successCallBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: C.brandBg, borderRadius: 14,
     paddingHorizontal: 20, paddingVertical: 12, marginTop: 4,
   },
   successCallEmoji: { fontSize: 24 },
-  successCallText: { fontSize: 18, fontWeight: '800', color: C.brand },
+  successCallText: { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: C.brand },
   successDesc: { fontSize: 14, color: C.g500, textAlign: 'center', lineHeight: 22, marginTop: 4 },
   successCouponBox: {
     backgroundColor: '#FFF0E6', borderRadius: 10,
     paddingHorizontal: 16, paddingVertical: 10, marginTop: 4,
   },
-  successCouponText: { fontSize: 13, fontWeight: '700', color: C.brand, textAlign: 'center' },
+  successCouponText: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: C.brand, textAlign: 'center' },
   doneBtn: {
     marginTop: 20, backgroundColor: C.brand, borderRadius: 14,
     paddingVertical: 16, paddingHorizontal: 52,
   },
-  doneBtnText: { color: C.white, fontSize: 16, fontWeight: '800' },
+  doneBtnText: { color: C.white, fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
 
   // 주소 모달
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 16, borderBottomWidth: 1, borderColor: C.g200, backgroundColor: C.white,
   },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: C.g900 },
+  modalTitle: { fontSize: 17, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: C.g900 },
   modalClose: { fontSize: 20, color: C.g500, padding: 4 },
 
   // 쿠폰 모달
@@ -751,7 +751,7 @@ const s = StyleSheet.create({
     padding: 18, paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.g150,
   },
-  couponModalTitle: { fontSize: 18, fontWeight: '800', color: C.g900 },
+  couponModalTitle: { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: C.g900 },
   couponModalBody: { padding: 20, paddingTop: 16, paddingBottom: 40 },
 
   // 쿠폰 종류 칩
@@ -760,7 +760,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
     borderWidth: 1.5, borderColor: C.g200, backgroundColor: C.white,
   },
-  kindChipText: { fontSize: 13, fontWeight: '600', color: C.g700 },
+  kindChipText: { fontSize: 13, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: C.g700 },
 
   // 유효기간 선택
   expiryRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
@@ -769,7 +769,7 @@ const s = StyleSheet.create({
     backgroundColor: C.g100,
   },
   expiryChipOn: { backgroundColor: C.brand },
-  expiryChipText: { fontSize: 13, fontWeight: '600', color: C.g700 },
+  expiryChipText: { fontSize: 13, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: C.g700 },
   expiryChipTextOn: { color: C.white },
   expiryInput: {
     borderWidth: 1.5, borderColor: C.g200, borderRadius: 10,

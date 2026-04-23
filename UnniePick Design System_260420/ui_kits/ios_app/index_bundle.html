@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>UnniePick · iOS UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="ui-kit.css">
+<template id="__bundler_thumbnail" data-bg-color="#FF6F0F">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#FF6F0F"/>
+    <rect x="440" y="160" width="320" height="580" rx="44" fill="#fff"/>
+    <rect x="470" y="230" width="260" height="40" rx="8" fill="#FFE9D6"/>
+    <rect x="470" y="290" width="180" height="24" rx="6" fill="#FFD4A8"/>
+    <rect x="470" y="360" width="260" height="120" rx="16" fill="#FFF2E4"/>
+    <rect x="490" y="390" width="160" height="20" rx="6" fill="#FF6F0F"/>
+    <rect x="490" y="420" width="100" height="16" rx="4" fill="#FFA05C"/>
+    <rect x="600" y="440" width="110" height="28" rx="14" fill="#FF6F0F"/>
+    <rect x="470" y="510" width="260" height="120" rx="16" fill="#FFF2E4"/>
+    <rect x="490" y="540" width="140" height="20" rx="6" fill="#FF6F0F"/>
+    <rect x="490" y="570" width="120" height="16" rx="4" fill="#FFA05C"/>
+    <text x="600" y="140" font-family="sans-serif" font-size="56" font-weight="900" fill="#fff" text-anchor="middle" letter-spacing="-1">언니픽</text>
+  </svg>
+</template>
+<style>
+  body { background: linear-gradient(180deg, #F4F4F6 0%, #E8E8EC 100%); min-height: 100vh; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 440px; }
+  .tool-btn { padding: 9px 16px; border-radius: 20px; background: #fff; border: 1.5px solid transparent; font: 700 13px/1 var(--font-sans); color: var(--fg2); cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .tool-btn.on { background: var(--orange-500); color: #fff; border-color: var(--orange-500); }
+  .caption { font: 500 12px/1.4 var(--font-sans); color: var(--fg3); text-align: center; max-width: 400px; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div style="text-align:center">
+  <div style="font: 400 32px/1 var(--font-display); color: var(--orange-500); letter-spacing: -0.8px">언니픽 iOS UI Kit</div>
+  <div class="caption" style="margin-top:8px">Pretendard · KCC-Ganpan · Orange #FF6F0F · Based on unniepick/src/constants/theme.ts</div>
+</div>
+
+<div class="toolbar" id="toolbar"></div>
+<div class="caption" id="screenCaption"></div>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="Primitives.jsx"></script>
+<script type="text/babel" src="FeedPost.jsx"></script>
+<script type="text/babel" src="Wallet.jsx"></script>
+<script type="text/babel" src="StoreRow.jsx"></script>
+<script type="text/babel" src="OwnerDashboard.jsx"></script>
+<script type="text/babel" src="IssueCouponFlow.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+// ─── Screens ───────────────────────────────────────────────────
+function HomeFeedScreen() {
+  const [posts, setPosts] = useState(SAMPLE_POSTS);
+  const [cat, setCat] = useState('전체');
+  const [tab, setTab] = useState('home');
+  const [qrCoupon, setQr] = useState(null);
+  const [walletCoupons, setWallet] = useState(SAMPLE_WALLET);
+  const [walletSeg, setWalletSeg] = useState('active');
+  const [stores, setStores] = useState(SAMPLE_STORES);
+  const [exploreCat, setExploreCat] = useState('전체');
+
+  const saveCoupon = (id) => {
+    setPosts(p => p.map(x => x.id===id ? {...x, coupon:{...x.coupon, saved:!x.coupon.saved}} : x));
+    const post = posts.find(p=>p.id===id);
+    if (post && !post.coupon.saved) {
+      setWallet(w => [{ id: 'w'+Date.now(), store: post.store, title: post.coupon.title, expiryDate: '오늘', daysLeft: 0, expiryPct: 95, status: 'active' }, ...w]);
+    }
+  };
+  const toggleFollow = (id) => {
+    setStores(s => s.map(x => x.id===id ? {...x, following: !x.following} : x));
+  };
+  const togglePostFollow = (id) => {
+    setPosts(p => p.map(x => x.id===id ? {...x, following: !x.following} : x));
+  };
+
+  const filteredPosts = cat === '전체' ? posts : posts.filter(p => p.category.includes(cat));
+  const activeW = walletCoupons.filter(c => c.status === 'active');
+  const usedW = walletCoupons.filter(c => c.status === 'used');
+  const expW = walletCoupons.filter(c => c.status === 'expired');
+  const filteredStores = exploreCat === '전체' ? stores : stores.filter(s => s.category.includes(exploreCat));
+
+  return (
+    <div className="up-screen">
+      {tab === 'home' && (
+        <>
+          <Header onNotif={()=>{}} onSearch={()=>{}} />
+          <ChipRow items={['전체','카페','음식','미용','네일','기타']} active={cat} onChange={setCat}/>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {filteredPosts.map(p => <FeedPost key={p.id} post={p} onSaveCoupon={saveCoupon} onFollow={togglePostFollow}/>)}
+            {filteredPosts.length === 0 && (
+              <div style={{ padding: 60, textAlign: 'center', font: '500 14px/1.4 var(--font-sans)', color: 'var(--fg3)' }}>
+                해당 카테고리 포스트가 아직 없어요
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'wallet' && (
+        <>
+          <Header title="내 쿠폰함" />
+          <Segment
+            items={[
+              { key: 'active', label: '사용 가능', count: activeW.length },
+              { key: 'used', label: '사용 완료', count: usedW.length },
+              { key: 'expired', label: '만료', count: expW.length },
+            ]}
+            active={walletSeg}
+            onChange={setWalletSeg}
+          />
+          <div style={{ flex: 1, overflow: 'auto', paddingTop: 4, paddingBottom: 20 }}>
+            {(walletSeg === 'active' ? activeW : walletSeg === 'used' ? usedW : expW).map(c =>
+              <WalletCard key={c.id} coupon={c} onUse={(id)=>setQr(walletCoupons.find(x=>x.id===id))}/>
+            )}
+            {walletSeg === 'active' && activeW.length === 0 && (
+              <div style={{ padding: 60, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg3)' }}>
+                저장한 쿠폰이 아직 없어요<br/>
+                <span style={{ color: 'var(--orange-500)', fontWeight: 700 }}>홈 피드</span>에서 쿠폰을 저장해보세요
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'explore' && (
+        <>
+          <div className="up-header">
+            <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+              <span style={{ font: '400 16px/1 var(--font-display)', color: 'var(--fg1)' }}>📍 강남구 역삼동</span>
+              <span style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--orange-500)' }}>변경</span>
+            </div>
+            <div className="up-header-actions">
+              <button className="up-icon-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4E5968" strokeWidth="2"/><path d="M20 20l-3.5-3.5" stroke="#4E5968" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+          <ChipRow items={['전체','카페','음식','미용','네일','편의점','기타']} active={exploreCat} onChange={setExploreCat}/>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 20px', background: '#fff', borderBottom: '1px solid var(--gray-150)', font: '500 13px/1 var(--font-sans)', color: 'var(--fg2)' }}>
+            <span>정렬: <b style={{color:'var(--fg1)'}}>거리순 ▾</b></span>
+            <span>반경: <b style={{color:'var(--fg1)'}}>500m ▾</b></span>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {filteredStores.map(s => <StoreRow key={s.id} store={s} onToggleFollow={toggleFollow}/>)}
+          </div>
+        </>
+      )}
+
+      {tab === 'profile' && <OwnerDashboard onIssueCoupon={()=>alert('쿠폰 발행 플로우')}/>}
+
+      <TabBar active={tab} onChange={setTab}/>
+      <QRSheet coupon={qrCoupon} onClose={()=>setQr(null)}/>
+    </div>
+  );
+}
+
+// ─── Single-screen demos for the toolbar ──────────────────────
+const SCREENS = {
+  home: { label: '홈 피드', caption: '팔로우한 가게 쿠폰이 Twitter식 타임라인으로 흐르는 메인 화면' },
+  wallet: { label: '내 쿠폰함', caption: '저장한 쿠폰 · 만료일 프로그레스 · QR 풀스크린 사용' },
+  explore: { label: '가게 탐색', caption: 'GPS 반경 내 가게 목록, 카테고리 필터, 거리 정렬' },
+  owner: { label: '사장님 홈', caption: '팔로워·발행·사용 대시보드 + 쿠폰 발행 CTA' },
+  issue: { label: '쿠폰 발행', caption: '4단계 플로우 — 유형 · 내용 · 설정 · 미리보기 & 발행' },
+};
+
+function Toolbar({ screen, setScreen }) {
+  return (
+    <>
+      {Object.entries(SCREENS).map(([k,v]) => (
+        <button key={k} className={'tool-btn' + (k === screen ? ' on' : '')} onClick={()=>setScreen(k)}>{v.label}</button>
+      ))}
+    </>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = useState('home');
+  useEffect(() => {
+    const cap = document.getElementById('screenCaption');
+    if (cap) cap.textContent = SCREENS[screen].caption;
+  }, [screen]);
+
+  useEffect(() => {
+    const tb = document.getElementById('toolbar');
+    if (!tb._root) tb._root = ReactDOM.createRoot(tb);
+    tb._root.render(<Toolbar screen={screen} setScreen={setScreen}/>);
+  }, [screen]);
+
+  return (
+    <IOSDevice width={390} height={844}>
+      <ScreenForced tab={screen} onExitIssue={() => setScreen('owner')}/>
+    </IOSDevice>
+  );
+}
+
+// Simplified - force a specific initial tab
+function ScreenForced({ tab: initialTab, onExitIssue }) {
+  const [posts, setPosts] = useState(SAMPLE_POSTS);
+  const [cat, setCat] = useState('전체');
+  const [tab, setTab] = useState(initialTab === 'owner' ? 'profile' : initialTab === 'issue' ? 'profile' : initialTab);
+  const [showIssue, setShowIssue] = useState(initialTab === 'issue');
+  useEffect(() => {
+    setTab(initialTab === 'owner' ? 'profile' : initialTab === 'issue' ? 'profile' : initialTab);
+    setShowIssue(initialTab === 'issue');
+  }, [initialTab]);
+  const [qrCoupon, setQr] = useState(null);
+  const [walletCoupons, setWallet] = useState(SAMPLE_WALLET);
+  const [walletSeg, setWalletSeg] = useState('active');
+  const [stores, setStores] = useState(SAMPLE_STORES);
+  const [exploreCat, setExploreCat] = useState('전체');
+
+  const saveCoupon = (id) => {
+    setPosts(p => p.map(x => x.id===id ? {...x, coupon:{...x.coupon, saved:!x.coupon.saved}} : x));
+  };
+  const toggleFollow = (id) => setStores(s => s.map(x => x.id===id ? {...x, following: !x.following} : x));
+  const togglePostFollow = (id) => setPosts(p => p.map(x => x.id===id ? {...x, following: !x.following} : x));
+
+  const filteredPosts = cat === '전체' ? posts : posts.filter(p => p.category.includes(cat));
+  const activeW = walletCoupons.filter(c => c.status === 'active');
+  const usedW = walletCoupons.filter(c => c.status === 'used');
+  const filteredStores = exploreCat === '전체' ? stores : stores.filter(s => s.category.includes(exploreCat));
+
+  return (
+    <div className="up-screen">
+      {tab === 'home' && (<>
+        <Header onNotif={()=>{}} onSearch={()=>{}} />
+        <ChipRow items={['전체','카페','음식','미용','네일','기타']} active={cat} onChange={setCat}/>
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {filteredPosts.map(p => <FeedPost key={p.id} post={p} onSaveCoupon={saveCoupon} onFollow={togglePostFollow}/>)}
+        </div>
+      </>)}
+
+      {tab === 'wallet' && (<>
+        <Header title="내 쿠폰함" />
+        <Segment items={[
+          { key: 'active', label: '사용 가능', count: activeW.length },
+          { key: 'used', label: '사용 완료', count: usedW.length },
+          { key: 'expired', label: '만료', count: 0 },
+        ]} active={walletSeg} onChange={setWalletSeg}/>
+        <div style={{ flex: 1, overflow: 'auto', paddingTop: 4, paddingBottom: 20 }}>
+          {(walletSeg === 'active' ? activeW : walletSeg === 'used' ? usedW : []).map(c =>
+            <WalletCard key={c.id} coupon={c} onUse={(id)=>setQr(walletCoupons.find(x=>x.id===id))}/>
+          )}
+        </div>
+      </>)}
+
+      {tab === 'explore' && (<>
+        <div className="up-header">
+          <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+            <span style={{ font: '700 16px/1 var(--font-sans)', color: 'var(--fg1)' }}>📍 강남구 역삼동</span>
+            <span style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--orange-500)' }}>변경</span>
+          </div>
+          <div className="up-header-actions">
+            <button className="up-icon-btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4E5968" strokeWidth="2"/><path d="M20 20l-3.5-3.5" stroke="#4E5968" strokeWidth="2" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <ChipRow items={['전체','카페','음식','미용','네일','편의점','기타']} active={exploreCat} onChange={setExploreCat}/>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 20px', background: '#fff', borderBottom: '1px solid var(--gray-150)', font: '500 13px/1 var(--font-sans)', color: 'var(--fg2)' }}>
+          <span>정렬: <b style={{color:'var(--fg1)'}}>거리순 ▾</b></span>
+          <span>반경: <b style={{color:'var(--fg1)'}}>500m ▾</b></span>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {filteredStores.map(s => <StoreRow key={s.id} store={s} onToggleFollow={toggleFollow}/>)}
+        </div>
+      </>)}
+
+      {tab === 'profile' && <OwnerDashboard onIssueCoupon={()=>setShowIssue(true)}/>}
+
+      {showIssue && <IssueCouponFlow onClose={() => { setShowIssue(false); if (onExitIssue) onExitIssue(); }}/>}
+
+      <TabBar active={tab === 'profile' && initialTab === 'owner' ? 'profile' : tab} onChange={setTab}/>
+      <QRSheet coupon={qrCoupon} onClose={()=>setQr(null)}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

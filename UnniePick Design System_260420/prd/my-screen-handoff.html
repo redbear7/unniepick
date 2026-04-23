@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>언니픽 · MY 탭 Claude Code 핸드오프</title>
+<link rel="stylesheet" href="spec-sheet.css">
+<style>
+  .hv-hero { background: var(--ink); color: #fff; padding: 80px 72px 90px; margin: 0 -80px 72px; position: relative; overflow: hidden; }
+  .hv-hero::before { content: ''; position: absolute; top: -260px; right: -180px; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(255,111,15,0.26), transparent 55%); }
+  .hv-top { display: flex; justify-content: space-between; margin-bottom: 56px; position: relative; z-index: 1; }
+  .hv-brand { font: 900 26px/1 'Wanted Sans'; color: var(--orange); letter-spacing: -0.6px; }
+  .hv-crumb { font: 600 13px/1.6 'Wanted Sans'; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; text-align: right; text-transform: uppercase; }
+  .hv-eye { font: 700 13px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 2.6px; text-transform: uppercase; position: relative; z-index: 1; margin-bottom: 24px; }
+  .hv-title { font: 900 84px/0.95 'Wanted Sans'; color: #fff; letter-spacing: -3px; position: relative; z-index: 1; max-width: 1050px; margin-bottom: 28px; }
+  .hv-title em { font-style: normal; color: var(--orange); }
+  .hv-sub { font: 500 22px/1.45 'Wanted Sans'; color: rgba(255,255,255,0.72); max-width: 860px; letter-spacing: -0.3px; position: relative; z-index: 1; }
+
+  .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+  .sec-card { padding: 26px 28px; background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+  .sec-eye { font: 800 11px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 1.3px; text-transform: uppercase; margin-bottom: 10px; }
+  .sec-t { font: 900 19px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.4px; margin-bottom: 10px; }
+  .sec-d { font: 500 13.5px/1.6 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .sec-d code { background: var(--code-bg); color: var(--code-fg); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+
+  .menu-table { margin-top: 24px; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .menu-row { display: grid; grid-template-columns: 60px 160px 1fr 120px; gap: 16px; padding: 14px 22px; border-bottom: 1px solid var(--line-soft); align-items: center; }
+  .menu-row:last-child { border-bottom: none; }
+  .menu-row.head { background: var(--bg-warm); font: 800 11px/1 'Wanted Sans'; color: var(--fg3); letter-spacing: 1.2px; text-transform: uppercase; padding: 12px 22px; }
+  .menu-row.group { background: var(--bg-warm); font: 900 13px/1 'Wanted Sans'; color: var(--orange-600); letter-spacing: 0.3px; text-transform: uppercase; grid-template-columns: 1fr; padding: 10px 22px; }
+  .menu-icon { font-size: 22px; text-align: center; }
+  .menu-label { font: 800 14px/1.2 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; }
+  .menu-sub { font: 500 12px/1.4 'Wanted Sans'; color: var(--fg3); letter-spacing: -0.1px; }
+  .menu-dest { font: 700 11px/1.3 'Wanted Sans'; color: var(--fg2); text-align: right; letter-spacing: 0.1px; }
+  .menu-dest b { color: var(--orange-600); display: block; font-weight: 800; }
+
+  .files-box { background: var(--code-bg); color: var(--code-fg); border-radius: 14px; padding: 28px 32px; margin-top: 24px; font: 500 14px/1.85 'JetBrains Mono', monospace; letter-spacing: 0; }
+  .files-box .dir { color: var(--code-key); font-weight: 700; }
+  .files-box .new { color: var(--code-str); }
+  .files-box .cmt { color: var(--code-mute); font-style: italic; }
+
+  .check-list { background: #0F1114; color: #fff; padding: 36px 40px; border-radius: 20px; margin-top: 24px; }
+  .check-row { display: grid; grid-template-columns: 28px 1fr 100px; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); align-items: center; }
+  .check-row:last-child { border-bottom: none; }
+  .check-box { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 5px; }
+  .check-text { font: 600 14px/1.4 'Wanted Sans'; color: #fff; letter-spacing: -0.1px; }
+  .check-text b { color: var(--orange); font-weight: 800; }
+  .check-text code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #fff; }
+  .check-est { font: 700 11px/1 'Wanted Sans'; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; text-align: right; text-transform: uppercase; }
+
+  .edge-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .edge { padding: 22px 24px; background: #fff; border: 1px solid var(--line); border-radius: 12px; border-left: 4px solid var(--orange); }
+  .edge-t { font: 800 14px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; margin-bottom: 8px; }
+  .edge-d { font: 500 12.5px/1.55 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+</style>
+</head>
+<body>
+
+<div class="hv-hero">
+  <div class="hv-top">
+    <div class="hv-brand">언니픽</div>
+    <div class="hv-crumb">Handoff · MY Screen<br/>W2 · 2025.11</div>
+  </div>
+  <div class="hv-eye">Claude Code · 사용자 MY 탭 핸드오프</div>
+  <h1 class="hv-title">프로필 · 레벨 · <em>활동 / 혜택 / 계정</em></h1>
+  <p class="hv-sub">사용자용 MY 탭 구현 명세. 사장님 대시보드(OwnerDashboard)와 완전히 분리된 화면. Wanted Sans 웨이트 규칙 엄수, 하단 탭바의 <code>profile</code> 라우트가 이 화면을 렌더.</p>
+</div>
+
+<!-- 01. 화면 구성 -->
+<section class="spec-section">
+  <div class="sec-num">01</div>
+  <h2 class="sec-title">화면 구성 · 4개 블록</h2>
+
+  <div class="section-grid">
+    <div class="sec-card">
+      <div class="sec-eye">Block A</div>
+      <div class="sec-t">프로필 헤더</div>
+      <div class="sec-d">
+        닉네임 이니셜 아바타(64px · 오렌지 그라데이션), 닉네임 + 레벨 뱃지(브론즈/실버/골드), 가입일(<code>joinedDays</code>), 우측 "프로필 수정" 버튼.<br/>
+        하단 레벨 프로그레스바(0~100%) + 다음 레벨까지 남은 포인트.<br/>
+        최하단 3분할 카운트: 보유 쿠폰 · 팔로잉 · 사용 완료.
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Block B</div>
+      <div class="sec-t">긴급 쿠폰 리마인더</div>
+      <div class="sec-d">
+        "오늘 안에 써야하는 쿠폰 N개" 카드. 오렌지 라이트 그라데이션 배경 + 오렌지 보더. ⏰ 이모지 + 가게명 리스트. 우측 › 쉐브론 → 쿠폰함 탭으로 이동. <b>당일 만료 쿠폰이 0개면 렌더하지 않음.</b>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Block C</div>
+      <div class="sec-t">메뉴 그룹 3종</div>
+      <div class="sec-d">
+        활동(4개) · 혜택(3개) · 계정(5개). 각 그룹은 섹션 라벨 + 흰 카드 그룹. 행마다 아이콘(32px · 그레이 배경) · 라벨 · 서브텍스트 · 배지(옵션) · › 쉐브론.<br/>
+        배지는 긴급 숫자(빨강) 또는 "NEW"(빨강).
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Block D</div>
+      <div class="sec-t">하단 진입 + 계정 액션</div>
+      <div class="sec-d">
+        "가게 사장님이신가요? 사장님 앱 다운로드 ›" 카드 (AppStore 딥링크). 그 아래 로그아웃 · 회원탈퇴 (텍스트 버튼), 최하단 버전 표기 (<code>UnniePick v1.0.0</code>).
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02. 메뉴 항목 전체 -->
+<section class="spec-section">
+  <div class="sec-num">02</div>
+  <h2 class="sec-title">메뉴 항목 · 12개 전체 명세</h2>
+
+  <div class="menu-table">
+    <div class="menu-row head">
+      <div>ICON</div><div>LABEL</div><div>SUB / 배지</div><div>DEST</div>
+    </div>
+
+    <div class="menu-row group">활동 (Activity)</div>
+    <div class="menu-row"><div class="menu-icon">🎟</div><div class="menu-label">내 쿠폰함</div><div class="menu-sub">보유 12 · 사용임박 2 · 빨강 배지 "2"</div><div class="menu-dest"><b>/wallet</b>탭 전환</div></div>
+    <div class="menu-row"><div class="menu-icon">❤️</div><div class="menu-label">팔로잉 가게</div><div class="menu-sub">18곳</div><div class="menu-dest"><b>/my/following</b>신규 화면</div></div>
+    <div class="menu-row"><div class="menu-icon">⭐</div><div class="menu-label">단골 스탬프</div><div class="menu-sub">3곳 모으는 중</div><div class="menu-dest"><b>/my/stamps</b>Phase 2</div></div>
+    <div class="menu-row"><div class="menu-icon">🕒</div><div class="menu-label">최근 본 가게</div><div class="menu-sub">(null)</div><div class="menu-dest"><b>/my/recent</b>신규 화면</div></div>
+
+    <div class="menu-row group">혜택 (Benefit)</div>
+    <div class="menu-row"><div class="menu-icon">🎁</div><div class="menu-label">친구 초대하고 쿠폰받기</div><div class="menu-sub">최대 5,000원 · "NEW" 배지</div><div class="menu-dest"><b>/my/invite</b>Phase 2</div></div>
+    <div class="menu-row"><div class="menu-icon">🎂</div><div class="menu-label">생일 쿠폰</div><div class="menu-sub">10월 생일 · 준비중</div><div class="menu-dest"><b>(disabled)</b>Phase 2</div></div>
+    <div class="menu-row"><div class="menu-icon">🎫</div><div class="menu-label">이벤트·공지</div><div class="menu-sub">(null)</div><div class="menu-dest"><b>/my/notices</b>웹뷰 가능</div></div>
+
+    <div class="menu-row group">계정 (Account)</div>
+    <div class="menu-row"><div class="menu-icon">📍</div><div class="menu-label">내 위치 설정</div><div class="menu-sub">창원시 의창구 팔용동</div><div class="menu-dest"><b>/my/location</b>지오코딩</div></div>
+    <div class="menu-row"><div class="menu-icon">🔔</div><div class="menu-label">알림 설정</div><div class="menu-sub">(null)</div><div class="menu-dest"><b>/my/notif</b>FCM 토글</div></div>
+    <div class="menu-row"><div class="menu-icon">👤</div><div class="menu-label">프로필 수정</div><div class="menu-sub">(null)</div><div class="menu-dest"><b>/my/edit</b>닉네임·생일</div></div>
+    <div class="menu-row"><div class="menu-icon">❓</div><div class="menu-label">고객센터·문의</div><div class="menu-sub">(null)</div><div class="menu-dest"><b>/my/help</b>채널톡 연동</div></div>
+    <div class="menu-row"><div class="menu-icon">📄</div><div class="menu-label">약관·개인정보</div><div class="menu-sub">(null)</div><div class="menu-dest"><b>/my/terms</b>마크다운 렌더</div></div>
+  </div>
+</section>
+
+<!-- 03. 데이터 소스 -->
+<section class="spec-section">
+  <div class="sec-num">03</div>
+  <h2 class="sec-title">데이터 소스 · Supabase 연동</h2>
+
+  <div class="section-grid">
+    <div class="sec-card">
+      <div class="sec-eye">Query A</div>
+      <div class="sec-t">profiles 테이블</div>
+      <div class="sec-d">
+        <code>select nickname, joined_at, level, level_progress, location_name from profiles where id = auth.uid()</code><br/>
+        <code>joinedDays</code>는 클라이언트에서 <code>differenceInDays(now, joined_at)</code>로 계산.
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Query B</div>
+      <div class="sec-t">카운트 3종</div>
+      <div class="sec-d">
+        단일 RPC <code>my_summary_counts()</code>:<br/>
+        보유 쿠폰 = <code>user_coupons where status='active'</code>,<br/>
+        팔로잉 = <code>follows where user_id=auth.uid()</code>,<br/>
+        사용 완료 = <code>user_coupons where status='used'</code>.
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Query C</div>
+      <div class="sec-t">긴급 쿠폰 리마인더</div>
+      <div class="sec-d">
+        <code>select store_name, count(*) from user_coupons where expires_at &lt; today_23:59:59 and status='active' group by store_name</code>. 결과 0개면 Block B 렌더 스킵.
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Caching</div>
+      <div class="sec-t">React Query 5분 TTL</div>
+      <div class="sec-d">
+        <code>queryKey: ['my', userId]</code>, <code>staleTime: 5 * 60 * 1000</code>. 쿠폰 저장/사용 뮤테이션 성공 시 invalidate.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04. 파일 구조 -->
+<section class="spec-section">
+  <div class="sec-num">04</div>
+  <h2 class="sec-title">파일 구조 · MyScreen.jsx 분할</h2>
+
+  <div class="files-box">
+<span class="dir">src/screens/My/</span><br/>
+├── <span class="new">MyScreen.tsx</span> <span class="cmt">// orchestrator · 데이터 훅 + 섹션 조립</span><br/>
+├── <span class="dir">sections/</span><br/>
+│   ├── <span class="new">ProfileHeader.tsx</span> <span class="cmt">// 아바타 · 닉네임 · 레벨 · 카운트 3종</span><br/>
+│   ├── <span class="new">LevelProgress.tsx</span> <span class="cmt">// 프로그레스바 + 다음 레벨까지</span><br/>
+│   ├── <span class="new">ExpiringCouponsCard.tsx</span> <span class="cmt">// 긴급 쿠폰 리마인더 (0개 시 null)</span><br/>
+│   ├── <span class="new">MenuGroup.tsx</span> <span class="cmt">// 활동·혜택·계정 공용 컴포넌트</span><br/>
+│   └── <span class="new">AccountActions.tsx</span> <span class="cmt">// 사장님앱 · 로그아웃 · 회원탈퇴 · 버전</span><br/>
+├── <span class="dir">hooks/</span><br/>
+│   ├── <span class="new">useMySummary.ts</span> <span class="cmt">// profiles + 카운트 3종</span><br/>
+│   └── <span class="new">useExpiringCoupons.ts</span> <span class="cmt">// 당일 만료 쿠폰</span><br/>
+└── <span class="dir">constants/</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="new">menuConfig.ts</span> <span class="cmt">// 12개 메뉴 + route/badge 매핑</span>
+  </div>
+</section>
+
+<!-- 05. 타이포 치환 -->
+<section class="spec-section">
+  <div class="sec-num">05</div>
+  <h2 class="sec-title">타이포 치환 · 웹→RN</h2>
+
+  <div class="section-grid">
+    <div class="sec-card">
+      <div class="sec-eye">Title</div>
+      <div class="sec-t">닉네임 · 레벨 · 카운트 숫자</div>
+      <div class="sec-d">
+        닉네임 <code>fontFamily: 'WantedSans-Black', fontSize: 19, letterSpacing: -0.4</code><br/>
+        레벨 뱃지 <code>ExtraBold 10px · #A46A2B · bg #FFE8C9</code><br/>
+        카운트 숫자 <code>Black 22px letterSpacing -0.5</code>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Menu</div>
+      <div class="sec-t">메뉴 라벨 · 서브텍스트</div>
+      <div class="sec-d">
+        라벨 <code>fontFamily: 'WantedSans-Bold', fontSize: 14, letterSpacing: -0.3</code><br/>
+        서브 <code>Medium 11px color var(--fg3) lineHeight 14</code><br/>
+        배지 <code>ExtraBold 10px #fff bg var(--red-500)</code>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Cards</div>
+      <div class="sec-t">긴급 쿠폰 리마인더</div>
+      <div class="sec-d">
+        타이틀 <code>ExtraBold 14px letterSpacing -0.3</code><br/>
+        설명 <code>Medium 11px color var(--fg3)</code><br/>
+        배경: <code>LinearGradient [#FFF3EB, #fff] (180deg, stop 70%)</code>, 보더 <code>var(--orange-300)</code>
+      </div>
+    </div>
+    <div class="sec-card">
+      <div class="sec-eye">Section</div>
+      <div class="sec-t">그룹 라벨 · 버전 · 하단 텍스트</div>
+      <div class="sec-d">
+        그룹 <code>Bold 11px letterSpacing 0.3</code><br/>
+        버전 <code>Medium 10px color var(--fg4)</code><br/>
+        로그아웃·회원탈퇴 <code>Medium 12px color var(--fg3)</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06. 엣지 케이스 -->
+<section class="spec-section">
+  <div class="sec-num">06</div>
+  <h2 class="sec-title">엣지 케이스 · 7종</h2>
+
+  <div class="edge-grid">
+    <div class="edge"><div class="edge-t">1. 닉네임 미설정</div><div class="edge-d">회원가입 S3를 건너뛴 계정은 없어야 하지만 fallback 으로 "언니님"으로 표시. 이니셜은 "언".</div></div>
+    <div class="edge"><div class="edge-t">2. 레벨 0% / 100%</div><div class="edge-d">0%는 프로그레스바 빈 상태 + "브론즈 시작". 100%는 "실버 승급 대기 중" 으로 텍스트 전환.</div></div>
+    <div class="edge"><div class="edge-t">3. 카운트 0</div><div class="edge-d">보유 쿠폰 0 → 숫자 그대로 "0" 표시. 클릭 시 쿠폰함 빈 상태로 이동.</div></div>
+    <div class="edge"><div class="edge-t">4. 위치 미설정</div><div class="edge-d">GPS 거부 + 수동 설정도 안 한 경우 "위치 설정 필요" 오렌지 텍스트 + 설정 화면 딥링크.</div></div>
+    <div class="edge"><div class="edge-t">5. 생일 준비중</div><div class="edge-d">생일이 당월이 아니면 "{N}월 생일 · 준비중" · disabled. 당월이면 "생일 쿠폰 받기" 오렌지 배지.</div></div>
+    <div class="edge"><div class="edge-t">6. 친구 초대 받은 후</div><div class="edge-d">이미 사용한 사용자는 "NEW" 제거, 서브텍스트 "초대 3회 · 누적 9,000원" 로 변경.</div></div>
+    <div class="edge"><div class="edge-t">7. 로그아웃 · 탈퇴 확인</div><div class="edge-d">둘 다 iOS 네이티브 <code>Alert</code> 로 2단계 확인. 탈퇴는 "진짜 탈퇴하시겠어요? 쿠폰 12장이 삭제됩니다" 강조.</div></div>
+  </div>
+</section>
+
+<!-- 07. 체크리스트 -->
+<section class="spec-section">
+  <div class="sec-num">07</div>
+  <h2 class="sec-title">구현 체크리스트 · 7단계</h2>
+
+  <div class="check-list">
+    <div class="check-row"><div class="check-box"></div><div class="check-text">01. <b>menuConfig.ts</b> — 12개 메뉴 + route/icon/badge 상수 정의</div><div class="check-est">0.5d</div></div>
+    <div class="check-row"><div class="check-box"></div><div class="check-text">02. <b>useMySummary</b> · <b>useExpiringCoupons</b> 훅 + Supabase RPC</div><div class="check-est">1d</div></div>
+    <div class="check-row"><div class="check-box"></div><div class="check-text">03. <b>ProfileHeader + LevelProgress</b> — 그라데이션 · 레벨 뱃지 · 카운트 3종</div><div class="check-est">1d</div></div>
+    <div class="check-row"><div class="check-box"></div><div class="check-text">04. <b>ExpiringCouponsCard</b> — 0개 시 null 렌더 · 쿠폰함 탭 이동</div><div class="check-est">0.5d</div></div>
+    <div class="check-row"><div class="check-box"></div><div class="check-text">05. <b>MenuGroup + MenuRow</b> — 3그룹 공용 · 배지 · 쉐브론</div><div class="check-est">1d</div></div>
+    <div class="check-row"><div class="check-box"></div><div class="check-text">06. <b>AccountActions</b> — 사장님앱 링크 · 로그아웃/탈퇴 Alert · 버전</div><div class="check-est">0.5d</div></div>
+    <div class="check-row"><div class="check-box"></div><div class="check-text">07. <b>엣지 케이스 7종</b> + UI Kit 프리뷰와 1:1 비교 QA</div><div class="check-est">1d</div></div>
+  </div>
+  <p style="margin-top: 18px; font: 600 13px/1.5 'Wanted Sans'; color: var(--fg3);">총 예상 4.5일 · W2 슬롯에 할당.</p>
+</section>
+
+<footer class="site-footer" style="margin-top: 60px;">
+  <div>언니픽 · MY Screen Handoff · v0.1 · 2025.11</div>
+  <div style="display:flex;gap:12px">
+    <a href="index.html">← Index</a>
+    <a href="splash-auth-handoff.html">Splash + Auth</a>
+    <a href="home-v1-handoff.html">Home V1</a>
+    <a href="launch-handoff.html">Launch</a>
+  </div>
+</footer>
+
+</body>
+</html>

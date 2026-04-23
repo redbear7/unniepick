@@ -1,41 +1,48 @@
 // Step 1: 휴대폰 번호 입력
-// "010" 고정 + 뒤 8자리, borderBottom 강조형 입력 (AuthFlow.jsx L91)
-import React, { useRef } from 'react';
+// 중앙 정렬 레이아웃, +82 pill + "010 1234 5678" 3-4-4 포맷 (AuthFlow.jsx L92~ 반영)
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { PALETTE, FONT_FAMILY } from '../../../constants/theme';
+import { PALETTE } from '../../../constants/theme';
+import { F, T } from '../../../constants/typography';
+import LegalSheet, { LegalTab } from '../components/LegalSheet';
 
 interface Props {
-  phone:    string;           // '010' + 뒤8자리
+  phone:    string;           // 전체 11자리 숫자 문자열 ex) "01012345678"
   setPhone: (v: string) => void;
   onNext:   () => void;
   loading?: boolean;
   error?:   string;
 }
 
+/** 숫자만 추출 후 3-4-4 공백 포맷: "010 1234 5678" */
+function formatPhone(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3)  return d;
+  if (d.length <= 7)  return `${d.slice(0, 3)} ${d.slice(3)}`;
+  return `${d.slice(0, 3)} ${d.slice(3, 7)} ${d.slice(7)}`;
+}
+
 export default function PhoneStep({ phone, setPhone, onNext, loading, error }: Props) {
   const inputRef = useRef<TextInput>(null);
+  const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
 
-  // "010" 이후 최대 8자리
-  const rest    = phone.replace(/\D/g, '').replace(/^010/, '').slice(0, 8);
-  const isValid = rest.length === 8;
-
-  // 표시용: 1234 - 5678 (공백 포함)
-  const display = rest.length > 4
-    ? `${rest.slice(0, 4)} - ${rest.slice(4)}`
-    : rest;
+  const digits  = phone.replace(/\D/g, '');
+  const isValid = digits.length === 11 && digits.startsWith('010');
+  const display = formatPhone(digits);
 
   const handleChange = (text: string) => {
-    const d = text.replace(/[^\d]/g, '').slice(0, 8);
-    setPhone('010' + d);
+    const d = text.replace(/\D/g, '').slice(0, 11);
+    setPhone(d);
   };
 
   return (
@@ -43,109 +50,163 @@ export default function PhoneStep({ phone, setPhone, onNext, loading, error }: P
       style={s.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={s.body}>
-        <Text style={s.title}>휴대폰 번호</Text>
-        <Text style={s.sub}>쿠폰 사용 · 본인 확인에 사용돼요</Text>
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={false}
+      >
+        {/* ── 중앙 콘텐츠 ── */}
+        <View style={s.center}>
+          <Text style={s.title}>전화번호를 알려주세요.</Text>
 
-        {/* 010 + 입력 */}
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => inputRef.current?.focus()}
-          style={[s.inputRow, rest.length > 0 && s.inputRowActive]}
-        >
-          <Text style={s.prefix}>010</Text>
-          <Text style={s.dash}> - </Text>
-          <TextInput
-            ref={inputRef}
-            keyboardType="number-pad"
-            placeholder="1234 - 5678"
-            placeholderTextColor={PALETTE.gray400}
-            value={display}
-            onChangeText={handleChange}
-            autoFocus
-            style={s.input}
-            maxLength={11} // "1234 - 5678"
-          />
-        </TouchableOpacity>
+          {/* +82 pill + 번호 입력 */}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => inputRef.current?.focus()}
+            style={s.inputRow}
+          >
+            <View style={s.pill}>
+              <Text style={s.pillText}>+82</Text>
+            </View>
+            <TextInput
+              ref={inputRef}
+              keyboardType="number-pad"
+              placeholder="010 1234 5678"
+              placeholderTextColor={PALETTE.gray400}
+              value={display}
+              onChangeText={handleChange}
+              autoFocus
+              style={s.input}
+              maxLength={13} // "010 1234 5678" = 13자
+            />
+          </TouchableOpacity>
 
-        {error ? <Text style={s.error}>{error}</Text> : null}
-      </View>
+          {error ? <Text style={s.error}>{error}</Text> : null}
+        </View>
 
-      <View style={s.footer}>
-        <TouchableOpacity
-          style={[s.btn, !isValid && s.btnDisabled]}
-          onPress={onNext}
-          disabled={!isValid || loading}
-          activeOpacity={0.85}
-        >
-          {loading
-            ? <ActivityIndicator color="#FFFFFF" />
-            : <Text style={s.btnText}>인증번호 받기</Text>
-          }
-        </TouchableOpacity>
-      </View>
+        {/* ── 하단 영역: 약관 + 버튼 ── */}
+        <View style={s.footer}>
+          {/* 약관 동의 문구 */}
+          <Text style={s.termsText}>
+            {'인증을 요청하면 14세 이상이며, 언니픽의 '}
+            <Text
+              style={s.termsLink}
+              onPress={() => setLegalTab('privacy')}
+            >
+              개인정보처리방침
+            </Text>
+            {' 및 '}
+            <Text
+              style={s.termsLink}
+              onPress={() => setLegalTab('terms')}
+            >
+              이용약관
+            </Text>
+            {'에 동의한 것으로 간주합니다.'}
+          </Text>
+
+          {/* CTA */}
+          <TouchableOpacity
+            style={[s.btn, !isValid && s.btnDisabled]}
+            onPress={onNext}
+            disabled={!isValid || loading}
+            activeOpacity={0.85}
+          >
+            {loading
+              ? <ActivityIndicator color="#FFFFFF" />
+              : <Text style={s.btnText}>인증번호 받기</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* 약관 바텀시트 */}
+      <LegalSheet
+        visible={legalTab !== null}
+        initTab={legalTab ?? 'privacy'}
+        onClose={() => setLegalTab(null)}
+      />
     </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  flex:  { flex: 1 },
-  body:  { flex: 1, paddingHorizontal: 24, paddingTop: 20 },
-  footer: { paddingHorizontal: 24, paddingBottom: 32 },
+  flex: { flex: 1 },
+
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
+  },
+
+  // ── 중앙 콘텐츠 ──────────────────────────────────────────
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 20,
+  },
 
   title: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 26,
-    fontWeight: '900',
+    ...T.title24,
     color: PALETTE.gray900,
-    letterSpacing: -0.8,
-    marginBottom: 10,
+    textAlign: 'center',
+    marginBottom: 32,
   },
-  sub: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 14,
-    color: PALETTE.gray500,
-    marginBottom: 36,
-    lineHeight: 21,
-  },
+
+  // +82 pill + input 한 줄
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    paddingVertical: 18,
-    borderBottomWidth: 2,
-    borderBottomColor: PALETTE.gray200,
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
   },
-  inputRowActive: { borderBottomColor: PALETTE.orange500 },
-  prefix: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 28,
-    fontWeight: '800',
-    color: PALETTE.gray900,
-    letterSpacing: -0.5,
+
+  pill: {
+    backgroundColor: PALETTE.gray100,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  dash: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 28,
-    fontWeight: '700',
-    color: PALETTE.gray400,
-    letterSpacing: -0.5,
+  pillText: {
+    ...T.body14,
+    fontFamily: undefined,   // medium 500 weight 그대로
+    color: PALETTE.gray700,
   },
+
   input: {
     flex: 1,
-    fontFamily: FONT_FAMILY,
-    fontSize: 28,
-    fontWeight: '800',
+    ...T.body15,
+    fontSize: 20,
     color: PALETTE.gray900,
-    letterSpacing: -0.5,
     padding: 0,
   },
+
   error: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
+    ...T.caption12,
     color: PALETTE.red500,
     marginTop: 12,
+    textAlign: 'center',
   },
+
+  // ── 하단 ─────────────────────────────────────────────────
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    gap: 14,
+  },
+
+  termsText: {
+    ...T.caption12,
+    color: PALETTE.gray600,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: PALETTE.gray700,
+    textDecorationLine: 'underline',
+  },
+
   btn: {
     backgroundColor: PALETTE.orange500,
     borderRadius: 14,
@@ -163,10 +224,7 @@ const s = StyleSheet.create({
     elevation: 0,
   },
   btnText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 16,
-    fontWeight: '900',
+    ...T.btn16,
     color: '#FFFFFF',
-    letterSpacing: -0.3,
   },
 });

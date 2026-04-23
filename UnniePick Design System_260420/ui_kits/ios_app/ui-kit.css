@@ -1,0 +1,68 @@
+/* UnniePick iOS UI Kit — screen-specific styles */
+@import url('../../colors_and_type.css');
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; background: #E8E8EC; }
+
+.up-screen { width: 100%; height: 100%; background: var(--gray-50); display: flex; flex-direction: column; }
+
+/* Header */
+.up-header { background: #fff; padding: 50px 20px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gray-150); }
+.up-header-brand { font: 900 24px/1 var(--font-sans); color: var(--orange-500); letter-spacing: -0.5px; }
+.up-header-actions { display: flex; gap: 16px; }
+.up-icon-btn { width: 36px; height: 36px; display:flex;align-items:center;justify-content:center; background:transparent;border:none;padding:0; }
+
+/* Tab bar */
+.up-tabbar { display: flex; background: #fff; padding: 8px 0 34px; border-top: 1px solid var(--gray-150); }
+.up-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; background: transparent; border: none; cursor: pointer; }
+.up-tab-icon { font-size: 22px; opacity: 0.5; }
+.up-tab.active .up-tab-icon { opacity: 1; }
+.up-tab-label { font: 500 10px/1 var(--font-sans); color: var(--gray-500); letter-spacing: -0.2px; }
+.up-tab.active .up-tab-label { color: var(--orange-500); font-weight: 700; }
+
+/* Store avatar */
+.up-avatar { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #fff; font: 900 20px/1 var(--font-sans); flex-shrink: 0; }
+.up-avatar.sm { width: 36px; height: 36px; border-radius: 10px; font-size: 15px; }
+.up-avatar.lg { width: 72px; height: 72px; border-radius: 20px; font-size: 30px; }
+
+/* Card / post */
+.up-post { background: #fff; padding: 16px 20px; border-bottom: 8px solid var(--gray-100); }
+.up-post-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.up-post-info { flex: 1; min-width: 0; }
+.up-post-name { font: 800 15px/1.2 var(--font-sans); color: var(--fg1); letter-spacing: -0.3px; }
+.up-post-meta { font: 400 12px/1.2 var(--font-sans); color: var(--fg3); margin-top: 3px; }
+.up-post-body { font: 400 14px/20px var(--font-sans); color: var(--fg1); margin-bottom: 10px; letter-spacing: -0.2px; }
+.up-post-actions { display: flex; gap: 20px; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--gray-100); }
+.up-post-action { font: 500 12px/1 var(--font-sans); color: var(--fg3); display:flex;align-items:center;gap:5px; background:none;border:none;padding:0; }
+
+/* Coupon card (embedded) */
+.up-coupon { background: var(--orange-50); border: 1.5px dashed var(--orange-500); border-radius: 14px; padding: 14px; }
+.up-coupon-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.up-coupon-title { flex: 1; font: 800 17px/1 var(--font-sans); color: var(--fg1); letter-spacing: -0.4px; }
+.up-coupon-badge { background: var(--orange-500); color: #fff; padding: 4px 10px; border-radius: 20px; font: 800 10px/1 var(--font-sans); letter-spacing: 0.3px; }
+.up-coupon-foot { display: flex; justify-content: space-between; align-items: center; }
+.up-coupon-meta { font: 500 12px/1 var(--font-sans); color: var(--fg3); }
+.up-coupon-urgent { color: var(--orange-500); font-weight: 700; }
+
+/* Buttons */
+.up-btn { padding: 13px 22px; border-radius: 22px; font: 800 14px/1 var(--font-sans); letter-spacing: -0.2px; border: none; cursor: pointer; }
+.up-btn-primary { background: var(--orange-500); color: #fff; box-shadow: var(--shadow-brand); }
+.up-btn-primary:active { background: var(--orange-600); transform: scale(0.98); }
+.up-btn-small { padding: 8px 16px; border-radius: 20px; font: 700 12px/1 var(--font-sans); }
+.up-btn-ghost { background: #fff; color: var(--orange-500); border: 1.5px solid var(--orange-500); }
+.up-btn-filled-gray { background: var(--gray-100); color: var(--fg1); }
+.up-btn-dark { background: var(--gray-900); color: #fff; }
+.up-btn-block { display: block; width: 100%; text-align: center; padding: 15px; border-radius: 14px; font-size: 15px; }
+
+/* Chips */
+.up-chip-row { display: flex; gap: 8px; padding: 12px 20px; overflow-x: auto; background: #fff; border-bottom: 1px solid var(--gray-150); }
+.up-chip { padding: 6px 14px; border-radius: 20px; font: 700 13px/1 var(--font-sans); background: var(--gray-100); color: var(--gray-700); white-space: nowrap; border: none; }
+.up-chip.on { background: var(--orange-500); color: #fff; }
+
+/* Section header */
+.up-section-head { padding: 16px 20px 8px; font: 800 14px/1 var(--font-sans); color: var(--fg2); letter-spacing: -0.3px; background: var(--gray-50); }
+
+/* Segment */
+.up-segment { display: flex; padding: 8px 20px 10px; gap: 0; background: #fff; border-bottom: 1px solid var(--gray-150); }
+.up-seg { flex: 1; padding: 10px 8px; text-align: center; font: 700 14px/1 var(--font-sans); color: var(--gray-500); background: transparent; border: none; border-bottom: 2.5px solid transparent; }
+.up-seg.on { color: var(--orange-500); border-bottom-color: var(--orange-500); }

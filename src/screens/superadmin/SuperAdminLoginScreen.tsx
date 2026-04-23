@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, justifyContent: 'center', gap: 20 },
   top: { alignItems: 'center', gap: 8 },
   emoji: { fontSize: 56 },
-  title: { fontSize: 26, fontWeight: '800', color: COLORS.white },
+  title: { fontSize: 26, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: COLORS.white },
   subtitle: { fontSize: 14, color: '#aaa' },
 
   // 생체인증 버튼
@@ -208,18 +208,18 @@ const styles = StyleSheet.create({
     paddingVertical: 18, borderWidth: 1.5, borderColor: '#4A90D9',
   },
   bioBtnEmoji: { fontSize: 26 },
-  bioBtnText: { color: '#4A90D9', fontSize: 16, fontWeight: '800' },
+  bioBtnText: { color: '#4A90D9', fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
 
   // 구분선
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#0F3460' },
-  dividerText: { fontSize: 12, color: '#555', fontWeight: '600' },
+  dividerText: { fontSize: 12, color: '#555', fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
 
   card: {
     backgroundColor: '#16213E', borderRadius: RADIUS.lg,
     padding: 24, gap: 12, borderWidth: 1, borderColor: '#0F3460',
   },
-  label: { fontSize: 14, fontWeight: '700', color: '#ccc' },
+  label: { fontSize: 14, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#ccc' },
   input: {
     borderWidth: 1.5, borderColor: '#0F3460', borderRadius: RADIUS.md,
     padding: 14, fontSize: 16, color: COLORS.white, backgroundColor: '#0F3460',
@@ -229,12 +229,12 @@ const styles = StyleSheet.create({
     padding: 16, alignItems: 'center', marginTop: 4,
   },
   disabled: { opacity: 0.6 },
-  loginBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
+  loginBtnText: { color: COLORS.white, fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   saveBtn: {
     borderWidth: 1.5, borderColor: '#4A90D9', borderRadius: RADIUS.md,
     padding: 14, alignItems: 'center',
   },
-  saveBtnText: { color: '#4A90D9', fontSize: 14, fontWeight: '700' },
+  saveBtnText: { color: '#4A90D9', fontSize: 14, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   backBtn: { alignItems: 'center' },
   backText: { fontSize: 14, color: '#888' },
 });

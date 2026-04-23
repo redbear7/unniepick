@@ -4,11 +4,69 @@ import * as SecureStore from 'expo-secure-store';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-// SecureStore에 저장된 만료 토큰 자동 정리
+/**
+ * SecureStore 청크 어댑터
+ *
+ * Supabase JWT 세션이 2048바이트를 초과하는 경우를 대비해
+ * 큰 값을 1800바이트 단위 청크로 분할 저장합니다.
+ * 각 청크는 `${key}__chunk_${i}` 키로, 총 청크 수는 `${key}__n` 키로 저장합니다.
+ */
+const CHUNK_SIZE = 1800;
+
+// 첫 번째 잠금 해제 이후 백그라운드에서도 접근 가능
+// (기본값 WHEN_UNLOCKED는 화면 잠금 시 접근 불가 → 자동 갱신 실패)
+const STORE_OPTS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+};
+
 const ExpoSecureStoreAdapter = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
-  setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
-  removeItem: (key: string) => SecureStore.deleteItemAsync(key),
+  getItem: async (key: string): Promise<string | null> => {
+    const countStr = await SecureStore.getItemAsync(`${key}__n`, STORE_OPTS);
+    if (!countStr) {
+      return SecureStore.getItemAsync(key, STORE_OPTS);
+    }
+    const n = parseInt(countStr, 10);
+    const chunks = await Promise.all(
+      Array.from({ length: n }, (_, i) =>
+        SecureStore.getItemAsync(`${key}__chunk_${i}`, STORE_OPTS),
+      ),
+    );
+    if (chunks.some(c => c === null)) return null;
+    return chunks.join('');
+  },
+
+  setItem: async (key: string, value: string): Promise<void> => {
+    if (value.length <= CHUNK_SIZE) {
+      await SecureStore.setItemAsync(key, value, STORE_OPTS);
+      await SecureStore.deleteItemAsync(`${key}__n`);
+      return;
+    }
+    const chunks: string[] = [];
+    for (let i = 0; i < value.length; i += CHUNK_SIZE) {
+      chunks.push(value.slice(i, i + CHUNK_SIZE));
+    }
+    await Promise.all(
+      chunks.map((chunk, i) =>
+        SecureStore.setItemAsync(`${key}__chunk_${i}`, chunk, STORE_OPTS),
+      ),
+    );
+    await SecureStore.setItemAsync(`${key}__n`, String(chunks.length), STORE_OPTS);
+    await SecureStore.deleteItemAsync(key);
+  },
+
+  removeItem: async (key: string): Promise<void> => {
+    const countStr = await SecureStore.getItemAsync(`${key}__n`);
+    if (countStr) {
+      const n = parseInt(countStr, 10);
+      await Promise.all([
+        ...Array.from({ length: n }, (_, i) =>
+          SecureStore.deleteItemAsync(`${key}__chunk_${i}`),
+        ),
+        SecureStore.deleteItemAsync(`${key}__n`),
+      ]);
+    }
+    await SecureStore.deleteItemAsync(key);
+  },
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

@@ -11,12 +11,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Props {
-  loc?:       string;
-  onChange?:  () => void;
-  showBrand?: boolean;
-  onSearch?:  () => void;
-  onAlarm?:   () => void;
-  hasAlarm?:  boolean;
+  loc?:            string;
+  onChange?:       () => void;
+  showBrand?:      boolean;
+  onSearch?:       () => void;
+  onAlarm?:        () => void;
+  hasAlarm?:       boolean;
+  /** 저장된 위치가 선택된 경우 라벨 전달 → '현재위치' 칩 표시 */
+  savedLocLabel?:  string | null;
+  /** '현재위치' 칩 클릭 시 GPS 위치로 리셋 */
+  onResetToGPS?:   () => void;
 }
 
 export default function HomeLocationBar({
@@ -26,6 +30,8 @@ export default function HomeLocationBar({
   onSearch,
   onAlarm,
   hasAlarm  = false,
+  savedLocLabel,
+  onResetToGPS,
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -41,6 +47,14 @@ export default function HomeLocationBar({
           <Text style={styles.locName}>{loc}</Text>
           <Ionicons name="chevron-down" size={14} color="#4E5968" />
         </TouchableOpacity>
+
+        {/* 저장 위치 선택 시: '현재위치' 리셋 칩 */}
+        {savedLocLabel != null && (
+          <TouchableOpacity style={styles.gpsChip} onPress={onResetToGPS} activeOpacity={0.7}>
+            <Ionicons name="navigate" size={11} color="#FF6F0F" />
+            <Text style={styles.gpsChipText}>현재위치</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* 우측: 검색 · 알림 */}
@@ -76,11 +90,12 @@ const styles = StyleSheet.create({
     minWidth:      0,
   },
   brand: {
-    fontSize:    20,
-    fontWeight:  '900',
-    color:       '#FF6F0F',
-    letterSpacing: -0.8,
-    flexShrink:  0,
+    fontFamily:   'WantedSans-Black',
+    fontSize:     22,
+    fontWeight:   '900',
+    color:        '#FF6F0F',
+    letterSpacing: -1.0,
+    flexShrink:   0,
   },
   locBtn: {
     flexDirection: 'row',
@@ -94,10 +109,27 @@ const styles = StyleSheet.create({
   },
   pin: { fontSize: 15 },
   locName: {
-    fontSize:    16,
-    fontWeight:  '800',
-    color:       '#191F28',
+    fontFamily:   'WantedSans-Bold',
+    fontSize:     17,
+    fontWeight:   '700',
+    color:        '#191F28',
     letterSpacing: -0.3,
+  },
+  gpsChip: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               3,
+    paddingHorizontal: 8,
+    paddingVertical:   4,
+    borderRadius:      20,
+    backgroundColor:   '#FFF3EB',
+    borderWidth:       1,
+    borderColor:       '#FFD4A8',
+  },
+  gpsChipText: {
+    fontSize:   11,
+    fontWeight: '700',
+    color:      '#FF6F0F',
   },
   right: {
     flexDirection: 'row',

@@ -17,6 +17,10 @@ export interface StoreRow {
   description: string;
   emoji: string;
   created_at: string;
+  naver_place_url: string | null;
+  representative_price: number | null;
+  price_label:          string | null;
+  price_range:          string | null;
   // 조인용 (쿠폰 존재 여부)
   has_active_coupon?: boolean;
 }

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>언니픽 · Phase 1 런칭 핸드오프</title>
+<link rel="stylesheet" href="spec-sheet.css">
+<style>
+  /* ══ Launch Handoff — timeline layout ══ */
+  .launch-hero { background: var(--ink); color: #fff; padding: 90px 80px 110px; margin: 0 -80px 80px; position: relative; overflow: hidden; }
+  .launch-hero::before { content: ''; position: absolute; top: -300px; right: -200px; width: 900px; height: 900px; border-radius: 50%; background: radial-gradient(circle, rgba(255,111,15,0.28), transparent 55%); }
+  .launch-hero::after { content: ''; position: absolute; bottom: -200px; left: -100px; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(255,111,15,0.12), transparent 60%); }
+  .lh-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 72px; position: relative; z-index: 1; }
+  .lh-brand { font: 900 28px/1 'Wanted Sans'; color: var(--orange); letter-spacing: -0.7px; }
+  .lh-crumb { font: 600 13px/1.6 'Wanted Sans'; color: rgba(255,255,255,0.5); letter-spacing: 0.6px; text-align: right; text-transform: uppercase; }
+  .lh-eye { font: 700 14px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 3px; text-transform: uppercase; position: relative; z-index: 1; margin-bottom: 28px; }
+  .lh-title { font: 900 96px/0.95 'Wanted Sans'; color: #fff; letter-spacing: -4px; position: relative; z-index: 1; max-width: 1100px; margin-bottom: 32px; }
+  .lh-title em { font-style: normal; color: var(--orange); }
+  .lh-sub { font: 500 24px/1.45 'Wanted Sans'; color: rgba(255,255,255,0.72); max-width: 900px; letter-spacing: -0.3px; position: relative; z-index: 1; }
+  .lh-stats { display: flex; gap: 32px; margin-top: 56px; padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.12); position: relative; z-index: 1; }
+  .lh-stat { flex: 1; }
+  .lh-stat-k { font: 700 11px/1 'Wanted Sans'; color: rgba(255,255,255,0.45); letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 12px; }
+  .lh-stat-v { font: 900 38px/1 'Wanted Sans'; color: #fff; letter-spacing: -1.2px; }
+  .lh-stat-v em { font-style: normal; color: var(--orange); }
+  .lh-stat-t { font: 500 13px/1.4 'Wanted Sans'; color: rgba(255,255,255,0.5); margin-top: 7px; letter-spacing: -0.1px; }
+
+  /* Scope banner */
+  .scope-banner { padding: 32px 40px; background: var(--orange-50); border-radius: 20px; border-left: 6px solid var(--orange); margin-bottom: 48px; display: grid; grid-template-columns: 180px 1fr; gap: 32px; align-items: center; }
+  .scope-eye { font: 900 13px/1 'Wanted Sans'; color: var(--orange-600); letter-spacing: 1.6px; text-transform: uppercase; }
+  .scope-title { font: 900 22px/1.2 'Wanted Sans'; color: var(--ink); letter-spacing: -0.4px; margin-top: 8px; }
+  .scope-body { font: 500 15px/1.6 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.2px; }
+  .scope-body strong { color: var(--ink); font-weight: 800; }
+  .scope-out { display: inline-block; padding: 4px 10px; background: #fff; border-radius: 6px; font: 800 12px/1 'Wanted Sans'; color: var(--fg3); margin-right: 6px; text-decoration: line-through; }
+
+  /* Week timeline */
+  .weeks { position: relative; margin: 40px 0 0; padding-left: 60px; }
+  .weeks::before { content: ''; position: absolute; left: 16px; top: 12px; bottom: 12px; width: 3px; background: linear-gradient(180deg, var(--orange) 0%, var(--orange) 70%, var(--orange-100) 100%); border-radius: 2px; }
+  .week { position: relative; margin-bottom: 48px; padding-bottom: 36px; border-bottom: 1px dashed var(--line); }
+  .week:last-child { border-bottom: none; }
+  .week-dot { position: absolute; left: -58px; top: 6px; width: 36px; height: 36px; border-radius: 999px; background: var(--orange); color: #fff; font: 900 13px/1 'Wanted Sans'; display: flex; align-items: center; justify-content: center; letter-spacing: -0.2px; box-shadow: 0 4px 12px rgba(255,111,15,0.3); }
+  .week-dot.done { background: var(--ink); }
+  .week-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px; }
+  .week-num { font: 900 14px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 1.6px; text-transform: uppercase; }
+  .week-title { font: 900 32px/1.15 'Wanted Sans'; color: var(--ink); letter-spacing: -0.8px; flex: 1; }
+  .week-pill { padding: 5px 10px; background: var(--bg-warm); color: var(--fg2); font: 700 11px/1 'Wanted Sans'; letter-spacing: 0.4px; border-radius: 6px; text-transform: uppercase; }
+  .week-goal { font: 500 17px/1.55 'Wanted Sans'; color: var(--fg2); max-width: 720px; margin-bottom: 22px; letter-spacing: -0.2px; }
+  .week-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .task-box { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+  .task-owner { display: inline-block; padding: 3px 8px; border-radius: 5px; font: 900 10px/1 'Wanted Sans'; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .owner-ios { background: #E6F2FF; color: #1A6FDA; }
+  .owner-be { background: #EAF7E9; color: #1B8333; }
+  .owner-pm { background: #FFEED6; color: #B26700; }
+  .owner-qa { background: #F3E9FF; color: #6A3FCF; }
+  .owner-design { background: #FFE6F0; color: #C43373; }
+  .task-title { font: 800 15px/1.3 'Wanted Sans'; color: var(--ink); letter-spacing: -0.25px; margin-bottom: 6px; }
+  .task-detail { font: 500 12.5px/1.5 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .task-detail code { background: var(--code-bg); color: var(--code-fg); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0; }
+  .task-ref { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font: 700 11px/1.4 'Wanted Sans'; color: var(--fg3); letter-spacing: 0.2px; }
+  .task-ref a { color: var(--orange); text-decoration: none; }
+  .task-ref a:hover { text-decoration: underline; }
+
+  /* Gate checklist */
+  .gates-wrap { background: #0F1114; color: #fff; padding: 40px 44px; border-radius: 22px; margin-top: 32px; }
+  .gate { display: grid; grid-template-columns: 44px 1fr 120px; gap: 18px; align-items: center; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .gate:last-child { border-bottom: none; }
+  .gate-num { font: 900 24px/1 'Wanted Sans'; color: var(--orange); letter-spacing: -0.4px; }
+  .gate-name { font: 800 15px/1.2 'Wanted Sans'; color: #fff; letter-spacing: -0.2px; margin-bottom: 4px; }
+  .gate-detail { font: 500 13px/1.5 'Wanted Sans'; color: rgba(255,255,255,0.6); letter-spacing: -0.1px; }
+  .gate-owner { font: 800 12px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 0.4px; text-align: right; text-transform: uppercase; }
+
+  /* Stack table */
+  .stack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+  .stack-card { padding: 24px 26px; background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+  .stack-h { font: 900 14px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px; }
+  .stack-list { font: 500 14px/1.75 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .stack-list strong { color: var(--ink); font-weight: 700; }
+  .stack-list code { background: var(--code-bg); color: var(--code-fg); padding: 2px 7px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0; }
+
+  /* Risk */
+  .risk-list { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+  .risk { display: grid; grid-template-columns: 80px 1fr 200px; gap: 24px; padding: 20px 24px; background: #fff; border: 1px solid var(--line); border-radius: 14px; align-items: center; }
+  .risk-lv { font: 900 13px/1 'Wanted Sans'; padding: 6px 12px; border-radius: 6px; letter-spacing: 0.5px; text-align: center; }
+  .risk-lv.hi { background: #FFE5E5; color: var(--red); }
+  .risk-lv.md { background: #FFF0CC; color: #9A6A00; }
+  .risk-lv.lo { background: #E5F6EC; color: var(--green); }
+  .risk-t { font: 800 15px/1.3 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; margin-bottom: 4px; }
+  .risk-d { font: 500 13px/1.5 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .risk-m { font: 700 12px/1.5 'Wanted Sans'; color: var(--orange-600); letter-spacing: -0.1px; }
+
+  /* Resources */
+  .res-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+  .res-box { padding: 24px; background: #fff; border: 1px solid var(--line); border-radius: 14px; text-decoration: none; color: inherit; transition: all 0.2s; display: block; }
+  .res-box:hover { border-color: var(--ink); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.06); }
+  .res-kind { font: 800 11px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 10px; }
+  .res-t { font: 800 17px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 6px; }
+  .res-d { font: 500 13px/1.5 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .res-arrow { font: 700 14px/1 'Wanted Sans'; color: var(--ink); margin-top: 14px; }
+
+  /* Out of scope callout */
+  .oos { background: #F4F2ED; padding: 28px 32px; border-radius: 16px; margin-top: 32px; }
+  .oos-h { font: 900 13px/1 'Wanted Sans'; color: var(--fg3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+  .oos-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .oos-chip { padding: 8px 14px; background: #fff; border: 1px dashed var(--fg4); border-radius: 8px; font: 700 13px/1 'Wanted Sans'; color: var(--fg3); letter-spacing: -0.1px; }
+  .oos-chip strong { color: var(--fg2); text-decoration: line-through; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+<!-- HERO -->
+<div class="launch-hero">
+  <div class="lh-top">
+    <div class="lh-brand">언니픽 · Launch Handoff</div>
+    <div class="lh-crumb">Phase 1 실행 문서 · v0.1<br>Target · 7주 런칭</div>
+  </div>
+  <div class="lh-eye">Phase 1 · Claude Code 개발 핸드오프</div>
+  <h1 class="lh-title">사용자 앱<br><em>2가지 루프</em>를<br>런칭한다.</h1>
+  <div class="lh-sub">Spec 01 지갑 자동 발견 + Spec 02 스탬프 × 단골 등급을 iOS 사용자 앱에 구현. 월드컵 딜 소싱과 사장님 앱은 별도 트랙으로 분리.</div>
+  <div class="lh-stats">
+    <div class="lh-stat">
+      <div class="lh-stat-k">Scope</div>
+      <div class="lh-stat-v">Spec <em>01</em> + <em>02</em></div>
+      <div class="lh-stat-t">사용자 앱 iOS · 2개 루프</div>
+    </div>
+    <div class="lh-stat">
+      <div class="lh-stat-k">Timeline</div>
+      <div class="lh-stat-v"><em>7주</em></div>
+      <div class="lh-stat-t">W0 킥오프 → W7 App Store 제출</div>
+    </div>
+    <div class="lh-stat">
+      <div class="lh-stat-k">Owners</div>
+      <div class="lh-stat-v">4<span style="font-size:22px;opacity:0.6;margin-left:4px">롤</span></div>
+      <div class="lh-stat-t">PM · iOS · BE · QA</div>
+    </div>
+    <div class="lh-stat">
+      <div class="lh-stat-k">Status</div>
+      <div class="lh-stat-v" style="font-size:24px;line-height:1.3">개발 준비</div>
+      <div class="lh-stat-t">프로토타입·스펙 완비</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 01 · Scope & Out-of-scope -->
+<section class="block" style="padding-top:0">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <h2 class="sec-title">범위 정의<br>& 제외 항목</h2>
+  </div>
+  <p class="sec-lede">Phase 1은 <strong>사용자 앱 iOS</strong>에서 가장 ICE 높은 2개 루프만 집중 런칭. 사장님 도구와 월드컵 수익 루프는 별도 트랙.</p>
+
+  <div class="scope-banner">
+    <div>
+      <div class="scope-eye">In Scope</div>
+      <div class="scope-title">Spec 01 + Spec 02</div>
+    </div>
+    <div class="scope-body">
+      <strong>Spec 01 지갑 자동 발견</strong> — iOS Live Activity + Widget으로 매장 진입 시 쿠폰 리마인드.<br>
+      <strong>Spec 02 스탬프 × 단골 등급</strong> — QR 스캔으로 도장을 모으고 10개 완성 시 단골 해금 + 시크릿 쿠폰.<br>
+      두 루프는 <strong>coupons 테이블 · GPS 인프라 · Live Activity 파이프라인</strong>을 공유.
+    </div>
+  </div>
+
+  <div class="oos">
+    <div class="oos-h">Out of scope — Phase 2 이후</div>
+    <div class="oos-chips">
+      <div class="oos-chip"><strong>Spec 03 월드컵 딜 소싱</strong> · 수익 루프 검증 후 Phase 2</div>
+      <div class="oos-chip"><strong>사장님 앱 대시보드</strong> · 별도 팀 · 별도 트랙</div>
+      <div class="oos-chip"><strong>Android</strong> · iOS 첫 런칭 후</div>
+      <div class="oos-chip"><strong>쿠폰 발행 툴</strong> · Seed 데이터는 수동 CSV Import</div>
+    </div>
+    <div class="caption" style="margin-top:14px">Phase 1 런칭 후 4주간 지표를 수집한 뒤 Phase 2 착수 여부를 재평가. 사장님 앱은 별도 PM이 병렬로 진행.</div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 02 · Stack & Infrastructure -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <h2 class="sec-title">기술 스택<br>& 인프라</h2>
+  </div>
+  <p class="sec-lede">기존 언니픽 레포를 기반으로 iOS 네이티브 모듈 추가. Swift/SwiftUI 중심 + Supabase + 기존 React Native 앱 위에 네이티브 브릿지.</p>
+
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="stack-h">📱 iOS — 신규 네이티브 레이어</div>
+      <div class="stack-list">
+        <strong>Live Activity · Widget:</strong> <code>ActivityKit</code>, <code>WidgetKit</code> — iOS 16.2+<br>
+        <strong>위치 감지:</strong> <code>CLLocationManager</code> · 배터리 최적화 <code>significantLocationChanges</code> + <code>CLRegion</code> geofencing<br>
+        <strong>QR 스캐너:</strong> <code>AVFoundation</code> <code>AVCaptureMetadataOutput</code> · 오프라인 검증<br>
+        <strong>Push:</strong> APNs + Supabase Edge Functions 트리거<br>
+        <strong>RN 브릿지:</strong> <code>NativeModule</code> 2개 — <code>UPGeofence</code>, <code>UPLiveActivity</code>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-h">🗄 Backend — 기존 스키마 확장</div>
+      <div class="stack-list">
+        <strong>DB:</strong> Supabase Postgres + <code>PostGIS</code> 확장 (매장 좌표 · 반경 쿼리)<br>
+        <strong>신규 테이블:</strong> <code>stamp_cards</code>, <code>stamp_events</code>, <code>secret_coupons</code><br>
+        <strong>기존 확장:</strong> <code>coupons</code> 에 <code>is_secret</code>, <code>unlock_rule</code> 컬럼<br>
+        <strong>Edge Functions:</strong> <code>scan-stamp</code>, <code>trigger-geofence</code>, <code>unlock-regular</code><br>
+        <strong>RLS:</strong> 사용자 본인 데이터만 조회 · 사장님은 <code>is_owner_of</code>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-h">🧪 QA · 배포</div>
+      <div class="stack-list">
+        <strong>CI:</strong> GitHub Actions — <code>fastlane beta</code> 자동 업로드<br>
+        <strong>TestFlight:</strong> 내부 10명 → 클로즈드 30명<br>
+        <strong>지표:</strong> Amplitude + Sentry iOS<br>
+        <strong>지역 한정 런칭:</strong> 창원시 의창구·성산구 2개 구 (반경 약 5km)<br>
+        <strong>Seed 매장:</strong> 카페 23개 + 음식점 18개 + 미용 12개 — CSV Import
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-h">🎨 디자인 · 자산</div>
+      <div class="stack-list">
+        <strong>디자인 시스템:</strong> <code>UnniePick iOS UI Kit.html</code> + <code>colors_and_type.css</code> Wanted Sans · Orange #FF6F0F<br>
+        <strong>홈 베리에이션:</strong> V1(표준) / V2(발견) / V3(소셜) — 상단 탭으로 A/B 테스트<br>
+        <strong>프로토타입 레퍼런스:</strong> <code>prototype/spec-01</code>, <code>prototype/spec-02</code><br>
+        <strong>아이콘·일러스트:</strong> 기존 언니픽 브랜드 팩 재사용<br>
+        <strong>Figma 핸드오프:</strong> 필요시 HTML 프로토타입을 Figma Dev Mode로 변환
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 03 · Week-by-week Timeline -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <h2 class="sec-title">주차별<br>작업 단계</h2>
+  </div>
+  <p class="sec-lede">W0 킥오프 → W7 App Store 제출. Spec 01과 Spec 02를 병렬 진행하되 W1–W2는 공통 인프라, W3부터 기능 레이어가 분기.</p>
+
+  <div class="weeks">
+
+    <!-- W0 -->
+    <div class="week">
+      <div class="week-dot">W0</div>
+      <div class="week-head">
+        <div class="week-num">킥오프</div>
+        <h3 class="week-title">스펙 정렬 · 레포 준비 · 좌표 데이터</h3>
+        <span class="week-pill">0.5주</span>
+      </div>
+      <div class="week-goal">Claude Code가 첫 커밋을 찍을 수 있도록 환경·데이터·스펙을 동기화. 이 단계 끝나면 W1부터 iOS·BE가 병렬로 뛸 수 있어야 함.</div>
+      <div class="week-grid">
+        <div class="task-box">
+          <span class="task-owner owner-pm">PM</span>
+          <div class="task-title">스펙 시트 최종 리뷰</div>
+          <div class="task-detail"><code>spec-01</code>·<code>spec-02</code> 리뷰 미팅. Edge case 10개 확정 (쿨다운·GPS 밖·권한 거부·배터리 세이브 등). 미결정 항목은 기본값 합의 후 문서화.</div>
+          <div class="task-ref">→ <a href="spec-01-wallet-discovery.html">Spec 01</a> · <a href="spec-02-stamp.html">Spec 02</a></div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-be">BE</span>
+          <div class="task-title">PostGIS 확장 + 매장 좌표 Seed</div>
+          <div class="task-detail">Supabase에 <code>postgis</code> 확장 활성화. 창원시 시드 매장 53개 수동 좌표 입력. <code>stores.geom</code> 인덱스 생성.</div>
+          <div class="task-ref">매장 리스트 → <code>seed_dummy_data.sql</code></div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">Xcode 프로젝트 · 권한 설정</div>
+          <div class="task-detail"><code>Info.plist</code>에 위치 · 카메라 · 알림 usage description 추가. iOS Deploy Target 16.2 고정 (Live Activity 요구). Capabilities · Background Modes 활성화.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-design">Design</span>
+          <div class="task-title">UI Kit 최종 동결</div>
+          <div class="task-detail">홈 V1/V2/V3 중 A/B 테스트할 2개 확정. 폰트·컬러·간격 토큰 <code>theme.ts</code> 반영. Splash·Auth flow 최종 확정.</div>
+          <div class="task-ref">→ <a href="../UnniePick iOS UI Kit.html">UI Kit</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W1 -->
+    <div class="week">
+      <div class="week-dot">W1</div>
+      <div class="week-head">
+        <div class="week-num">공통 인프라</div>
+        <h3 class="week-title">지갑 테이블 확장 · 위치 권한 · 온보딩</h3>
+        <span class="week-pill">1주</span>
+      </div>
+      <div class="week-goal">두 스펙이 공유할 <strong>쿠폰 지갑 레이어</strong>와 <strong>위치 권한 플로우</strong>를 먼저 확립. 이후 주에서 기능이 이 위에 올라감.</div>
+      <div class="week-grid">
+        <div class="task-box">
+          <span class="task-owner owner-be">BE</span>
+          <div class="task-title">coupons 테이블 확장 마이그레이션</div>
+          <div class="task-detail"><code>is_secret BOOL</code>, <code>unlock_rule JSONB</code>, <code>notify_on_nearby BOOL</code> 컬럼 추가. RLS 재정의. <code>wallets</code> view 생성.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">온보딩 3단 권한 플로우</div>
+          <div class="task-detail">위치(always) · 알림 · 카메라 3단계 권한 요청 화면. 각 단계 스킵·거부 분기 처리. 설정 앱 딥링크 fallback.</div>
+          <div class="task-ref">→ Spec 01 프로토타입 "온보딩" 씬</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">쿠폰 지갑 화면 (V1)</div>
+          <div class="task-detail">저장한 쿠폰 리스트 · 탭별 필터 · 만료 게이지 · QR 풀스크린 사용 시트. Spec 01·02 모두 이 화면 재사용.</div>
+          <div class="task-ref">→ UI Kit "내 쿠폰함"</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-pm">PM</span>
+          <div class="task-title">Analytics 이벤트 스키마</div>
+          <div class="task-detail">Amplitude 이벤트 정의 — <code>coupon_saved</code>, <code>geofence_entered</code>, <code>stamp_scanned</code>, <code>regular_unlocked</code> 등 18개. 프로퍼티 포함.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W2 -->
+    <div class="week">
+      <div class="week-dot">W2</div>
+      <div class="week-head">
+        <div class="week-num">Spec 01 · Part 1</div>
+        <h3 class="week-title">Geofencing 엔진 · Live Activity 프레임</h3>
+        <span class="week-pill">1주</span>
+      </div>
+      <div class="week-goal">매장 반경 진입을 감지하고 Live Activity를 띄우는 <strong>가장 기술적인 난이도</strong> 구간. 여기서 배터리·정확도 튜닝을 확실히 해야 함.</div>
+      <div class="week-grid">
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">Significant Location Changes + Region 등록</div>
+          <div class="task-detail">저장된 쿠폰의 매장 좌표 상위 20개를 <code>CLCircularRegion</code>으로 등록 (iOS 최대 20개 제한). <code>significantLocationChanges</code>로 보조. 앱 백그라운드·포스 킬 상태에서도 동작 확인.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">Live Activity Attributes + 잠금화면 뷰</div>
+          <div class="task-detail">SwiftUI로 Live Activity 두 레이아웃 — 기본 · Dynamic Island. <code>ActivityKit.request()</code> 래퍼 작성. 8시간 TTL 후 자동 종료.</div>
+          <div class="task-ref">→ Spec 01 프로토타입 "Live Activity"</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-be">BE</span>
+          <div class="task-title">Edge Function: trigger-geofence</div>
+          <div class="task-detail">iOS에서 매장 진입 감지 시 호출. 쿨다운 체크(24h) · 쿠폰 상태 검증 · APNs liveness push payload 반환.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-qa">QA</span>
+          <div class="task-title">GPS 정확도 필드 테스트</div>
+          <div class="task-detail">창원 시내 10곳에서 실제 진입·이탈 테스트. 허위 트리거율 · 놓침율 측정. 반경 파라미터(50/100/200m) 튜닝.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W3 -->
+    <div class="week">
+      <div class="week-dot">W3</div>
+      <div class="week-head">
+        <div class="week-num">Spec 01 · Part 2</div>
+        <h3 class="week-title">Widget · 지도 뷰 · 설정</h3>
+        <span class="week-pill">1주</span>
+      </div>
+      <div class="week-goal">Spec 01을 피처 완성으로 끌어올림. Live Activity만으로는 발견이 약하므로 Widget·지도·설정을 합류시킴.</div>
+      <div class="week-grid">
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">Home/Lock Screen Widget (2 sizes)</div>
+          <div class="task-detail">Small · Medium 위젯. 저장된 쿠폰 중 오늘 가장 가까운 1/3개 표시. 15분 interval <code>TimelineProvider</code>.</div>
+          <div class="task-ref">→ Spec 01 프로토타입 "Widget"</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">지도 뷰 (MapKit) + 핀 클러스터링</div>
+          <div class="task-detail">저장한 쿠폰 매장 · 팔로우 매장 · 진입 감지 반경을 시각화. Bottom sheet로 쿠폰 미리보기.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">설정 화면 (반경·알림 끄기·개별 쿠폰 토글)</div>
+          <div class="task-detail">반경 50/100/200m 3단계 세그먼트. 매장별 알림 on/off. "이 시간엔 알림 안 받기" 방해금지 시간 설정.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-be">BE</span>
+          <div class="task-title">쿠폰 발견·저장 API 최종 확정</div>
+          <div class="task-detail"><code>GET /wallet</code>, <code>POST /coupons/save</code>, <code>POST /coupons/toggle-notify</code> 엔드포인트 명세 + 응답 스키마 고정.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W4 -->
+    <div class="week">
+      <div class="week-dot">W4</div>
+      <div class="week-head">
+        <div class="week-num">Spec 02 · Part 1</div>
+        <h3 class="week-title">QR 스캐너 · 스탬프 카드 자료구조</h3>
+        <span class="week-pill">1주</span>
+      </div>
+      <div class="week-goal">Spec 02의 <strong>핵심 행동(스캔 → 도장)</strong>을 구현. 도장이 찍히는 순간의 피드백이 이 스펙 가치의 80%.</div>
+      <div class="week-grid">
+        <div class="task-box">
+          <span class="task-owner owner-be">BE</span>
+          <div class="task-title">stamp_cards · stamp_events · secret_coupons 테이블</div>
+          <div class="task-detail">사용자 × 매장 1:1 stamp_card. 스캔마다 stamp_event 추가. 10개 도달 시 secret_coupon 자동 발급 트리거.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-be">BE</span>
+          <div class="task-title">Edge Function: scan-stamp</div>
+          <div class="task-detail">매장 QR 토큰 + GPS + 사용자 ID 검증. 쿨다운 24h · 50m 이내 · 토큰 유효성. 성공 시 stamp_event insert + Live Activity push.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">QR 스캐너 풀스크린</div>
+          <div class="task-detail"><code>AVCaptureMetadataOutput</code> QR 감지. 가로 스캔 라인 애니메이션. 에러 분기 — 쿨다운·거리 초과·토큰 만료 각각 다른 토스트.</div>
+          <div class="task-ref">→ Spec 02 프로토타입 "QR 스캐너"</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">도장 찍힘 애니메이션 + Haptic</div>
+          <div class="task-detail">1초 피드백 — 큰 도장이 카드에 "쾅"하고 내려앉음. <code>UIImpactFeedbackGenerator</code> success. Lottie 또는 <code>withAnimation(.spring)</code>.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W5 -->
+    <div class="week">
+      <div class="week-dot">W5</div>
+      <div class="week-head">
+        <div class="week-num">Spec 02 · Part 2 + Integration</div>
+        <h3 class="week-title">단골 해금 · 시크릿 쿠폰 · 카드 상세</h3>
+        <span class="week-pill">1주</span>
+      </div>
+      <div class="week-goal">10번째 도장 = 감동 모먼트. 시크릿 쿠폰과 단골 해금을 완성하고, Spec 01·02의 쿠폰 지갑을 <strong>하나로 통합</strong>.</div>
+      <div class="week-grid">
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">단골 달성 풀스크린 축하 화면</div>
+          <div class="task-detail">10번째 도장 찍힘 → 브랜드 컬러 풀스크린 + 왕관 + 해금 혜택 리스트. 공유 CTA · "쿠폰 바로 보기" CTA.</div>
+          <div class="task-ref">→ Spec 02 프로토타입 "단골 달성 축하"</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">스탬프 카드 상세 + 지갑 탭 통합</div>
+          <div class="task-detail">단골 카드 상세 — 10개 도장 그리드 + 해금 시크릿 쿠폰 리스트. 지갑 탭에 "스탬프 카드" 섹션 추가 (일반 쿠폰과 분리된 영역).</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-be">BE</span>
+          <div class="task-title">cross-spec: 쿠폰 사용 → 스탬프 자동 적립</div>
+          <div class="task-detail">Spec 01 쿠폰 사용 이벤트가 발생하면 그 매장의 stamp_card에 자동으로 1개 스탬프 추가. 한 번의 결제 = 두 루프 진입.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">Live Activity 확장: 스탬프 진행</div>
+          <div class="task-detail">스캔 직후 잠금화면에 "9/10 · 단골까지 1번 더" Live Activity. 기존 Spec 01 ActivityAttributes에 stamp state 추가.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W6 -->
+    <div class="week">
+      <div class="week-dot">W6</div>
+      <div class="week-head">
+        <div class="week-num">QA · Polish</div>
+        <h3 class="week-title">TestFlight 내부 배포 · 현장 테스트</h3>
+        <span class="week-pill">1주</span>
+      </div>
+      <div class="week-goal">피처 프리즈. QA 10명이 실제 창원 거리를 걷고 매장을 방문하며 엔드투엔드 시나리오 반복.</div>
+      <div class="week-grid">
+        <div class="task-box">
+          <span class="task-owner owner-qa">QA</span>
+          <div class="task-title">엔드투엔드 시나리오 테스트 (현장)</div>
+          <div class="task-detail">10명 × 3일 × 창원 의창·성산구. 저장 → 진입 감지 → Live Activity → 매장 스캔 → 도장 → 10번째 해금까지. 배터리 소모 측정.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-ios">iOS</span>
+          <div class="task-title">배터리 소모 최적화</div>
+          <div class="task-detail">Region monitoring 20개 제한 내 · Significant change fallback · Push 빈도 제한. 목표: 8시간 사용 시 추가 5% 이하.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-pm">PM</span>
+          <div class="task-title">App Store 제출 준비</div>
+          <div class="task-detail">스크린샷 6종 · 앱 설명 · 개인정보 처리방침 업데이트 (위치·카메라). ATT prompt 문구 확정. 심사 리뷰어 가이드 첨부.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-qa">QA</span>
+          <div class="task-title">크리티컬 버그 0 · P1 버그 3 이하</div>
+          <div class="task-detail">Sentry + 현장 리포트 합산. 크래시율 0.5% 이하. Live Activity 미표시율 3% 이하 허용.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- W7 -->
+    <div class="week">
+      <div class="week-dot done">W7</div>
+      <div class="week-head">
+        <div class="week-num">Launch</div>
+        <h3 class="week-title">App Store 제출 · 창원 한정 런칭</h3>
+        <span class="week-pill">0.5주</span>
+      </div>
+      <div class="week-goal">창원시 2개 구 한정 런칭. 4주간 Phase 1 KPI 수집 후 Phase 2 착수 여부 재평가.</div>
+      <div class="week-grid">
+        <div class="task-box">
+          <span class="task-owner owner-pm">PM</span>
+          <div class="task-title">App Store 제출 + Phased Release</div>
+          <div class="task-detail">심사 평균 24-48h. 통과 후 자동 Phased Release 7일. 창원 IP 외 다운로드 제한은 앱 내 gating으로 처리.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-be">BE</span>
+          <div class="task-title">Production Seed + Monitoring</div>
+          <div class="task-detail">Prod DB에 Seed 매장 53개 삽입. Edge Function 에러율 대시보드. APNs push 성공률 모니터링.</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-pm">PM</span>
+          <div class="task-title">런칭일 오퍼레이션 플레이북</div>
+          <div class="task-detail">매장 사장님 온보딩 콜 · QR 포스터 배송 · 첫 주 지원 hotline. 마케팅 공지(창원 커뮤니티 5곳).</div>
+        </div>
+        <div class="task-box">
+          <span class="task-owner owner-qa">QA</span>
+          <div class="task-title">런칭 후 24h 워룸</div>
+          <div class="task-detail">Sentry · Amplitude 실시간 모니터링. 크래시/이상 트래픽/푸시 실패 즉각 대응. Hotfix 브랜치 대기.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 04 · Launch Gates -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <h2 class="sec-title">런칭<br>게이트</h2>
+  </div>
+  <p class="sec-lede">각 주의 끝에 이 게이트를 통과해야 다음 주로 넘어간다. 미통과 시 해당 주 범위 축소 또는 일정 1주 연장.</p>
+
+  <div class="gates-wrap">
+    <div class="gate">
+      <div class="gate-num">G1</div>
+      <div>
+        <div class="gate-name">W1 — 지갑 CRUD + 온보딩 통과</div>
+        <div class="gate-detail">쿠폰 저장·조회·삭제 3개 API 동작. 권한 3단계 플로우 iOS Simulator에서 완주.</div>
+      </div>
+      <div class="gate-owner">iOS · BE</div>
+    </div>
+    <div class="gate">
+      <div class="gate-num">G2</div>
+      <div>
+        <div class="gate-name">W2 — Geofence Alpha</div>
+        <div class="gate-detail">창원 5개 매장 현장 테스트. 진입 감지 성공률 90% 이상. Live Activity 잠금화면 표시 확인.</div>
+      </div>
+      <div class="gate-owner">iOS · QA</div>
+    </div>
+    <div class="gate">
+      <div class="gate-num">G3</div>
+      <div>
+        <div class="gate-name">W3 — Spec 01 Feature Complete</div>
+        <div class="gate-detail">Widget 2 size · 지도 · 설정 완료. Spec 01 단독으로 PM 데모 가능.</div>
+      </div>
+      <div class="gate-owner">iOS · PM</div>
+    </div>
+    <div class="gate">
+      <div class="gate-num">G4</div>
+      <div>
+        <div class="gate-name">W4 — Scan Happy Path</div>
+        <div class="gate-detail">QR 스캔 → 도장 찍힘 애니 → DB 반영 1.5초 이내. 쿨다운·거리 에러 분기 모두 동작.</div>
+      </div>
+      <div class="gate-owner">iOS · BE</div>
+    </div>
+    <div class="gate">
+      <div class="gate-num">G5</div>
+      <div>
+        <div class="gate-name">W5 — Integration Complete</div>
+        <div class="gate-detail">단골 해금 축하 화면 · 시크릿 쿠폰 지갑 편입 · cross-spec 자동 적립 모두 동작.</div>
+      </div>
+      <div class="gate-owner">iOS · BE · PM</div>
+    </div>
+    <div class="gate">
+      <div class="gate-num">G6</div>
+      <div>
+        <div class="gate-name">W6 — Release Candidate</div>
+        <div class="gate-detail">크래시율 0.5% 이하 · 배터리 +5% 이하. 엔드투엔드 시나리오 10/10 성공.</div>
+      </div>
+      <div class="gate-owner">QA · iOS</div>
+    </div>
+    <div class="gate">
+      <div class="gate-num">G7</div>
+      <div>
+        <div class="gate-name">W7 — Store Live</div>
+        <div class="gate-detail">App Store 심사 통과. 첫 Phased Release 세그먼트 활성화. 24h 워룸 체크리스트 클리어.</div>
+      </div>
+      <div class="gate-owner">PM · 전팀</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 05 · Risks -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <h2 class="sec-title">리스크<br>& 완화책</h2>
+  </div>
+  <p class="sec-lede">iOS 플랫폼 제약이 가장 큰 리스크. Seed 매장 확보와 지역 커뮤니티 리드도 사전 확보 필요.</p>
+
+  <div class="risk-list">
+    <div class="risk">
+      <div class="risk-lv hi">HIGH</div>
+      <div>
+        <div class="risk-t">iOS Region monitoring 20개 제한</div>
+        <div class="risk-d">저장 쿠폰이 21개 넘어가면 geofence 등록 불가. 활성 쿠폰·거리·시간 우선순위로 동적 교체 필요.</div>
+      </div>
+      <div class="risk-m">→ W2에 우선순위 엔진 구현 · significant location change fallback</div>
+    </div>
+    <div class="risk">
+      <div class="risk-lv hi">HIGH</div>
+      <div>
+        <div class="risk-t">Live Activity Always-On 제약</div>
+        <div class="risk-d">8시간 최대 · Push 업데이트 4KB 제한. Dynamic Island는 iPhone 14 Pro 이상만. 표시 실패 fallback 필요.</div>
+      </div>
+      <div class="risk-m">→ 3% 미표시 허용치 책정 · 푸시 알림 폴백</div>
+    </div>
+    <div class="risk">
+      <div class="risk-lv md">MED</div>
+      <div>
+        <div class="risk-t">Seed 매장 수 부족 (53개 목표)</div>
+        <div class="risk-d">런칭 지역에 실제 참여 의향 매장이 부족하면 사용자 경험 공허. 사장님 팀 병행 온보딩 필수.</div>
+      </div>
+      <div class="risk-m">→ W0-2 병행 · Biz Ops 주간 온보딩 목표 10개/주</div>
+    </div>
+    <div class="risk">
+      <div class="risk-lv md">MED</div>
+      <div>
+        <div class="risk-t">위치 권한 Always 허용률</div>
+        <div class="risk-d">iOS Always 권한은 거부율 40-60%. 권한 없으면 Spec 01 핵심 가치 제공 불가.</div>
+      </div>
+      <div class="risk-m">→ "왜 필요한가" 사전 교육 화면 · While Using에서도 최소 동작 보장</div>
+    </div>
+    <div class="risk">
+      <div class="risk-lv lo">LOW</div>
+      <div>
+        <div class="risk-t">QR 위조 · 중복 스캔</div>
+        <div class="risk-d">매장 QR이 SNS로 유출될 수 있음. 서버에서 GPS 50m 검증·24h 쿨다운으로 이중 방어.</div>
+      </div>
+      <div class="risk-m">→ 서버 검증 · 필요 시 rotating token 고려</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 06 · KPIs -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">06</div>
+    <h2 class="sec-title">런칭 후<br>KPI</h2>
+  </div>
+  <p class="sec-lede">런칭 후 4주간 추적. 목표 미달 시 Phase 2 착수 대신 Phase 1 튜닝에 2주 추가 투입.</p>
+
+  <div class="grid-3" style="margin-top:28px">
+    <div class="card">
+      <div class="eyebrow">Activation</div>
+      <h4 class="h4" style="margin-top:6px">쿠폰 저장 → 실제 매장 진입</h4>
+      <p class="body" style="font-size:15px;margin-top:10px">저장한 쿠폰의 매장에 실제로 들어가서 Live Activity가 표시된 비율. <strong>목표 45%</strong> (벤치: Honey 자동 발견 38%).</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Retention</div>
+      <h4 class="h4" style="margin-top:6px">단골 등급 달성률</h4>
+      <p class="body" style="font-size:15px;margin-top:10px">스탬프 카드 시작한 사용자 중 10/10 완성한 비율. <strong>목표 22%</strong> (벤치: Meituan 회원 등급 18%).</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Engagement</div>
+      <h4 class="h4" style="margin-top:6px">DAU/MAU</h4>
+      <p class="body" style="font-size:15px;margin-top:10px">창원 한정 런칭 2주차. <strong>목표 28%</strong>. Live Activity 재방문 효과 기대.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 07 · Resources -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">07</div>
+    <h2 class="sec-title">핵심 자료<br>링크</h2>
+  </div>
+  <p class="sec-lede">Claude Code가 개발 중 참조해야 할 1차 자료. 이 외에는 원본 unniepick 레포.</p>
+
+  <div class="res-grid">
+    <a href="spec-01-wallet-discovery.html" class="res-box">
+      <div class="res-kind">📄 Spec Sheet</div>
+      <div class="res-t">Spec 01 · 지갑 자동 발견</div>
+      <div class="res-d">Honey 벤치마크 · iOS Live Activity · Widget · Geofencing 파이프라인 전체 명세</div>
+      <div class="res-arrow">열기 →</div>
+    </a>
+    <a href="spec-02-stamp.html" class="res-box">
+      <div class="res-kind">📄 Spec Sheet</div>
+      <div class="res-t">Spec 02 · 스탬프 × 단골 등급</div>
+      <div class="res-d">Fetch·Meituan 벤치 · QR 검증 · 스탬프 자료구조 · 시크릿 쿠폰 해금 규칙</div>
+      <div class="res-arrow">열기 →</div>
+    </a>
+    <a href="../prototype/spec-01/index.html" class="res-box">
+      <div class="res-kind">🎨 Prototype</div>
+      <div class="res-t">Spec 01 인터랙티브 프로토타입</div>
+      <div class="res-d">7개 화면 · Tweaks 패널 · 실제 iOS 프레임. UI 빌드 시 픽셀·애니메이션 참조용</div>
+      <div class="res-arrow">열기 →</div>
+    </a>
+    <a href="../prototype/spec-02/index.html" class="res-box">
+      <div class="res-kind">🎨 Prototype</div>
+      <div class="res-t">Spec 02 인터랙티브 프로토타입</div>
+      <div class="res-d">8개 화면 · 스캔 → 도장 → 축하 플로우 · 시크릿 쿠폰 해금 연출</div>
+      <div class="res-arrow">열기 →</div>
+    </a>
+    <a href="../UnniePick iOS UI Kit.html" class="res-box">
+      <div class="res-kind">🧩 Design System</div>
+      <div class="res-t">언니픽 iOS UI Kit</div>
+      <div class="res-d">홈 V1/V2/V3 · Splash · Auth · 쿠폰 발행 · 월드컵 · 공용 컴포넌트. 상단 탭으로 홈 베리에이션 전환</div>
+      <div class="res-arrow">열기 →</div>
+    </a>
+    <a href="index.html" class="res-box">
+      <div class="res-kind">📑 Index</div>
+      <div class="res-t">Phase 1 Handoff 인덱스</div>
+      <div class="res-d">3개 스펙 카드 · 스펙 간 연결 · Phase 1/2/3 타임라인 · 관련 벤치마킹 PRD</div>
+      <div class="res-arrow">열기 →</div>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<div class="doc-foot">
+  <div>언니픽 · Phase 1 Launch Handoff · v0.1 · 2025.11</div>
+  <div style="display:flex;gap:12px">
+    <a href="index.html">Index</a>
+    <a href="spec-01-wallet-discovery.html">Spec 01</a>
+    <a href="spec-02-stamp.html">Spec 02</a>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

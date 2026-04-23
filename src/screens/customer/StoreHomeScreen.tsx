@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator, RefreshControl, Alert,
+  TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Linking,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 import { fetchStore, StoreRow } from '../../lib/services/storeService';
 import {
@@ -18,6 +20,19 @@ import {
 } from '../../lib/services/favoriteService';
 import { getSession } from '../../lib/services/authService';
 import { useMiniPlayerPadding } from '../../hooks/useMiniPlayerPadding';
+import { supabase } from '../../lib/supabase';
+import { notifyAdmin } from '../../lib/services/pushService';
+
+interface PriceReport {
+  id:             string;
+  menu_name:      string;
+  price:          number;
+  note:           string | null;
+  created_at:     string;
+  agree_count:    number;
+  disagree_count: number;
+  myVote?:        'agree' | 'disagree' | null;  // 현재 유저 투표
+}
 
 export default function StoreHomeScreen() {
   const navigation = useNavigation<any>();
@@ -32,14 +47,133 @@ export default function StoreHomeScreen() {
   const [userId,    setUserId]    = useState<string | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [priceReports,  setPriceReports]  = useState<PriceReport[]>([]);
+  const [voteToast,     setVoteToast]     = useState(false);
+  const [votingId,      setVotingId]      = useState<string | null>(null);
 
   useEffect(() => { loadAll(); }, [storeId]);
+
+  const loadPriceReports = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id ?? null;
+
+      // 제보 목록 (active만)
+      const { data: reports } = await supabase
+        .from('price_reports')
+        .select('id, menu_name, price, note, created_at, agree_count, disagree_count')
+        .eq('store_id', storeId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!reports?.length) { setPriceReports([]); return; }
+
+      // 내 투표 일괄 조회
+      let myVoteMap: Record<string, 'agree' | 'disagree'> = {};
+      if (uid) {
+        const reportIds = reports.map(r => r.id);
+        const { data: votes } = await supabase
+          .from('price_report_votes')
+          .select('report_id, vote')
+          .eq('user_id', uid)
+          .in('report_id', reportIds);
+        (votes ?? []).forEach((v: any) => { myVoteMap[v.report_id] = v.vote; });
+      }
+
+      setPriceReports(reports.map(r => ({
+        ...r,
+        agree_count:    r.agree_count    ?? 0,
+        disagree_count: r.disagree_count ?? 0,
+        myVote: myVoteMap[r.id] ?? null,
+      })));
+    } catch { /* 조용히 실패 */ }
+  }, [storeId]);
+
+  // 맞아요 / 틀려요 투표
+  const handleVote = useCallback(async (reportId: string, vote: 'agree' | 'disagree') => {
+    if (!userId) {
+      Alert.alert('로그인 필요', '투표는 로그인 후 이용할 수 있어요.');
+      return;
+    }
+
+    setVotingId(reportId);
+
+    // 낙관적 업데이트
+    setPriceReports(prev => prev.map(r => {
+      if (r.id !== reportId) return r;
+      const wasAgree    = r.myVote === 'agree';
+      const wasDisagree = r.myVote === 'disagree';
+      const isSame      = r.myVote === vote;
+
+      // 같은 버튼 재클릭 → 취소
+      if (isSame) {
+        return {
+          ...r,
+          myVote:         null,
+          agree_count:    vote === 'agree'    ? Math.max(0, r.agree_count - 1)    : r.agree_count,
+          disagree_count: vote === 'disagree' ? Math.max(0, r.disagree_count - 1) : r.disagree_count,
+        };
+      }
+      return {
+        ...r,
+        myVote:         vote,
+        agree_count:    vote === 'agree'
+          ? r.agree_count + 1
+          : wasAgree ? Math.max(0, r.agree_count - 1) : r.agree_count,
+        disagree_count: vote === 'disagree'
+          ? r.disagree_count + 1
+          : wasDisagree ? Math.max(0, r.disagree_count - 1) : r.disagree_count,
+      };
+    }));
+
+    try {
+      const existing = priceReports.find(r => r.id === reportId);
+      const isSame   = existing?.myVote === vote;
+
+      if (isSame) {
+        // 취소 (삭제)
+        await supabase
+          .from('price_report_votes')
+          .delete()
+          .eq('report_id', reportId)
+          .eq('user_id', userId);
+      } else {
+        // 신규 or 변경 (upsert)
+        await supabase
+          .from('price_report_votes')
+          .upsert({ report_id: reportId, user_id: userId, vote }, { onConflict: 'report_id,user_id' });
+      }
+
+      // 관리자 알림 (틀려요 or 처음 맞아요)
+      const report = priceReports.find(r => r.id === reportId);
+      if (report) {
+        const storeName = store?.name ?? '가게';
+        const voteLabel = vote === 'agree' ? '✅ 맞아요' : '❌ 틀려요';
+        notifyAdmin(
+          `💰 가격 제보 ${voteLabel}`,
+          `${storeName} · ${report.menu_name} ${report.price.toLocaleString()}원`,
+          { type: 'price_vote', storeId, reportId, vote },
+        ).catch(() => {}); // best-effort
+      }
+
+      // 토스트: 관리자에게 알렸습니다
+      setVoteToast(true);
+      setTimeout(() => setVoteToast(false), 2500);
+    } catch {
+      // 실패 시 낙관적 업데이트 롤백
+      await loadPriceReports();
+    } finally {
+      setVotingId(null);
+    }
+  }, [userId, priceReports, storeId, store]);
 
   const loadAll = async () => {
     try {
       const [storeData, couponData] = await Promise.all([
         fetchStore(storeId),
         fetchStoreActiveCoupons(storeId),
+        loadPriceReports(),
       ]);
       setStore(storeData);
       setCoupons(couponData);
@@ -105,6 +239,13 @@ export default function StoreHomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* 관리자 알림 토스트 */}
+      {voteToast && (
+        <View style={styles.toast} pointerEvents="none">
+          <Text style={styles.toastText}>📣 관리자에게 알렸습니다</Text>
+        </View>
+      )}
+
       {/* 네비게이션 바 */}
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -166,11 +307,197 @@ export default function StoreHomeScreen() {
             </View>
           )}
 
+          {/* 위치 지도 썸네일 → 언니픽 지도로 이동 */}
+          {!!store.latitude && !!store.longitude && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('CustomerTabs', {
+                screen:  'MapTab',
+                params: {
+                  focusLat:   store.latitude,
+                  focusLng:   store.longitude,
+                  focusStore: store.id,
+                },
+              })}
+            >
+              <View style={styles.mapWrap}>
+                <MapView
+                  provider={PROVIDER_DEFAULT}
+                  style={styles.mapView}
+                  initialRegion={{
+                    latitude: store.latitude,
+                    longitude: store.longitude,
+                    latitudeDelta: 0.004,
+                    longitudeDelta: 0.004,
+                  }}
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  rotateEnabled={false}
+                  pitchEnabled={false}
+                  pointerEvents="none"
+                >
+                  <Marker
+                    coordinate={{ latitude: store.latitude, longitude: store.longitude }}
+                    title={store.name}
+                  />
+                </MapView>
+                <View style={styles.mapOverlay}>
+                  <Text style={styles.mapOverlayText}>🗺 언니픽 지도로 보기</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* A사 플레이스 링크 */}
+          {!!store.naver_place_url && (
+            <TouchableOpacity
+              style={styles.naverBtn}
+              onPress={() => Linking.openURL(store.naver_place_url!)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.naverBtnText}>A사 업체정보</Text>
+            </TouchableOpacity>
+          )}
+
           {/* 한줄 소개 */}
           {!!store.description && (
             <View style={[styles.storeDescBox]}>
               <Text style={styles.storeDescText}>{store.description}</Text>
             </View>
+          )}
+        </View>
+
+        {/* ── 발행 중인 쿠폰 ── */}
+        <View style={styles.couponSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🎟 발행 중인 쿠폰</Text>
+            <Text style={styles.sectionBadge}>{coupons.length}개</Text>
+          </View>
+
+          {coupons.length === 0 ? (
+            <View style={styles.noCouponBox}>
+              <Text style={styles.noCouponText}>현재 발행 중인 쿠폰이 없어요</Text>
+            </View>
+          ) : (
+            <View style={styles.couponList}>
+              {coupons.map(c => (
+                <StoreCouponCard
+                  key={c.id}
+                  coupon={c}
+                  onPress={() => navigation.navigate('CouponDetail', { coupon: c })}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* ── 가격 정보 ── */}
+        <View style={[styles.section, SHADOW.card]}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>💰 가격 정보</Text>
+            <TouchableOpacity
+              style={styles.reportBtn}
+              onPress={() => navigation.navigate('ReceiptReview', {
+                prefilledStoreId:   storeId,
+                prefilledStoreName: store.name,
+              })}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.reportBtnText}>🧾 영수증 리뷰</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 대표 가격 (DB 직접 설정값) */}
+          {store.representative_price != null && (
+            <View style={styles.repPriceRow}>
+              <View style={styles.repPriceBadge}>
+                <Text style={styles.repPriceLabel}>대표 메뉴</Text>
+                <Text style={styles.repPriceValue}>
+                  {store.price_label ?? `${store.representative_price.toLocaleString()}원~`}
+                </Text>
+              </View>
+              {store.price_range && (
+                <View style={styles.rangeBadge}>
+                  <Text style={styles.rangeBadgeText}>{store.price_range}</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* 고객 제보 목록 */}
+          {priceReports.length > 0 ? (
+            <View style={styles.reportList}>
+              <Text style={styles.reportListTitle}>👥 고객 제보</Text>
+              {priceReports.map((r) => {
+                const isVoting = votingId === r.id;
+                return (
+                  <View key={r.id} style={styles.reportRow}>
+                    {/* 메뉴 + 가격 */}
+                    <View style={styles.reportTop}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.reportMenu}>{r.menu_name}</Text>
+                        {r.note ? (
+                          <Text style={styles.reportNote} numberOfLines={1}>{r.note}</Text>
+                        ) : null}
+                      </View>
+                      <Text style={styles.reportPrice}>
+                        {r.price.toLocaleString()}원
+                      </Text>
+                    </View>
+                    {/* 맞아요 / 틀려요 */}
+                    <View style={styles.voteRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.voteBtn,
+                          r.myVote === 'agree' && styles.voteBtnAgreeActive,
+                        ]}
+                        onPress={() => handleVote(r.id, 'agree')}
+                        disabled={isVoting}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.voteBtnText,
+                          r.myVote === 'agree' && styles.voteBtnTextAgreeActive,
+                        ]}>
+                          👍 맞아요 {r.agree_count > 0 ? r.agree_count : ''}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.voteBtn,
+                          r.myVote === 'disagree' && styles.voteBtnDisagreeActive,
+                        ]}
+                        onPress={() => handleVote(r.id, 'disagree')}
+                        disabled={isVoting}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.voteBtnText,
+                          r.myVote === 'disagree' && styles.voteBtnTextDisagreeActive,
+                        ]}>
+                          👎 틀려요 {r.disagree_count > 0 ? r.disagree_count : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            store.representative_price == null && (
+              <TouchableOpacity
+                style={styles.emptyReport}
+                onPress={() => navigation.navigate('PriceReport', {
+                  storeId,
+                  storeName: store.name,
+                })}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.emptyReportText}>
+                  아직 가격 정보가 없어요.{'\n'}첫 번째로 제보해보세요! 💪
+                </Text>
+              </TouchableOpacity>
+            )
           )}
         </View>
 
@@ -232,30 +559,6 @@ export default function StoreHomeScreen() {
           )}
         </View>
 
-        {/* ── 발행 중인 쿠폰 ── */}
-        <View style={styles.couponSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🎟 발행 중인 쿠폰</Text>
-            <Text style={styles.sectionBadge}>{coupons.length}개</Text>
-          </View>
-
-          {coupons.length === 0 ? (
-            <View style={styles.noCouponBox}>
-              <Text style={styles.noCouponText}>현재 발행 중인 쿠폰이 없어요</Text>
-            </View>
-          ) : (
-            <View style={styles.couponList}>
-              {coupons.map(c => (
-                <StoreCouponCard
-                  key={c.id}
-                  coupon={c}
-                  onPress={() => navigation.navigate('CouponDetail', { coupon: c })}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
@@ -265,7 +568,7 @@ export default function StoreHomeScreen() {
 // ── 쿠폰 미니 카드 ──────────────────────────────────────────────────
 function StoreCouponCard({ coupon, onPress }: { coupon: CouponRow; onPress: () => void }) {
   const kind      = getCouponKindConfig(coupon.coupon_kind);
-  const remaining = coupon.total_quantity - coupon.issued_count;
+  const remaining = (coupon.total_quantity ?? 0) - coupon.issued_count;
   const discountText =
     coupon.discount_type === 'percent'
       ? `${coupon.discount_value}% 할인`
@@ -358,6 +661,53 @@ const styles = StyleSheet.create({
   storeDetailIcon:{ fontSize: 14, marginTop: 1 },
   storeDetailText:{ flex: 1, fontSize: 13, color: COLORS.textMuted, lineHeight: 20 },
 
+  // ── 지도 썸네일 ──
+  mapWrap: {
+    width: '100%',
+    height: 140,
+    borderRadius: RADIUS.md,
+    overflow: 'hidden',
+    marginTop: 2,
+  },
+  mapView: {
+    width: '100%',
+    height: '100%',
+  },
+  mapOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.38)',
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  mapOverlayText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: -0.2,
+  },
+
+  naverBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#03C75A18',
+    borderWidth: 1,
+    borderColor: '#03C75A40',
+    borderRadius: RADIUS.sm,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    marginTop: 2,
+  },
+  naverBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#03C75A',
+    letterSpacing: -0.2,
+  },
+
   storeDescBox: {
     backgroundColor: COLORS.background,
     borderRadius: RADIUS.sm, padding: 10, marginTop: 4,
@@ -416,4 +766,85 @@ const styles = StyleSheet.create({
     padding: 20, alignItems: 'center',
   },
   noCouponText: { fontSize: 13, color: COLORS.textMuted },
+
+  // ── 가격 정보 섹션 ──
+  reportBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius:    8,
+    paddingHorizontal: 10,
+    paddingVertical:    5,
+  },
+  reportBtnText: {
+    fontSize: 12, fontWeight: '700', color: '#FFFFFF',
+  },
+  repPriceRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: COLORS.secondary,
+    borderRadius: 10, padding: 12,
+  },
+  repPriceBadge: { flex: 1 },
+  repPriceLabel: { fontSize: 11, color: COLORS.textMuted, fontWeight: '600' },
+  repPriceValue: { fontSize: 18, fontWeight: '800', color: COLORS.primary, marginTop: 2 },
+  rangeBadge: {
+    backgroundColor: COLORS.primary + '22',
+    borderRadius:    6,
+    paddingHorizontal: 8, paddingVertical: 4,
+  },
+  rangeBadgeText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
+
+  reportList: { gap: 8, marginTop: 4 },
+  reportListTitle: { fontSize: 12, fontWeight: '700', color: COLORS.textMuted, marginBottom: 4 },
+  reportRow: {
+    paddingVertical: 10, paddingHorizontal: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 8, gap: 8,
+  },
+  reportTop: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+  },
+  reportMenu: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  reportNote: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+  reportPrice: { fontSize: 15, fontWeight: '800', color: COLORS.primary, flexShrink: 0 },
+
+  // 맞아요 / 틀려요
+  voteRow: { flexDirection: 'row', gap: 8 },
+  voteBtn: {
+    flex: 1, paddingVertical: 7, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5, borderColor: COLORS.border,
+  },
+  voteBtnAgreeActive: {
+    backgroundColor: '#E8F5E9', borderColor: '#4CAF50',
+  },
+  voteBtnDisagreeActive: {
+    backgroundColor: '#FFEBEE', borderColor: '#EF5350',
+  },
+  voteBtnText: {
+    fontSize: 12, fontWeight: '700', color: COLORS.textMuted,
+  },
+  voteBtnTextAgreeActive:    { color: '#2E7D32' },
+  voteBtnTextDisagreeActive: { color: '#C62828' },
+
+  // 관리자 알림 토스트
+  toast: {
+    position: 'absolute', top: 60, alignSelf: 'center',
+    zIndex: 999,
+    backgroundColor: 'rgba(30,30,30,0.88)',
+    borderRadius: 24,
+    paddingHorizontal: 20, paddingVertical: 10,
+  },
+  toastText: {
+    fontSize: 13, fontWeight: '700', color: '#FFFFFF',
+  },
+
+  emptyReport: {
+    backgroundColor: COLORS.background,
+    borderRadius: 10, padding: 16, alignItems: 'center',
+    borderWidth: 1.5, borderColor: COLORS.border,
+    borderStyle: 'dashed',
+  },
+  emptyReportText: {
+    fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20,
+  },
 });

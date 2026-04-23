@@ -79,7 +79,7 @@ function TagChip({ label, active, onPress }: { label: string; active: boolean; o
 const tc = StyleSheet.create({
   chip:        { borderRadius: 999, borderWidth: 1, borderColor: SA.border, paddingHorizontal: 12, paddingVertical: 6, marginRight: 6, marginBottom: 6 },
   chipActive:  { borderColor: SA.accent, backgroundColor: SA.accentDim },
-  label:       { fontSize: 12, fontWeight: '600', color: SA.sub },
+  label:       { fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: SA.sub },
   labelActive: { color: SA.accent },
 });
 
@@ -105,11 +105,11 @@ const tsr = StyleSheet.create({
   rowSelected: { backgroundColor: SA.accentDim },
   emoji:       { fontSize: 24, width: 36, textAlign: 'center' },
   info:        { flex: 1 },
-  title:       { fontSize: 13, fontWeight: '600', color: SA.text },
+  title:       { fontSize: 13, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: SA.text },
   sub:         { fontSize: 11, color: SA.sub, marginTop: 2 },
   check:       { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: SA.border, alignItems: 'center', justifyContent: 'center' },
   checkActive: { borderColor: SA.accent, backgroundColor: SA.accent },
-  checkIcon:   { fontSize: 12, color: '#fff', fontWeight: '800' },
+  checkIcon:   { fontSize: 12, color: '#fff', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
 });
 
 // ─── 메인 화면 ───────────────────────────────────────────────────
@@ -585,15 +585,15 @@ const s = StyleSheet.create({
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: SA.border },
   backBtn:     { paddingVertical: 4, paddingRight: 12 },
   backText:    { fontSize: 17, color: SA.blue },
-  headerTitle: { fontSize: 16, fontWeight: '800', color: SA.text },
+  headerTitle: { fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
   addBtn:      { backgroundColor: SA.accent, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
-  addBtnText:  { fontSize: 13, fontWeight: '800', color: '#fff' },
+  addBtnText:  { fontSize: 13, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
 
   list:        { padding: 16, gap: 12 },
 
   summary:     { flexDirection: 'row', backgroundColor: SA.card, borderRadius: 14, padding: 16, marginBottom: 4, borderWidth: 1, borderColor: SA.border },
   summaryItem: { flex: 1, alignItems: 'center', gap: 4 },
-  summaryVal:  { fontSize: 22, fontWeight: '900', color: SA.text },
+  summaryVal:  { fontSize: 22, fontFamily: 'WantedSans-Black', fontWeight: '900', color: SA.text },
   summaryLabel:{ fontSize: 11, color: SA.sub },
 
   card:        { backgroundColor: SA.card, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: SA.border, gap: 12 },
@@ -601,35 +601,35 @@ const s = StyleSheet.create({
   cardEmoji:   { fontSize: 32 },
   cardInfo:    { flex: 1 },
   cardTitleRow:{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  cardName:    { fontSize: 16, fontWeight: '800', color: SA.text },
+  cardName:    { fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
   cardMeta:    { fontSize: 12, color: SA.sub, marginTop: 3 },
   aiBadge:     { backgroundColor: SA.accentDim, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  aiBadgeText: { fontSize: 10, fontWeight: '900', color: SA.accent },
+  aiBadgeText: { fontSize: 10, fontFamily: 'WantedSans-Black', fontWeight: '900', color: SA.accent },
   statusBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  statusText:  { fontSize: 11, fontWeight: '700' },
+  statusText:  { fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
 
   tagSection:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tag:         { backgroundColor: SA.accentDim, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  tagText:     { fontSize: 10, fontWeight: '600', color: SA.sub },
+  tagText:     { fontSize: 10, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: SA.sub },
 
   cardActions: { flexDirection: 'row', gap: 8 },
   actionBtn:   { flex: 1, backgroundColor: SA.elevated, borderRadius: 8, paddingVertical: 8, alignItems: 'center' },
-  actionBtnText:{ fontSize: 12, fontWeight: '700', color: SA.sub },
+  actionBtnText:{ fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.sub },
 
   empty:        { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
   emptyText:    { fontSize: 16, color: SA.sub },
   emptyBtn:     { backgroundColor: SA.accent, borderRadius: 999, paddingHorizontal: 24, paddingVertical: 12 },
-  emptyBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  emptyBtnText: { fontSize: 14, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
 
   // 모달
   modalSafe:   { flex: 1, backgroundColor: SA.bg },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: SA.border },
   modalCancel: { fontSize: 16, color: SA.sub },
-  modalTitle:  { fontSize: 16, fontWeight: '800', color: SA.text },
-  modalSave:   { fontSize: 16, fontWeight: '800', color: SA.accent },
+  modalTitle:  { fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
+  modalSave:   { fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.accent },
   modalBody:   { padding: 20, gap: 4 },
 
-  label:       { fontSize: 13, fontWeight: '700', color: SA.sub, marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  label:       { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.sub, marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   input: {
     backgroundColor: SA.card, borderRadius: 12, borderWidth: 1, borderColor: SA.border,
     paddingHorizontal: 14, paddingVertical: 12,
@@ -648,7 +648,7 @@ const s = StyleSheet.create({
 
   trackHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 },
   trackSelectBtn:    { backgroundColor: SA.accentDim, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  trackSelectBtnText:{ fontSize: 12, fontWeight: '700', color: SA.accent },
+  trackSelectBtnText:{ fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.accent },
 
   selectedPreview: { backgroundColor: SA.card, borderRadius: 12, borderWidth: 1, borderColor: SA.border, overflow: 'hidden', marginTop: 8 },
   previewTrack:    { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: SA.border },

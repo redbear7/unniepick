@@ -1036,7 +1036,7 @@ export default function CouponListScreen() {
                     isLiked={likedCoupons.has(uc.coupon.id)} likeCount={couponLikes[uc.coupon.id] ?? 0}
                     isPicked={pickedCoupons.has(uc.coupon.id)} pickCount={couponPicks[uc.coupon.id] ?? uc.coupon.pick_count ?? 0}
                     isUsed={isOver} userStatus={uc.status}
-                    onPress={() => uc.status === 'available' && navigation.navigate('MyCouponQR', { userCoupon: uc })}
+                    onPress={() => uc.status === 'available' && navigation.navigate('MyCouponQR', { userCouponId: uc.id })}
                     onStorePress={uc.coupon.store?.id ? () => navigation.navigate('StoreHome', { storeId: uc.coupon.store!.id }) : undefined}
                     onLike={() => handleLike('coupon', uc.coupon.id)}
                     onPick={() => handlePick('coupon', uc.coupon.id)}

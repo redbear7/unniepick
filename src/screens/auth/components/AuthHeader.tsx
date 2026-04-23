@@ -1,13 +1,15 @@
 // AuthHeader — 뒤로가기 버튼 + DotIndicator ●●○○
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { PALETTE, FONT_FAMILY } from '../../../constants/theme';
+import { PALETTE } from '../../../constants/theme';
+import { F } from '../../../constants/typography';
 
 interface Props {
   step: number;
   total: number;
   onBack: () => void;
   canBack?: boolean;
+  rightAction?: React.ReactNode;
 }
 
 function DotIndicator({ step, total }: { step: number; total: number }) {
@@ -28,7 +30,7 @@ function DotIndicator({ step, total }: { step: number; total: number }) {
   );
 }
 
-export default function AuthHeader({ step, total, onBack, canBack = true }: Props) {
+export default function AuthHeader({ step, total, onBack, canBack = true, rightAction }: Props) {
   return (
     <View style={s.container}>
       <View style={s.row}>
@@ -38,10 +40,9 @@ export default function AuthHeader({ step, total, onBack, canBack = true }: Prop
           style={s.backBtn}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          {/* 왼쪽 꺾쇠 */}
           <Text style={[s.backChevron, !canBack && s.backChevronHidden]}>‹</Text>
         </TouchableOpacity>
-        <View style={s.spacer} />
+        {rightAction ?? <View style={s.spacer} />}
       </View>
       <DotIndicator step={step} total={total} />
     </View>
@@ -66,8 +67,7 @@ const s = StyleSheet.create({
   },
   backChevron: {
     fontSize: 32,
-    fontFamily: FONT_FAMILY,
-    fontWeight: '300',
+    fontFamily: F.regular,
     color: PALETTE.gray800,
     lineHeight: 36,
   },

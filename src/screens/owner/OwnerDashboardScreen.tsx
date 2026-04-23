@@ -17,7 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { getStoreCouponPin, setStoreCouponPin, fetchActiveCoupons, CouponRow } from '../../lib/services/couponService';
 import { generateTTS, generateAnnouncementText, fetchFishVoices, FishVoice } from '../../lib/services/ttsService';
 import { changeOwnerPin } from '../../lib/services/ownerPinService';
-import { duckMusicVolume, unduckMusicVolume } from '../../lib/volumeDuck';
+
 import { saveAnnouncement, fetchMyAnnouncements, deleteAnnouncement, StoreAnnouncement } from '../../lib/services/musicService';
 import {
   createPost, fetchMyPosts, deletePost, editPost,
@@ -533,7 +533,7 @@ export default function OwnerDashboardScreen() {
       await ttsSoundRef.current?.unloadAsync();
       ttsSoundRef.current = null;
       setPlayingVoice(null);
-      unduckMusicVolume();   // 음악 볼륨 복원
+      
       return;
     }
     // 기존 재생 정지
@@ -550,7 +550,7 @@ export default function OwnerDashboardScreen() {
         url = await generateTTS(SAMPLE_TEXT, voice);
         setVoiceSamples(prev => ({ ...prev, [voice]: url }));
       }
-      duckMusicVolume();   // 음악 볼륨 낮추기
+      
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
       ttsSoundRef.current = sound;
@@ -560,11 +560,11 @@ export default function OwnerDashboardScreen() {
           setPlayingVoice(null);
           sound.unloadAsync();
           ttsSoundRef.current = null;
-          unduckMusicVolume();   // 샘플 끝 → 음악 볼륨 복원
+          
         }
       });
     } catch (e: any) {
-      unduckMusicVolume();   // 실패해도 볼륨 복원
+      
       Alert.alert('샘플 재생 실패', e.message ?? '다시 시도해주세요');
     } finally {
       setSamplingVoice(null);
@@ -578,7 +578,7 @@ export default function OwnerDashboardScreen() {
     ttsSoundRef.current = null;
     setTtsPlaying(false);
     setPlayingUrl(null);
-    unduckMusicVolume();   // 음악 볼륨 복원
+    
   };
 
   // ── TTS 모달 닫기 (키보드 해제 + 오디오 중지 + 모달 닫기) ──
@@ -599,7 +599,7 @@ export default function OwnerDashboardScreen() {
     // 다른 URL or 정지 상태 → 기존 중지 후 새로 재생
     try {
       await handleStopTTS();
-      duckMusicVolume();   // 음악 볼륨 낮추기
+      
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const { sound } = await Audio.Sound.createAsync({ uri: url }, { shouldPlay: true });
       ttsSoundRef.current = sound;
@@ -611,7 +611,7 @@ export default function OwnerDashboardScreen() {
           setPlayingUrl(null);
           sound.unloadAsync();
           ttsSoundRef.current = null;
-          unduckMusicVolume();   // 방송 끝 → 음악 볼륨 복원
+          
         }
       });
     } catch { Alert.alert('재생 실패', '음성을 재생할 수 없어요'); }
@@ -1414,7 +1414,7 @@ export default function OwnerDashboardScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>새 비밀번호 (숫자 4자리)</Text>
               <TextInput
-                style={[styles.input, { letterSpacing: 12, fontSize: 22, fontWeight: '800',
+                style={[styles.input, { letterSpacing: 12, fontSize: 22, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800',
                   textAlign: 'center' }]}
                 value={pinInput}
                 onChangeText={v => setPinInput(v.replace(/\D/g, '').slice(0, 4))}
@@ -1471,7 +1471,7 @@ export default function OwnerDashboardScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>현재 PIN (6자리)</Text>
               <TextInput
-                style={[styles.input, { letterSpacing: 8, fontSize: 20, fontWeight: '800', textAlign: 'center' }]}
+                style={[styles.input, { letterSpacing: 8, fontSize: 20, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', textAlign: 'center' }]}
                 value={changePinCurrent}
                 onChangeText={v => setChangePinCurrent(v.replace(/\D/g, '').slice(0, 6))}
                 placeholder="● ● ● ● ● ●"
@@ -1485,7 +1485,7 @@ export default function OwnerDashboardScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>새 PIN (6자리)</Text>
               <TextInput
-                style={[styles.input, { letterSpacing: 8, fontSize: 20, fontWeight: '800', textAlign: 'center' }]}
+                style={[styles.input, { letterSpacing: 8, fontSize: 20, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', textAlign: 'center' }]}
                 value={changePinNew}
                 onChangeText={v => setChangePinNew(v.replace(/\D/g, '').slice(0, 6))}
                 placeholder="● ● ● ● ● ●"
@@ -1499,7 +1499,7 @@ export default function OwnerDashboardScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>새 PIN 확인</Text>
               <TextInput
-                style={[styles.input, { letterSpacing: 8, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+                style={[styles.input, { letterSpacing: 8, fontSize: 20, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', textAlign: 'center' },
                   changePinConfirm.length === 6 && changePinNew !== changePinConfirm
                     ? { borderColor: '#EF4444' } : {}]}
                 value={changePinConfirm}
@@ -1659,7 +1659,7 @@ export default function OwnerDashboardScreen() {
                       onPress={() => setAiPanel(p => !p)}
                     >
                       <Text style={{ fontSize: 12 }}>✨</Text>
-                      <Text style={{ fontSize: 11, fontWeight: '700',
+                      <Text style={{ fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700',
                         color: aiPanel ? '#fff' : L.accent }}>AI 생성</Text>
                     </TouchableOpacity>
                     {/* 선택된 템플릿 + 내용 변경 시 저장 버튼 표시 */}
@@ -1686,7 +1686,7 @@ export default function OwnerDashboardScreen() {
                     padding: 12,
                     gap: 10,
                   }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: L.accent }}>
+                    <Text style={{ fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.accent }}>
                       ✨ 어떤 상황인가요?
                     </Text>
                     {/* 상황 칩 */}
@@ -1705,7 +1705,7 @@ export default function OwnerDashboardScreen() {
                           }}
                         >
                           <Text style={{
-                            fontSize: 12, fontWeight: '600',
+                            fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600',
                             color: aiSituation === chip ? '#fff' : L.sub,
                           }}>{chip}</Text>
                         </TouchableOpacity>
@@ -1734,7 +1734,7 @@ export default function OwnerDashboardScreen() {
                       {aiGenerating
                         ? <ActivityIndicator size="small" color="#fff" />
                         : <Text style={{ fontSize: 13 }}>✨</Text>}
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>
+                      <Text style={{ fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#fff' }}>
                         {aiGenerating ? 'AI 생성 중...' : '문구 생성하기'}
                       </Text>
                     </TouchableOpacity>
@@ -2203,7 +2203,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
   },
-  title: { fontSize: 20, fontWeight: '800', color: L.text },
+  title: { fontSize: 20, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: L.text },
   date: { fontSize: 13, color: L.muted, marginTop: 2 },
   logoutText: { fontSize: 14, color: L.muted, marginTop: 4 },
   statsRow: { flexDirection: 'row', gap: 10 },
@@ -2213,9 +2213,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: L.border,
   },
   statIcon: { fontSize: 22 },
-  statValue: { fontSize: 18, fontWeight: '800', color: L.accent },
+  statValue: { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: L.accent },
   statLabel: { fontSize: 10, color: L.muted, textAlign: 'center' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: L.text },
+  sectionTitle: { fontSize: 16, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.text },
   notifPanel: {
     backgroundColor: L.surface, borderRadius: RADIUS.lg, padding: 16, gap: 14,
     borderWidth: 1, borderColor: L.border,
@@ -2230,7 +2230,7 @@ const styles = StyleSheet.create({
   notifBtnCoupon: { backgroundColor: L.accentDim },
   notifBtnTimeSale: { backgroundColor: 'rgba(255,211,61,0.15)' },
   notifBtnEmoji: { fontSize: 28 },
-  notifBtnTitle: { fontSize: 14, fontWeight: '800', color: L.text },
+  notifBtnTitle: { fontSize: 14, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: L.text },
   notifBtnSub: { fontSize: 11, color: L.muted },
   // ── TTS 모달 헤더
   ttsModalHeader:  { flexDirection: 'row', alignItems: 'center',
@@ -2239,18 +2239,18 @@ const styles = StyleSheet.create({
                      backgroundColor: L.elevated, borderWidth: 1,
                      borderColor: L.border,
                      alignItems: 'center', justifyContent: 'center' },
-  ttsCloseBtnText: { fontSize: 14, color: L.muted, fontWeight: '700' },
+  ttsCloseBtnText: { fontSize: 14, color: L.muted, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   // ── 예약 요약 카드
   schedSummaryCard:  { flexDirection: 'row', alignItems: 'center',
                        backgroundColor: L.accentFaint, borderRadius: RADIUS.sm,
                        borderWidth: 1.5, borderColor: 'rgba(255,111,15,0.25)',
                        padding: 12, gap: 10, marginBottom: 4 },
   schedSummaryLeft:  { flex: 1, gap: 3 },
-  schedSummaryTitle: { fontSize: 13, fontWeight: '700', color: L.accent },
+  schedSummaryTitle: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.accent },
   schedSummaryDesc:  { fontSize: 11, color: L.sub },
   schedEditBtn:      { paddingHorizontal: 10, paddingVertical: 6,
                        backgroundColor: L.accent, borderRadius: RADIUS.sm },
-  schedEditBtnText:  { fontSize: 11, fontWeight: '800', color: '#fff' },
+  schedEditBtnText:  { fontSize: 11, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
   // ── TTS 안내방송
   ttsPanel:        { backgroundColor: L.surface, borderRadius: RADIUS.lg, padding: 16, gap: 12,
                      borderWidth: 1, borderColor: L.border },
@@ -2259,17 +2259,17 @@ const styles = StyleSheet.create({
                      backgroundColor: L.accent, borderRadius: RADIUS.md,
                      paddingHorizontal: 16, paddingVertical: 14 },
   ttsCreateBtnEmoji:{ fontSize: 24 },
-  ttsCreateBtnText: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  ttsCreateBtnText: { fontSize: 15, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
   ttsHistory:      { borderTopWidth: 1, borderTopColor: L.border, paddingTop: 10, gap: 8 },
-  ttsHistoryTitle: { fontSize: 12, fontWeight: '700', color: L.muted, marginBottom: 2 },
+  ttsHistoryTitle: { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.muted, marginBottom: 2 },
   ttsHistoryItem:  { flexDirection: 'row', alignItems: 'center', gap: 8,
                      backgroundColor: L.elevated, borderRadius: RADIUS.sm, padding: 10 },
-  ttsHistoryText:  { fontSize: 13, fontWeight: '600', color: L.text },
+  ttsHistoryText:  { fontSize: 13, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: L.text },
   ttsHistoryMeta:  { fontSize: 11, color: L.muted, marginTop: 2 },
   ttsHistoryBtns:  { flexDirection: 'row', gap: 6 },
   ttsPlayBtn:      { width: 32, height: 32, borderRadius: 16, backgroundColor: L.accentDim,
                      alignItems: 'center', justifyContent: 'center' },
-  ttsPlayBtnText:  { fontSize: 14, color: L.accent, fontWeight: '800' },
+  ttsPlayBtnText:  { fontSize: 14, color: L.accent, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   ttsDelBtn:       { width: 32, height: 32, borderRadius: 16, backgroundColor: L.errorDim,
                      alignItems: 'center', justifyContent: 'center' },
   ttsDelBtnText:   { fontSize: 14 },
@@ -2282,7 +2282,7 @@ const styles = StyleSheet.create({
                            minWidth: 76 },
   templateChipActive:    { borderColor: L.accent, backgroundColor: L.accentFaint },
   templateEmoji:         { fontSize: 22 },
-  templateLabel:         { fontSize: 11, fontWeight: '700', color: L.muted },
+  templateLabel:         { fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.muted },
   templateLabelActive:    { color: L.accent },
   templateEditHint:       { fontSize: 9, color: L.muted, marginTop: 2 },
   templateScheduleBadge:  { fontSize: 9, marginTop: 2 },
@@ -2291,13 +2291,13 @@ const styles = StyleSheet.create({
                             borderRadius: RADIUS.sm, borderWidth: 1.5,
                             borderColor: L.accent, borderStyle: 'dashed' as any,
                             minWidth: 64 },
-  templateAddIcon:        { fontSize: 20, color: L.accent, fontWeight: '800' },
-  templateAddLabel:       { fontSize: 11, fontWeight: '700', color: L.accent },
+  templateAddIcon:        { fontSize: 20, color: L.accent, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
+  templateAddLabel:       { fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.accent },
   inputLabelRow:         { flexDirection: 'row', alignItems: 'center',
                            justifyContent: 'space-between', marginBottom: 6 },
   templateSaveBtn:       { paddingHorizontal: 10, paddingVertical: 4,
                            backgroundColor: L.accent, borderRadius: RADIUS.sm },
-  templateSaveBtnText:   { fontSize: 11, fontWeight: '800', color: '#fff' },
+  templateSaveBtnText:   { fontSize: 11, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
   // 발음 속도 조절
   speedRow:            { flexDirection: 'row', alignItems: 'center', gap: 12,
                          paddingVertical: 4 },
@@ -2306,16 +2306,16 @@ const styles = StyleSheet.create({
                          backgroundColor: L.elevated,
                          alignItems: 'center', justifyContent: 'center' },
   speedBtnDisabled:    { opacity: 0.3 },
-  speedBtnText:        { fontSize: 22, fontWeight: '700', color: L.text, lineHeight: 26 },
+  speedBtnText:        { fontSize: 22, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.text, lineHeight: 26 },
   speedDisplay:        { flex: 1, alignItems: 'center', gap: 2 },
-  speedValue:          { fontSize: 22, fontWeight: '800', color: L.accent },
-  speedLabel:          { fontSize: 11, color: L.muted, fontWeight: '600' },
+  speedValue:          { fontSize: 22, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: L.accent },
+  speedLabel:          { fontSize: 11, color: L.muted, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
   speedPresets:        { flexDirection: 'row', gap: 8, marginTop: 10 },
   speedPresetChip:     { flex: 1, paddingVertical: 7, borderRadius: RADIUS.sm,
                          borderWidth: 1.5, borderColor: L.border,
                          backgroundColor: L.elevated, alignItems: 'center' },
   speedPresetChipActive: { borderColor: L.accent, backgroundColor: L.accentFaint },
-  speedPresetText:     { fontSize: 12, fontWeight: '700', color: L.muted },
+  speedPresetText:     { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.muted },
   speedPresetTextActive: { color: L.accent },
   inputLabelSub:         { fontSize: 11, fontWeight: '400', color: L.muted },
   // 템플릿 편집 모달
@@ -2327,7 +2327,7 @@ const styles = StyleSheet.create({
                            alignItems: 'center', justifyContent: 'center',
                            backgroundColor: L.elevated },
   tplDayChipActive:      { borderColor: L.accent, backgroundColor: L.accent },
-  tplDayText:            { fontSize: 13, fontWeight: '700', color: L.muted },
+  tplDayText:            { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.muted },
   tplDayTextActive:      { color: '#fff' },
   ttsSampleHint:    { fontSize: 11, color: L.muted, marginBottom: 8, marginTop: -4 },
   ttsVoiceList:     { gap: 8 },
@@ -2338,22 +2338,22 @@ const styles = StyleSheet.create({
   ttsVoiceSelect:   { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
                       paddingHorizontal: 12, paddingVertical: 12 },
   ttsVoiceEmoji:    { fontSize: 20 },
-  ttsVoiceLabel:    { fontSize: 13, fontWeight: '600', color: L.muted, flex: 1 },
+  ttsVoiceLabel:    { fontSize: 13, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: L.muted, flex: 1 },
   ttsVoiceLabelActive: { color: L.accent },
   ttsCachedBadge:   { backgroundColor: L.successDim, borderRadius: 4,
                       paddingHorizontal: 5, paddingVertical: 2 },
-  ttsCachedText:    { fontSize: 9, fontWeight: '700', color: L.success },
+  ttsCachedText:    { fontSize: 9, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.success },
   ttsSampleBtn:     { width: 48, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center',
                       borderLeftWidth: 1, borderLeftColor: L.border,
                       backgroundColor: L.surface },
   ttsSampleBtnPlaying: { backgroundColor: L.accentFaint },
-  ttsSampleBtnText: { fontSize: 16, color: L.muted, fontWeight: '700' },
+  ttsSampleBtnText: { fontSize: 16, color: L.muted, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   ttsModeRow:       { flexDirection: 'row', alignItems: 'center', gap: 10,
                       borderWidth: 1.5, borderColor: L.border, borderRadius: RADIUS.sm,
                       padding: 12, backgroundColor: L.elevated },
   ttsModeRowActive: { borderColor: L.accent, backgroundColor: L.accentFaint },
   ttsModeEmoji:     { fontSize: 20 },
-  ttsModeLabel:     { fontSize: 14, fontWeight: '700', color: L.text },
+  ttsModeLabel:     { fontSize: 14, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.text },
   ttsModeLabelActive:{ color: L.accent },
   ttsModeSub:       { fontSize: 11, color: L.muted, marginTop: 1 },
   ttsRadio:         { width: 20, height: 20, borderRadius: 10, borderWidth: 2,
@@ -2364,12 +2364,12 @@ const styles = StyleSheet.create({
   ttsRepeatChip:    { paddingHorizontal: 16, paddingVertical: 9, borderRadius: RADIUS.sm,
                       borderWidth: 1.5, borderColor: L.border, backgroundColor: L.elevated },
   ttsRepeatChipActive: { borderColor: L.accent, backgroundColor: L.accentFaint },
-  ttsRepeatText:    { fontSize: 13, fontWeight: '700', color: L.muted },
+  ttsRepeatText:    { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.muted },
   ttsRepeatTextActive: { color: L.accent },
   ttsPreviewBtn:        { borderWidth: 1.5, borderColor: L.accent, borderRadius: RADIUS.md,
                           padding: 12, alignItems: 'center', marginTop: 4 },
   ttsPreviewBtnPlaying: { backgroundColor: L.accentFaint },
-  ttsPreviewBtnText:    { fontSize: 14, fontWeight: '700', color: L.accent },
+  ttsPreviewBtnText:    { fontSize: 14, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.accent },
   ttsPlayBtnActive:     { backgroundColor: L.errorDim },
 
   menuGrid: { flexDirection: 'row', gap: 12 },
@@ -2379,7 +2379,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: L.border,
   },
   menuBtnIcon: { fontSize: 32 },
-  menuBtnLabel: { fontSize: 13, fontWeight: '700', color: L.text },
+  menuBtnLabel: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.text },
   // Modal
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end',
@@ -2394,22 +2394,22 @@ const styles = StyleSheet.create({
     width: 40, height: 4, backgroundColor: L.border,
     borderRadius: 2, alignSelf: 'center', marginBottom: 4,
   },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: L.text },
+  modalTitle: { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: L.text },
   modalDesc: { fontSize: 13, color: L.sub },
   inputGroup: { gap: 6 },
-  inputLabel: { fontSize: 13, fontWeight: '700', color: L.text },
+  inputLabel: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.text },
   input: {
     borderWidth: 1.5, borderColor: L.border, borderRadius: RADIUS.md,
     padding: 12, fontSize: 14, color: L.text, backgroundColor: L.elevated,
   },
   previewBox: { gap: 6 },
-  previewLabel: { fontSize: 12, fontWeight: '700', color: L.muted },
+  previewLabel: { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.muted },
   previewCard: {
     backgroundColor: L.accentFaint, borderRadius: RADIUS.md,
     padding: 12, gap: 4,
     borderLeftWidth: 3, borderLeftColor: L.accent,
   },
-  previewTitle: { fontSize: 13, fontWeight: '800', color: L.text },
+  previewTitle: { fontSize: 13, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: L.text },
   previewBody: { fontSize: 12, color: L.sub, lineHeight: 18 },
   modalBtnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   cancelBtn: {
@@ -2417,13 +2417,13 @@ const styles = StyleSheet.create({
     padding: 14, alignItems: 'center',
     borderWidth: 1, borderColor: L.border,
   },
-  cancelBtnText: { fontSize: 15, fontWeight: '600', color: L.muted },
+  cancelBtnText: { fontSize: 15, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: L.muted },
   sendBtn: {
     flex: 2, backgroundColor: L.accent, borderRadius: RADIUS.md,
     padding: 14, alignItems: 'center',
   },
   sendBtnDisabled: { opacity: 0.5 },
-  sendBtnText: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  sendBtnText: { fontSize: 15, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
 
   // 쿠폰 PIN 카드
   pinCard: {
@@ -2433,22 +2433,22 @@ const styles = StyleSheet.create({
   },
   pinDisplay:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   pinLabel:      { fontSize: 12, color: L.muted, marginBottom: 4 },
-  pinValue:      { fontSize: 32, fontWeight: '900', color: L.accent, letterSpacing: 8 },
+  pinValue:      { fontSize: 32, fontFamily: 'WantedSans-Black', fontWeight: '900', color: L.accent, letterSpacing: 8 },
   pinEyeBtn:     { backgroundColor: L.elevated, borderRadius: RADIUS.sm,
                    paddingHorizontal: 12, paddingVertical: 6,
                    borderWidth: 1, borderColor: L.border },
-  pinEyeText:    { fontSize: 12, fontWeight: '700', color: L.muted },
+  pinEyeText:    { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.muted },
   pinGuide:      { fontSize: 12, color: L.sub, lineHeight: 18 },
   pinBtnRow:     { flexDirection: 'row', gap: 10 },
   pinBtn:        { flex: 1, borderRadius: RADIUS.md, paddingVertical: 11, alignItems: 'center' },
   pinBtnOutline: { borderWidth: 1.5, borderColor: L.accent },
-  pinBtnOutlineText: { fontSize: 13, fontWeight: '700', color: L.accent },
+  pinBtnOutlineText: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.accent },
   pinBtnFill:    { backgroundColor: L.accent },
-  pinBtnFillText:{ fontSize: 13, fontWeight: '700', color: '#fff' },
+  pinBtnFillText:{ fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#fff' },
   pinEmptyText:  { fontSize: 13, color: L.muted, lineHeight: 20, textAlign: 'center' },
   pinBtnFull:    { backgroundColor: L.accent, borderRadius: RADIUS.md,
                    paddingVertical: 14, alignItems: 'center' },
-  pinBtnFullText:{ fontSize: 15, fontWeight: '800', color: '#fff' },
+  pinBtnFullText:{ fontSize: 15, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
 
   stampSettingCard: {
     backgroundColor: L.surface, borderRadius: RADIUS.lg, padding: 16,
@@ -2456,7 +2456,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4, borderLeftColor: '#22C55E',
     borderWidth: 1, borderColor: L.border,
   },
-  stampSettingTitle:  { fontSize: 14, fontWeight: '800', color: L.text },
+  stampSettingTitle:  { fontSize: 14, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: L.text },
   stampSettingReward: { fontSize: 12, color: L.muted, marginTop: 3 },
   stampSettingArrow:  { fontSize: 18 },
 
@@ -2466,7 +2466,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 7,
     marginBottom: 8,
   },
-  postTimeInfoText: { fontSize: 12, color: L.indigo, fontWeight: '500' },
+  postTimeInfoText: { fontSize: 12, color: L.indigo, fontFamily: 'WantedSans-Medium', fontWeight: '500' },
 
   postWriteBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -2475,8 +2475,8 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   postWriteEmoji: { fontSize: 20 },
-  postWriteText:  { flex: 1, fontSize: 14, color: L.muted, fontWeight: '500' },
-  postWriteArrow: { fontSize: 22, color: L.accent, fontWeight: '800' },
+  postWriteText:  { flex: 1, fontSize: 14, color: L.muted, fontFamily: 'WantedSans-Medium', fontWeight: '500' },
+  postWriteArrow: { fontSize: 22, color: L.accent, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
 
   postWriteDisabled: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
@@ -2484,7 +2484,7 @@ const styles = StyleSheet.create({
     padding: 16, borderWidth: 1.5, borderColor: L.border,
   },
   postWriteDisabledEmoji: { fontSize: 24, marginTop: 2 },
-  postWriteDisabledTitle: { fontSize: 14, fontWeight: '800', color: L.muted, marginBottom: 4 },
+  postWriteDisabledTitle: { fontSize: 14, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: L.muted, marginBottom: 4 },
   postWriteDisabledSub:   { fontSize: 12, color: L.muted, lineHeight: 18, opacity: 0.6 },
 
   postList:     { gap: 8, marginTop: 8 },
@@ -2495,9 +2495,9 @@ const styles = StyleSheet.create({
   postItemTop:  { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   postItemTime: { fontSize: 11, color: L.muted, flex: 1 },
   postLikeChip: { backgroundColor: L.pinkDim, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  postLikeText: { fontSize: 12, fontWeight: '700', color: L.pink },
+  postLikeText: { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.pink },
   postItemContent:    { fontSize: 14, color: L.text, lineHeight: 20 },
-  postItemCouponChip: { fontSize: 12, color: L.accent, fontWeight: '600' },
+  postItemCouponChip: { fontSize: 12, color: L.accent, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
   postCouponActiveNote: { fontSize: 11, color: L.warn, marginTop: 2 },
 
   postActionBtn: {
@@ -2506,15 +2506,15 @@ const styles = StyleSheet.create({
     backgroundColor: L.elevated,
   },
   postActionBtnMuted: { borderColor: L.border, backgroundColor: L.elevated, opacity: 0.6 },
-  postActionEdit: { fontSize: 11, color: L.blue, fontWeight: '700' },
-  postActionDel:  { fontSize: 11, color: L.error, fontWeight: '700' },
+  postActionEdit: { fontSize: 11, color: L.blue, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
+  postActionDel:  { fontSize: 11, color: L.error, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
 
   postDeletePending: {
     paddingHorizontal: 8, paddingVertical: 4,
     borderRadius: RADIUS.sm, backgroundColor: L.warnDim,
     borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)',
   },
-  postDeletePendingText: { fontSize: 11, color: L.warn, fontWeight: '700' },
+  postDeletePendingText: { fontSize: 11, color: L.warn, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
 
   // 삭제 요청 모달
   deleteReqPreview: {
@@ -2535,7 +2535,7 @@ const styles = StyleSheet.create({
     maxWidth: 160,
   },
   couponChipActive:     { backgroundColor: L.accentDim, borderColor: L.accent },
-  couponChipText:       { fontSize: 12, fontWeight: '600', color: L.muted },
+  couponChipText:       { fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: L.muted },
   couponChipTextActive: { color: L.accent },
 
   // ── 음악 DNA 분석 패널 ───────────────────────────────────────────
@@ -2545,14 +2545,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4, borderLeftColor: L.indigo,
   },
   dnaPanelDesc: { fontSize: 13, color: L.sub, lineHeight: 20 },
-  dnaLabel:           { fontSize: 13, fontWeight: '700', color: L.text },
+  dnaLabel:           { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: L.text },
   dnaTagRow:          { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   dnaBtn: {
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#3B82F6', borderRadius: RADIUS.md, paddingVertical: 12,
   },
   dnaBtnDisabled:     { opacity: 0.5 },
-  dnaBtnText:         { fontSize: 14, fontWeight: '700', color: '#fff' },
+  dnaBtnText:         { fontSize: 14, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#fff' },
 
   // 컨텍스트 뱃지
   contextInfoRow:     { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
@@ -2561,7 +2561,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59,130,246,0.15)', borderRadius: 999,
     borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)',
   },
-  contextBadgeText:   { fontSize: 12, fontWeight: '700', color: '#3B82F6' },
+  contextBadgeText:   { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#3B82F6' },
   contextDetailText:  { fontSize: 11, color: L.muted, marginTop: 2 },
 
   // 메뉴 태그 입력
@@ -2575,11 +2575,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 9,
     backgroundColor: '#3B82F6', borderRadius: RADIUS.md, justifyContent: 'center',
   },
-  menuTagAddBtnText:  { fontSize: 13, fontWeight: '700', color: '#fff' },
+  menuTagAddBtnText:  { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#fff' },
   menuTag: {
     paddingHorizontal: 10, paddingVertical: 4,
     backgroundColor: 'rgba(251,146,60,0.15)', borderRadius: 999,
     borderWidth: 1, borderColor: 'rgba(251,146,60,0.35)',
   },
-  menuTagText:        { fontSize: 12, fontWeight: '600', color: '#F97316' },
+  menuTagText:        { fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: '#F97316' },
 });

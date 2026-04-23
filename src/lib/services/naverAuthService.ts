@@ -71,7 +71,7 @@ export async function requestNaverAuthCode(): Promise<string> {
     if (result.type === 'cancel' || result.type === 'dismiss') {
       throw new Error('CANCELLED');
     }
-    throw new Error('네이버 로그인을 완료하지 못했어요.');
+    throw new Error('소셜 로그인을 완료하지 못했어요.');
   }
 
   const code = (result.params as any).code;
@@ -111,7 +111,7 @@ async function fetchNaverUserInfo(accessToken: string): Promise<NaverUserInfo> {
   const data = await res.json();
 
   if (data.resultcode !== '00') {
-    throw new Error('네이버 사용자 정보를 가져오지 못했어요.');
+    throw new Error('사용자 정보를 가져오지 못했어요.');
   }
 
   const r = data.response;
@@ -194,7 +194,13 @@ export async function signInWithNaver(): Promise<{ user: NaverUserInfo; isNew: b
   const naverUser   = await fetchNaverUserInfo(accessToken);
   const session     = await upsertSupabaseUser(naverUser);
 
-  const isNew = !session; // signUp은 이메일 인증 전 session이 null일 수 있음
+  // 로그인 직후 푸시 토큰 등록 (비동기 — 실패해도 로그인에 영향 없음)
+  const uid = session?.user?.id;
+  if (uid) {
+    registerPushToken(uid).catch(() => {});
+  }
+
+  const isNew = !session;
   return { user: naverUser, isNew };
 }
 

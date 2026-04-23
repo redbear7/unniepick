@@ -105,18 +105,18 @@ const styles = StyleSheet.create({
     gap:     4,
   },
   name: {
-    fontSize:    13,
+    fontSize:    14,
     fontWeight:  '800',
     color:       '#191F28',
     letterSpacing: -0.3,
   },
   meta: {
-    fontSize:   11,
+    fontSize:   12,
     fontWeight: '500',
     color:      '#6B7684',
   },
   coupons: {
-    fontSize:   11,
+    fontSize:   12,
     fontWeight: '700',
     color:      '#FF6F0F',
     marginTop:  2,

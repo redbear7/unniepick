@@ -43,8 +43,8 @@ export default function StoreQRScreen() {
     if (!store) return;
     try {
       await Share.share({
-        title: `${store.name} 언니코인 QR`,
-        message: `${store.name} 방문 시 아래 링크로 언니코인을 적립하세요!\nhttps://unniepick.app/checkin?store=${store.id}`,
+        title: `${store.name} 픽포인트 QR`,
+        message: `${store.name} 방문 시 아래 링크로 픽포인트를 적립하세요!\nhttps://unniepick.app/checkin?store=${store.id}`,
       });
     } catch { /* 무시 */ }
   };
@@ -91,7 +91,7 @@ export default function StoreQRScreen() {
           {/* 상단 헤더 */}
           <View style={s.posterHeader}>
             <Text style={s.posterLogo}>언니픽 💰</Text>
-            <Text style={s.posterSub}>방문하고 언니코인 받기</Text>
+            <Text style={s.posterSub}>방문하고 픽포인트 받기</Text>
           </View>
 
           {/* QR 코드 */}
@@ -144,8 +144,8 @@ const s = StyleSheet.create({
   safe:      { flex: 1, backgroundColor: COLORS.background },
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
                padding: 20, paddingBottom: 8 },
-  backText:  { fontSize: 16, color: COLORS.primary, fontWeight: '600' },
-  title:     { fontSize: 18, fontWeight: '800', color: COLORS.text },
+  backText:  { fontSize: 16, color: COLORS.primary, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
+  title:     { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: COLORS.text },
   center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   noStoreEmoji: { fontSize: 56 },
   noStoreText:  { fontSize: 15, color: COLORS.textMuted, textAlign: 'center', lineHeight: 24 },
@@ -158,14 +158,14 @@ const s = StyleSheet.create({
     borderWidth: 2, borderColor: COLORS.primary,
   },
   posterHeader:   { alignItems: 'center', gap: 4 },
-  posterLogo:     { fontSize: 20, fontWeight: '900', color: COLORS.primary },
-  posterSub:      { fontSize: 13, color: COLORS.textMuted, fontWeight: '600' },
+  posterLogo:     { fontSize: 20, fontFamily: 'WantedSans-Black', fontWeight: '900', color: COLORS.primary },
+  posterSub:      { fontSize: 13, color: COLORS.textMuted, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
   qrBox: {
     padding: 16, backgroundColor: '#fff',
     borderRadius: 12, borderWidth: 2, borderColor: COLORS.border,
   },
   posterInfo:     { alignItems: 'center', gap: 4 },
-  posterStoreName:{ fontSize: 20, fontWeight: '900', color: COLORS.text },
+  posterStoreName:{ fontSize: 20, fontFamily: 'WantedSans-Black', fontWeight: '900', color: COLORS.text },
   posterCategory: { fontSize: 13, color: COLORS.textMuted },
   posterAddress:  { fontSize: 12, color: COLORS.textMuted, maxWidth: 220 },
   earnBadge: {
@@ -173,12 +173,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 8,
     borderWidth: 1.5, borderColor: COLORS.primary,
   },
-  earnBadgeText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  earnBadgeText: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: COLORS.primary },
 
   // 안내 카드
   guideCard:  { backgroundColor: '#fff', borderRadius: RADIUS.md, padding: 16,
                 gap: 6, width: '100%' },
-  guideTitle: { fontSize: 13, fontWeight: '800', color: COLORS.text, marginBottom: 4 },
+  guideTitle: { fontSize: 13, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: COLORS.text, marginBottom: 4 },
   guideText:  { fontSize: 13, color: COLORS.textMuted, lineHeight: 20 },
 
   // 공유 버튼
@@ -186,6 +186,6 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.primary, borderRadius: RADIUS.md,
     paddingVertical: 14, paddingHorizontal: 32, width: '100%', alignItems: 'center',
   },
-  shareBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  shareBtnText: { color: '#fff', fontSize: 15, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   notice: { fontSize: 11, color: COLORS.textMuted, textAlign: 'center' },
 });

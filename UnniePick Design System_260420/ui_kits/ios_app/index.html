@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>UnniePick · iOS UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="ui-kit.css">
+<link rel="stylesheet" href="home-screens.css">
+<style>
+  body { background: linear-gradient(180deg, #F4F4F6 0%, #E8E8EC 100%); min-height: 100vh; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 520px; }
+  .tool-btn { padding: 9px 16px; border-radius: 20px; background: #fff; border: 1.5px solid transparent; font: 700 13px/1 var(--font-sans); color: var(--fg2); cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .tool-btn.on { background: var(--orange-500); color: #fff; border-color: var(--orange-500); }
+  .caption { font: 500 12px/1.4 var(--font-sans); color: var(--fg3); text-align: center; max-width: 400px; margin-top: 4px; }
+
+  /* Home variant tabs — prominent top-level selector */
+  .home-tabs-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .home-tabs-label { font: 700 11px/1 var(--font-sans); color: var(--fg3); letter-spacing: 1.4px; text-transform: uppercase; }
+  .home-tabs { display: inline-flex; gap: 4px; padding: 4px; background: #fff; border: 1px solid var(--gray-200); border-radius: 999px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+  .home-tab { padding: 10px 22px; border-radius: 999px; background: transparent; border: none; font: 800 13px/1 var(--font-sans); color: var(--fg2); cursor: pointer; letter-spacing: -0.2px; transition: all 0.15s ease; }
+  .home-tab:hover { color: var(--fg1); }
+  .home-tab.on { background: var(--ink); color: #fff; }
+  .home-tab .tab-sub { display: block; font: 600 10px/1 var(--font-sans); color: rgba(255,255,255,0.7); margin-top: 3px; letter-spacing: 0.2px; }
+  .home-tab:not(.on) .tab-sub { color: var(--fg3); }
+</style>
+</head>
+<body>
+
+<div style="text-align:center">
+  <div style="font-size: 22px">언니픽 iOS UI Kit</div>
+  <div class="caption" style="margin-top:8px">Wanted Sans · Orange #FF6F0F · Based on unniepick/src/constants/theme.ts</div>
+</div>
+
+<div class="home-tabs-wrap">
+  <div class="home-tabs-label">홈 화면 베리에이션</div>
+  <div class="home-tabs" id="homeTabs"></div>
+</div>
+
+<div class="toolbar" id="toolbar"></div>
+<div class="caption" id="screenCaption"></div>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="Primitives.jsx"></script>
+<script type="text/babel" src="FeedPost.jsx"></script>
+<script type="text/babel" src="Wallet.jsx"></script>
+<script type="text/babel" src="StoreRow.jsx"></script>
+<script type="text/babel" src="OwnerDashboard.jsx"></script>
+<script type="text/babel" src="MyScreen.jsx"></script>
+<script type="text/babel" src="Splash.jsx"></script>
+<script type="text/babel" src="AuthFlow.jsx"></script>
+<script type="text/babel" src="IssueCouponFlow.jsx"></script>
+<script type="text/babel" src="worldcup-data.jsx"></script>
+<script type="text/babel" src="WorldCup.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="HomeScreens.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+// ─── Screens ───────────────────────────────────────────────────
+function HomeFeedScreen() {
+  const [posts, setPosts] = useState(SAMPLE_POSTS);
+  const [cat, setCat] = useState('전체');
+  const [tab, setTab] = useState('home');
+  const [qrCoupon, setQr] = useState(null);
+  const [walletCoupons, setWallet] = useState(SAMPLE_WALLET);
+  const [walletSeg, setWalletSeg] = useState('active');
+  const [stores, setStores] = useState(SAMPLE_STORES);
+  const [exploreCat, setExploreCat] = useState('전체');
+
+  const saveCoupon = (id) => {
+    setPosts(p => p.map(x => x.id===id ? {...x, coupon:{...x.coupon, saved:!x.coupon.saved}} : x));
+    const post = posts.find(p=>p.id===id);
+    if (post && !post.coupon.saved) {
+      setWallet(w => [{ id: 'w'+Date.now(), store: post.store, title: post.coupon.title, expiryDate: '오늘', daysLeft: 0, expiryPct: 95, status: 'active' }, ...w]);
+    }
+  };
+  const toggleFollow = (id) => {
+    setStores(s => s.map(x => x.id===id ? {...x, following: !x.following} : x));
+  };
+  const togglePostFollow = (id) => {
+    setPosts(p => p.map(x => x.id===id ? {...x, following: !x.following} : x));
+  };
+
+  const filteredPosts = cat === '전체' ? posts : posts.filter(p => p.category.includes(cat));
+  const activeW = walletCoupons.filter(c => c.status === 'active');
+  const usedW = walletCoupons.filter(c => c.status === 'used');
+  const expW = walletCoupons.filter(c => c.status === 'expired');
+  const filteredStores = exploreCat === '전체' ? stores : stores.filter(s => s.category.includes(exploreCat));
+
+  return (
+    <div className="up-screen">
+      {tab === 'home' && (
+        <>
+          <Header location="상남동" onNotif={()=>{}} onSearch={()=>{}} onLocation={()=>{}} />
+          <ChipRow items={['전체','카페','음식','미용','네일','기타']} active={cat} onChange={setCat}/>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {filteredPosts.map(p => <FeedPost key={p.id} post={p} onSaveCoupon={saveCoupon} onFollow={togglePostFollow}/>)}
+            {filteredPosts.length === 0 && (
+              <div style={{ padding: 60, textAlign: 'center', font: '500 14px/1.4 var(--font-sans)', color: 'var(--fg3)' }}>
+                해당 카테고리 포스트가 아직 없어요
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'wallet' && (
+        <>
+          <Header title="내 쿠폰함" />
+          <Segment
+            items={[
+              { key: 'active', label: '사용 가능', count: activeW.length },
+              { key: 'used', label: '사용 완료', count: usedW.length },
+              { key: 'expired', label: '만료', count: expW.length },
+            ]}
+            active={walletSeg}
+            onChange={setWalletSeg}
+          />
+          <div style={{ flex: 1, overflow: 'auto', paddingTop: 4, paddingBottom: 20 }}>
+            {(walletSeg === 'active' ? activeW : walletSeg === 'used' ? usedW : expW).map(c =>
+              <WalletCard key={c.id} coupon={c} onUse={(id)=>setQr(walletCoupons.find(x=>x.id===id))}/>
+            )}
+            {walletSeg === 'active' && activeW.length === 0 && (
+              <div style={{ padding: 60, textAlign: 'center', font: '500 14px/1.6 var(--font-sans)', color: 'var(--fg3)' }}>
+                저장한 쿠폰이 아직 없어요<br/>
+                <span style={{ color: 'var(--orange-500)', fontWeight: 700 }}>홈 피드</span>에서 쿠폰을 저장해보세요
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'explore' && (
+        <>
+          <div className="up-header">
+            <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+              <span style={{ font: '800 16px/1 var(--font-sans)', color: 'var(--fg1)' }}>📍 강남구 역삼동</span>
+              <span style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--orange-500)' }}>변경</span>
+            </div>
+            <div className="up-header-actions">
+              <button className="up-icon-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4E5968" strokeWidth="2"/><path d="M20 20l-3.5-3.5" stroke="#4E5968" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+          <ChipRow items={['전체','카페','음식','미용','네일','편의점','기타']} active={exploreCat} onChange={setExploreCat}/>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 20px', background: '#fff', borderBottom: '1px solid var(--gray-150)', font: '500 13px/1 var(--font-sans)', color: 'var(--fg2)' }}>
+            <span>정렬: <b style={{color:'var(--fg1)'}}>거리순 ▾</b></span>
+            <span>반경: <b style={{color:'var(--fg1)'}}>500m ▾</b></span>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {filteredStores.map(s => <StoreRow key={s.id} store={s} onToggleFollow={toggleFollow}/>)}
+          </div>
+        </>
+      )}
+
+      {tab === 'profile' && <MyScreen/>}
+
+      <TabBar active={tab} onChange={setTab}/>
+      <QRSheet coupon={qrCoupon} onClose={()=>setQr(null)}/>
+    </div>
+  );
+}
+
+// ─── Single-screen demos for the toolbar ──────────────────────
+const SCREENS = {
+  splash_v1: { label: 'Splash · 중앙', caption: 'V1 · 워드마크 중앙 + 하단 태그라인 · 가장 표준적인 레이아웃' },
+  splash_v6: { label: 'Splash · 히어로', caption: 'V6 · 극대형 워드마크 단독 · 미니멀 극단, 글자 자체가 주인공' },
+  auth_basic: { label: '회원가입 · 기본형', caption: 'V1 회원가입 · 기본형 (깔끔 iOS) — 휴대폰 → SMS → 닉네임+생일 → GPS 권한 → 주변 10개 업체 5+ 팔로우 → 푸시 권한' },
+  auth_enhanced: { label: '회원가입 · 강화형', caption: 'V1 회원가입 · 강화형 (오렌지 포인트 + 🐻 보조 메시지) — 헤드라인 강화 + 친근한 헬퍼 문구' },
+  auth_step_1: { label: '가입 S1 · 휴대폰', caption: 'Step 1/6 · 010- 프리픽스 고정 + 뒤 8자리 입력 · 인증번호 받기' },
+  auth_step_2: { label: '가입 S2 · SMS', caption: 'Step 2/6 · 6자리 SMS · iOS 자동완성 · 3분 카운트다운' },
+  auth_step_3: { label: '가입 S3 · 프로필', caption: 'Step 3/6 · 닉네임 중복 확인 + 생일 휠피커 · 생일 선택사항' },
+  auth_step_4: { label: '가입 S4 · GPS', caption: 'Step 4/6 · 위치 권한 풀스크린 설명 · 거부 시 재요청 강제 (진행 불가)' },
+  auth_step_5: { label: '가입 S5 · 팔로우', caption: 'Step 5/6 · 반경 500m 가게 10개 · 최소 5곳 팔로우 강제 → 약관 바텀시트' },
+  auth_step_6: { label: '가입 S6 · 푸시', caption: 'Step 6/6 · 푸시 알림 권한 풀스크린 · 거부해도 홈 진입 허용' },
+  home: { label: '홈 (피드 · 기본)', caption: '팔로우한 가게 쿠폰이 Twitter식 타임라인으로 흐르는 기본 홈 — 상단 탭 V1/V2/V3에서 프로토타입 전환 가능' },
+  home_v1: { label: '홈 V1 · 표준', caption: '위치바 → 긴급 쿠폰 가로 스트립 → 내 주변 가게 → 월드컵 배너 → 팔로우 피드. 섹션형 표준 허브.' },
+  home_v2: { label: '홈 V2 · 발견', caption: '오늘의 Pick 대형 히어로 쿠폰 + 카테고리 그리드 + 에디터 pick + 지도 미리보기. 탐색 중심 구성.' },
+  home_v3: { label: '홈 V3 · 소셜', caption: '스토리 릴 + 단골 스탬프 진행 + 팔로우 피드. 관계·소셜 중심 구성.' },
+  wallet: { label: '내 쿠폰함', caption: '저장한 쿠폰 · 만료일 프로그레스 · QR 풀스크린 사용' },
+  explore: { label: '가게 탐색', caption: 'GPS 반경 내 가게 목록, 카테고리 필터, 거리 정렬' },
+  my: { label: 'MY (사용자)', caption: '사용자용 MY 탭 — 프로필 · 레벨 · 활동/혜택/계정 메뉴. 사장님 앱은 별도 제작.' },
+  owner: { label: '사장님 홈', caption: '팔로워·발행·사용 대시보드 + 쿠폰 발행 CTA' },
+  issue: { label: '쿠폰 발행', caption: '4단계 플로우 — 유형 · 내용 · 설정 · 미리보기 & 발행' },
+  wc_situation: { label: '월드컵 시작', caption: '맛집 월드컵 · 8가지 상황 카드 그리드 + AI 랜덤 추천' },
+  wc_match: { label: '16강 대결', caption: '좌/우 풀블리드 카드 대결 · VS 배지 · 선택 애니메이션' },
+  wc_transition: { label: '라운드 전환', caption: '라운드 통과 축하 화면 · 생존자 썸네일 나열' },
+  wc_result: { label: '우승 결과', caption: '트로피 · 챔피언 카드 · 상세 · 공유 CTA' },
+};
+
+function Toolbar({ screen, setScreen }) {
+  const homeKeys = ['home', 'home_v1', 'home_v2', 'home_v3'];
+  return (
+    <>
+      {Object.entries(SCREENS).filter(([k]) => !homeKeys.includes(k)).map(([k,v]) => (
+        <button key={k} className={'tool-btn' + (k === screen ? ' on' : '')} onClick={()=>setScreen(k)}>{v.label}</button>
+      ))}
+    </>
+  );
+}
+
+function HomeTabs({ screen, setScreen }) {
+  const tabs = [
+    { k: 'home',    label: '기본 피드', sub: '팔로우 타임라인' },
+    { k: 'home_v1', label: 'V1',       sub: '표준 허브' },
+    { k: 'home_v2', label: 'V2',       sub: '발견 중심' },
+    { k: 'home_v3', label: 'V3',       sub: '소셜 중심' },
+  ];
+  return (
+    <>
+      {tabs.map(t => (
+        <button key={t.k} className={'home-tab' + (t.k === screen ? ' on' : '')} onClick={() => setScreen(t.k)}>
+          {t.label}
+          <span className="tab-sub">{t.sub}</span>
+        </button>
+      ))}
+    </>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = useState('splash_v1');
+  useEffect(() => {
+    const cap = document.getElementById('screenCaption');
+    if (cap) cap.textContent = SCREENS[screen].caption;
+  }, [screen]);
+
+  useEffect(() => {
+    const tb = document.getElementById('toolbar');
+    if (!tb._root) tb._root = ReactDOM.createRoot(tb);
+    tb._root.render(<Toolbar screen={screen} setScreen={setScreen}/>);
+
+    const ht = document.getElementById('homeTabs');
+    if (ht) {
+      if (!ht._root) ht._root = ReactDOM.createRoot(ht);
+      ht._root.render(<HomeTabs screen={screen} setScreen={setScreen}/>);
+    }
+  }, [screen]);
+
+  // Splash variant 맵 (key의 suffix로 Splash variant 선택)
+  const splashVariantMap = {
+    splash_v1: 'centered', splash_v6: 'hero',
+  };
+  const isSplash = screen in splashVariantMap;
+
+  return (
+    <IOSDevice width={390} height={844}>
+      {isSplash && <Splash key={screen} variant={splashVariantMap[screen]} />}
+      {screen === 'auth_basic' && <AuthFlow variant="basic" onDone={() => setScreen('home')} onClose={() => setScreen('home')}/>}
+      {screen === 'auth_enhanced' && <AuthFlow variant="enhanced" onDone={() => setScreen('home')} onClose={() => setScreen('home')}/>}
+      {screen === 'auth_step_1' && <AuthFlow key="s1" variant="basic" initialStep={1} onDone={() => setScreen('home')} onClose={() => setScreen('home')}/>}
+      {screen === 'auth_step_2' && <AuthFlow key="s2" variant="basic" initialStep={2} onDone={() => setScreen('home')} onClose={() => setScreen('home')}/>}
+      {screen === 'auth_step_3' && <AuthFlow key="s3" variant="basic" initialStep={3} onDone={() => setScreen('home')} onClose={() => setScreen('home')}/>}
+      {screen === 'auth_step_4' && <AuthFlow key="s4" variant="basic" initialStep={4} onDone={() => setScreen('home')} onClose={() => setScreen('home')}/>}
+      {screen === 'auth_step_5' && <AuthFlow key="s5" variant="basic" initialStep={5} onDone={() => setScreen('home')} onClose={() => setScreen('home')}/>}
+      {screen === 'auth_step_6' && <AuthFlow key="s6" variant="basic" initialStep={6} onDone={() => setScreen('home')} onClose={() => setScreen('home')}/>}
+      {screen === 'wc_situation' && <SituationSelect onPick={()=>setScreen('wc_match')} onRandom={()=>setScreen('wc_match')} onExit={()=>setScreen('home')}/>}
+      {screen === 'wc_match' && <MatchScreen round={16} matchIdx={0} totalMatches={8} pair={[WORLDCUP_STORES[0], WORLDCUP_STORES[3]]} situation={SITUATIONS[0]} onPick={()=>setScreen('wc_transition')} onExit={()=>setScreen('home')}/>}
+      {screen === 'wc_transition' && <RoundTransition fromRound={16} toRound={8} survivors={WORLDCUP_STORES.slice(0,8)} onNext={()=>setScreen('wc_result')}/>}
+      {screen === 'wc_result' && <ResultScreen winner={WORLDCUP_STORES[10]} situation={SITUATIONS[0]} onRestart={()=>setScreen('wc_situation')} onExit={()=>setScreen('home')}/>}
+      {screen === 'home_v1' && <HomeVariantScreen variant="v1"/>}
+      {screen === 'home_v2' && <HomeVariantScreen variant="v2"/>}
+      {screen === 'home_v3' && <HomeVariantScreen variant="v3"/>}
+      {!isSplash && !['auth_basic','auth_enhanced','auth_step_1','auth_step_2','auth_step_3','auth_step_4','auth_step_5','auth_step_6','wc_situation','wc_match','wc_transition','wc_result','home_v1','home_v2','home_v3'].includes(screen) && (
+        <ScreenForced tab={screen} onExitIssue={() => setScreen('owner')}/>
+      )}
+    </IOSDevice>
+  );
+}
+
+// Home variant wrapper — V1/V2/V3 in full iOS chrome (status bar + tab bar)
+function HomeVariantScreen({ variant }) {
+  const [posts, setPosts] = React.useState(SAMPLE_POSTS);
+  const [tab, setTab] = React.useState('home');
+  const [qrCoupon, setQr] = React.useState(null);
+  const saveCoupon = (id) => setPosts(p => p.map(x => x.id===id ? {...x, coupon:{...x.coupon, saved:!x.coupon.saved}} : x));
+  const toggleFollow = (id) => setPosts(p => p.map(x => x.id===id ? {...x, following: !x.following} : x));
+  return (
+    <div className="up-screen">
+      {variant === 'v1' && <HomeV1Standard posts={posts} onSaveCoupon={saveCoupon} onFollow={toggleFollow}/>}
+      {variant === 'v2' && <HomeV2Discovery onSaveCoupon={saveCoupon}/>}
+      {variant === 'v3' && <HomeV3Social posts={posts} onSaveCoupon={saveCoupon} onFollow={toggleFollow}/>}
+      <TabBar active={tab} onChange={setTab}/>
+      <QRSheet coupon={qrCoupon} onClose={()=>setQr(null)}/>
+    </div>
+  );
+}
+
+// Simplified - force a specific initial tab
+function ScreenForced({ tab: initialTab, onExitIssue }) {
+  const [posts, setPosts] = useState(SAMPLE_POSTS);
+  const [cat, setCat] = useState('전체');
+  const mapToTab = (t) => (t === 'owner' || t === 'issue') ? 'profile' : t === 'my' ? 'profile' : t;
+  const [tab, setTab] = useState(mapToTab(initialTab));
+  const [showIssue, setShowIssue] = useState(initialTab === 'issue');
+  const isUserMy = initialTab === 'my';
+  useEffect(() => {
+    setTab(mapToTab(initialTab));
+    setShowIssue(initialTab === 'issue');
+  }, [initialTab]);
+  const [qrCoupon, setQr] = useState(null);
+  const [walletCoupons, setWallet] = useState(SAMPLE_WALLET);
+  const [walletSeg, setWalletSeg] = useState('active');
+  const [stores, setStores] = useState(SAMPLE_STORES);
+  const [exploreCat, setExploreCat] = useState('전체');
+
+  const saveCoupon = (id) => {
+    setPosts(p => p.map(x => x.id===id ? {...x, coupon:{...x.coupon, saved:!x.coupon.saved}} : x));
+  };
+  const toggleFollow = (id) => setStores(s => s.map(x => x.id===id ? {...x, following: !x.following} : x));
+  const togglePostFollow = (id) => setPosts(p => p.map(x => x.id===id ? {...x, following: !x.following} : x));
+
+  const filteredPosts = cat === '전체' ? posts : posts.filter(p => p.category.includes(cat));
+  const activeW = walletCoupons.filter(c => c.status === 'active');
+  const usedW = walletCoupons.filter(c => c.status === 'used');
+  const filteredStores = exploreCat === '전체' ? stores : stores.filter(s => s.category.includes(exploreCat));
+
+  return (
+    <div className="up-screen">
+      {tab === 'home' && (<>
+        <Header location="상남동" onNotif={()=>{}} onSearch={()=>{}} onLocation={()=>{}} />
+        <ChipRow items={['전체','카페','음식','미용','네일','기타']} active={cat} onChange={setCat}/>
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {filteredPosts.map(p => <FeedPost key={p.id} post={p} onSaveCoupon={saveCoupon} onFollow={togglePostFollow}/>)}
+        </div>
+      </>)}
+
+      {tab === 'wallet' && (<>
+        <Header title="내 쿠폰함" />
+        <Segment items={[
+          { key: 'active', label: '사용 가능', count: activeW.length },
+          { key: 'used', label: '사용 완료', count: usedW.length },
+          { key: 'expired', label: '만료', count: 0 },
+        ]} active={walletSeg} onChange={setWalletSeg}/>
+        <div style={{ flex: 1, overflow: 'auto', paddingTop: 4, paddingBottom: 20 }}>
+          {(walletSeg === 'active' ? activeW : walletSeg === 'used' ? usedW : []).map(c =>
+            <WalletCard key={c.id} coupon={c} onUse={(id)=>setQr(walletCoupons.find(x=>x.id===id))}/>
+          )}
+        </div>
+      </>)}
+
+      {tab === 'explore' && (<>
+        <div className="up-header">
+          <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+            <span style={{ font: '700 16px/1 var(--font-sans)', color: 'var(--fg1)' }}>📍 강남구 역삼동</span>
+            <span style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--orange-500)' }}>변경</span>
+          </div>
+          <div className="up-header-actions">
+            <button className="up-icon-btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#4E5968" strokeWidth="2"/><path d="M20 20l-3.5-3.5" stroke="#4E5968" strokeWidth="2" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+        <ChipRow items={['전체','카페','음식','미용','네일','편의점','기타']} active={exploreCat} onChange={setExploreCat}/>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 20px', background: '#fff', borderBottom: '1px solid var(--gray-150)', font: '500 13px/1 var(--font-sans)', color: 'var(--fg2)' }}>
+          <span>정렬: <b style={{color:'var(--fg1)'}}>거리순 ▾</b></span>
+          <span>반경: <b style={{color:'var(--fg1)'}}>500m ▾</b></span>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {filteredStores.map(s => <StoreRow key={s.id} store={s} onToggleFollow={toggleFollow}/>)}
+        </div>
+      </>)}
+
+      {tab === 'profile' && (initialTab === 'owner' || initialTab === 'issue' ? <OwnerDashboard onIssueCoupon={()=>setShowIssue(true)}/> : <MyScreen/>)}
+
+      {showIssue && <IssueCouponFlow onClose={() => { setShowIssue(false); if (onExitIssue) onExitIssue(); }}/>}
+
+      <TabBar active={tab === 'profile' && initialTab === 'owner' ? 'profile' : tab} onChange={setTab}/>
+      <QRSheet coupon={qrCoupon} onClose={()=>setQr(null)}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

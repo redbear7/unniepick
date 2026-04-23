@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { PALETTE, FONT_FAMILY } from '../../../constants/theme';
+import { PALETTE } from '../../../constants/theme';
+import { T, F } from '../../../constants/typography';
 
 export interface TermsState {
   tos:       boolean;
@@ -139,19 +140,14 @@ const cs = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 20,
-    fontWeight: '900',
+    ...T.terms20,
     color: PALETTE.gray900,
-    letterSpacing: -0.5,
     marginBottom: 6,
   },
   sub: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13,
+    ...T.body13,
     color: PALETTE.gray500,
     marginBottom: 16,
-    lineHeight: 19,
   },
   box: {
     backgroundColor: PALETTE.gray100,
@@ -185,17 +181,14 @@ const cs = StyleSheet.create({
   },
   label: {
     flex: 1,
-    fontFamily: FONT_FAMILY,
-    fontSize: 14,
-    fontWeight: '500',
+    ...T.terms14,
     color: PALETTE.gray900,
-    letterSpacing: -0.1,
   },
-  labelBold: { fontSize: 15, fontWeight: '800' },
+  labelBold: { ...T.terms15, color: PALETTE.gray900 },
   required: { color: PALETTE.orange500 },
   optional: { color: PALETTE.gray500 },
   arrow: {
-    fontFamily: FONT_FAMILY,
+    fontFamily: F.medium,
     fontSize: 12,
     color: PALETTE.gray500,
   },
@@ -216,10 +209,7 @@ const cs = StyleSheet.create({
     elevation: 0,
   },
   btnText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 16,
-    fontWeight: '900',
+    ...T.btn16,
     color: '#FFFFFF',
-    letterSpacing: -0.3,
   },
 });

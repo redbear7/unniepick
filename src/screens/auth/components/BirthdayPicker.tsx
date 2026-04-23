@@ -132,11 +132,13 @@ export default function BirthdayPicker({ initialMonth, initialDay, onConfirm, on
 
   return (
     <Modal transparent animationType="none" onRequestClose={onCancel}>
-      <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={onCancel}>
-        <Animated.View
-          style={[s.sheet, { transform: [{ translateY: slideAnim }] }]}
-          onStartShouldSetResponder={() => true}
-        >
+      {/* 백드롭과 시트를 flex 컨테이너로 분리 — 시트 안 버튼 탭이 막히지 않도록 */}
+      <View style={s.container}>
+        {/* 위쪽 어두운 영역 탭 → 닫기 */}
+        <TouchableOpacity style={s.dismissArea} activeOpacity={1} onPress={onCancel} />
+
+        {/* 시트 (TouchableOpacity 외부) */}
+        <Animated.View style={[s.sheet, { transform: [{ translateY: slideAnim }] }]}>
           {/* Grabber */}
           <View style={s.grabber} />
 
@@ -170,16 +172,19 @@ export default function BirthdayPicker({ initialMonth, initialDay, onConfirm, on
             />
           </View>
         </Animated.View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 }
 
 const s = StyleSheet.create({
-  backdrop: {
+  container: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  dismissArea: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
   },
   sheet: {
     backgroundColor: '#F2F2F7',

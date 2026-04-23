@@ -3,13 +3,18 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { PALETTE, FONT_FAMILY } from '../../../constants/theme';
+import { PALETTE } from '../../../constants/theme';
+import { T } from '../../../constants/typography';
 
 interface Props {
   phone:   string;           // 마스킹 표시용
@@ -50,6 +55,16 @@ export default function CodeStep({ phone, onNext, onResend, loading, error }: Pr
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
+  // 백그라운드에서 복귀 시 포커스 복원 (키보드 재표시)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        setTimeout(() => hiddenRef.current?.focus(), 150);
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   // 6자리 완성 시 자동 제출
   useEffect(() => {
     if (code.length === 6) {
@@ -88,33 +103,41 @@ export default function CodeStep({ phone, onNext, onResend, loading, error }: Pr
   const timerExpired = seconds === 0;
 
   return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={false}
+      >
     <View style={s.body}>
       <Text style={s.title}>인증번호를{'\n'}입력해주세요</Text>
-      <Text style={s.sub}>
+      <View style={s.subBox}>
         <Text style={s.subBold}>{maskPhone(phone)}</Text>
-        {' '}으로 6자리 인증번호를{'\n'}발송했어요
-      </Text>
+        <Text style={s.sub}>으로 6자리 인증번호를 발송했어요</Text>
+      </View>
 
-      {/* 숨겨진 input — SMS 자동완성 */}
-      <TextInput
-        ref={hiddenRef}
-        value={code}
-        onChangeText={handleChange}
-        keyboardType="number-pad"
-        maxLength={6}
-        autoFocus
-        textContentType="oneTimeCode"
-        autoComplete="sms-otp"
-        caretHidden
-        style={s.hiddenInput}
-      />
-
-      {/* 시각적 6칸 */}
+      {/* 시각적 6칸 + SMS 자동완성 input 오버레이 */}
       <TouchableOpacity
         activeOpacity={1}
         onPress={() => hiddenRef.current?.focus()}
         style={[s.boxRow, shake && s.shake]}
       >
+        {/* SMS 자동완성 input — 박스 위에 덮어씌워 iOS QuickType 인식 */}
+        <TextInput
+          ref={hiddenRef}
+          value={code}
+          onChangeText={handleChange}
+          keyboardType="number-pad"
+          maxLength={6}
+          autoFocus
+          textContentType="oneTimeCode"
+          autoComplete="sms-otp"
+          caretHidden
+          style={s.hiddenInput}
+        />
         {Array.from({ length: 6 }).map((_, i) => {
           const ch       = code[i] || '';
           const isActive = i === code.length && !loading;
@@ -153,6 +176,8 @@ export default function CodeStep({ phone, onNext, onResend, loading, error }: Pr
       {/* 에러 */}
       {error ? <Text style={s.error}>{error}</Text> : null}
     </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -163,25 +188,27 @@ const s = StyleSheet.create({
     paddingTop: 20,
   },
   title: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 26,
-    fontWeight: '900',
+    ...T.title26,
     color: PALETTE.gray900,
-    letterSpacing: -0.8,
     marginBottom: 10,
-    lineHeight: 34,
+  },
+  subBox: {
+    marginBottom: 28,
+    gap: 2,
   },
   sub: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13,
+    ...T.body13,
     color: PALETTE.gray500,
-    marginBottom: 28,
-    lineHeight: 20,
   },
-  subBold: { fontWeight: '700', color: PALETTE.gray900 },
+  subBold: { ...T.label13, color: PALETTE.gray900 },
   hiddenInput: {
-    position: 'absolute',
-    width: 1, height: 1, opacity: 0,
+    // iOS SMS 자동완성: 실제 크기가 있어야 QuickType 바에 제안이 뜸
+    // opacity:0 이면 iOS가 무시 → 0.01로 설정해 투명하게 유지
+    position:   'absolute',
+    top:        0, left: 0, right: 0, bottom: 0,
+    opacity:    0.01,
+    color:      'transparent',
+    fontSize:   1,
   },
   boxRow: {
     flexDirection: 'row',
@@ -213,9 +240,7 @@ const s = StyleSheet.create({
   },
   boxShake: { borderColor: PALETTE.red500 },
   boxText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 24,
-    fontWeight: '900',
+    ...T.otp26,
     color: PALETTE.gray900,
   },
   cursor: {
@@ -229,22 +254,17 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   timer: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 14,
-    fontWeight: '700',
+    ...T.btn14,
     color: PALETTE.orange500,
   },
   timerExpired: { color: PALETTE.red500 },
   resend: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13,
-    fontWeight: '700',
+    ...T.btnSmall,
     color: PALETTE.orange500,
     textDecorationLine: 'underline',
   },
   error: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
+    ...T.caption12,
     color: PALETTE.red500,
     marginTop: 4,
   },

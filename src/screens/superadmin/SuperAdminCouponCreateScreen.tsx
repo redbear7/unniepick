@@ -138,7 +138,7 @@ export default function SuperAdminCouponCreateScreen() {
                   onPress={() => setCouponKind(key)}
                 >
                   <Text style={s.kindEmoji}>{cfg.emoji}</Text>
-                  <Text style={[s.kindLabel, couponKind === key && { color: '#fff', fontWeight: '800' }]}>
+                  <Text style={[s.kindLabel, couponKind === key && { color: '#fff', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' }]}>
                     {cfg.label}
                   </Text>
                 </TouchableOpacity>
@@ -271,7 +271,7 @@ export default function SuperAdminCouponCreateScreen() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={{ gap: 6 }}>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: COLORS.text }}>{label}</Text>
+      <Text style={{ fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: COLORS.text }}>{label}</Text>
       {children}
     </View>
   );
@@ -281,22 +281,22 @@ const s = StyleSheet.create({
   safe:      { flex: 1, backgroundColor: '#1A1A2E' },
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
                padding: 20, paddingBottom: 8 },
-  backText:  { fontSize: 16, color: '#4A90D9', fontWeight: '600' },
-  title:     { fontSize: 18, fontWeight: '800', color: '#fff' },
+  backText:  { fontSize: 16, color: '#4A90D9', fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
+  title:     { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
   container: { padding: 16, gap: 16, paddingBottom: 40 },
 
   section:   { backgroundColor: '#16213E', borderRadius: RADIUS.lg, padding: 16,
                gap: 14, borderWidth: 1, borderColor: '#0F3460' },
-  sectionLabel: { fontSize: 13, fontWeight: '700', color: '#aaa' },
+  sectionLabel: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#aaa' },
 
   // 가게 선택
   storePicker: { borderWidth: 1.5, borderColor: '#0F3460', borderRadius: RADIUS.md,
                  padding: 14, backgroundColor: '#0F3460', minHeight: 50, justifyContent: 'center' },
   storePickerSelected: { borderColor: '#4A90D9' },
   storePickerRow: { flexDirection: 'row', alignItems: 'center' },
-  storePickerName: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  storePickerName: { fontSize: 15, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
   storePickerCat:  { fontSize: 12, color: '#aaa', marginTop: 2 },
-  storePickerChange:    { fontSize: 13, color: '#4A90D9', fontWeight: '700' },
+  storePickerChange:    { fontSize: 13, color: '#4A90D9', fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   storePickerPlaceholder: { fontSize: 14, color: '#555' },
 
   // 쿠폰 종류
@@ -305,7 +305,7 @@ const s = StyleSheet.create({
              alignItems: 'center', gap: 4, borderWidth: 1.5, borderColor: '#0F3460',
              backgroundColor: '#0F3460' },
   kindEmoji: { fontSize: 18 },
-  kindLabel: { fontSize: 10, fontWeight: '600', color: '#aaa', textAlign: 'center' },
+  kindLabel: { fontSize: 10, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: '#aaa', textAlign: 'center' },
 
   // 입력
   input: { borderWidth: 1.5, borderColor: '#0F3460', borderRadius: RADIUS.md,
@@ -314,12 +314,12 @@ const s = StyleSheet.create({
   typeBtn: { flex: 1, padding: 12, borderRadius: RADIUS.md, alignItems: 'center',
              borderWidth: 1.5, borderColor: '#0F3460', backgroundColor: '#0F3460' },
   typeBtnActive:     { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  typeBtnText:       { fontSize: 14, fontWeight: '600', color: '#aaa' },
+  typeBtnText:       { fontSize: 14, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: '#aaa' },
   typeBtnTextActive: { color: '#fff' },
   charCount: { fontSize: 11, color: '#555', textAlign: 'right' },
 
   createBtn: { borderRadius: RADIUS.lg, padding: 18, alignItems: 'center', marginTop: 4 },
-  createBtnText: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  createBtnText: { color: '#fff', fontSize: 17, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
 });
 
 const m = StyleSheet.create({
@@ -328,7 +328,7 @@ const m = StyleSheet.create({
              maxHeight: '75%', borderTopWidth: 1, borderColor: '#0F3460' },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                  padding: 20, paddingBottom: 12 },
-  sheetTitle: { fontSize: 17, fontWeight: '800', color: '#fff' },
+  sheetTitle: { fontSize: 17, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
   sheetClose: { fontSize: 18, color: '#aaa', padding: 4 },
   search: { marginHorizontal: 16, marginBottom: 8, padding: 12,
             borderWidth: 1.5, borderColor: '#0F3460', borderRadius: RADIUS.md,
@@ -337,8 +337,8 @@ const m = StyleSheet.create({
                paddingHorizontal: 20, paddingVertical: 14,
                borderBottomWidth: 1, borderBottomColor: '#0F3460' },
   storeItemSelected: { backgroundColor: '#4A90D922' },
-  storeItemName: { flex: 1, fontSize: 15, fontWeight: '700', color: '#fff' },
+  storeItemName: { flex: 1, fontSize: 15, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#fff' },
   storeItemCat:  { fontSize: 12, color: '#aaa' },
-  checkMark: { fontSize: 16, color: '#4A90D9', fontWeight: '800' },
+  checkMark: { fontSize: 16, color: '#4A90D9', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   emptyText: { textAlign: 'center', color: '#555', padding: 24, fontSize: 14 },
 });

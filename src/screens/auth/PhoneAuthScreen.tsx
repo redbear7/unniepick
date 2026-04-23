@@ -1,26 +1,32 @@
 /**
- * PhoneAuthScreen — AuthFlow 오케스트레이터 (4스텝)
+ * PhoneAuthScreen — AuthFlow 오케스트레이터 (6스텝)
  *
- * Step 1: 휴대폰 번호  → Supabase signInWithOtp
- * Step 2: SMS 인증번호 → Supabase verifyOtp
- * Step 3: 닉네임 + 생일 → profiles upsert
- * Step 4: 주변 가게 팔로우 + 약관 동의 → follows / profiles upsert → CustomerTabs
+ * S1 휴대폰 번호  → supabase.auth.signInWithOtp
+ * S2 SMS 인증번호 → supabase.auth.verifyOtp
+ * S3 닉네임 + 생일 → profiles upsert
+ * S4 위치 권한    → expo-location requestForegroundPermissionsAsync (거부 시 진행 불가)
+ * S5 주변 가게 팔로우 5곳 + 약관 → follows / profiles upsert
+ * S6 푸시 권한    → expo-notifications (거부해도 진행)
+ *     → CustomerTabs
  *
  * API 호출은 이 파일에만 집중. 각 Step 컴포넌트는 순수 UI.
  */
 
 import React, { useCallback, useRef, useState } from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
 import { supabase } from '../../lib/supabase';
 import { PALETTE } from '../../constants/theme';
+import { notifyAdmin, registerPushToken } from '../../lib/services/pushService';
 
-import AuthHeader            from './components/AuthHeader';
-import { TermsState }        from './components/TermsSheet';
-import PhoneStep             from './steps/PhoneStep';
-import CodeStep              from './steps/CodeStep';
-import ProfileStep, { ProfileData } from './steps/ProfileStep';
+import AuthHeader                        from './components/AuthHeader';
+import { TermsState }                    from './components/TermsSheet';
+import PhoneStep                         from './steps/PhoneStep';
+import CodeStep                          from './steps/CodeStep';
+import ProfileStep, { ProfileData }      from './steps/ProfileStep';
+import LocationPermissionStep            from './steps/LocationPermissionStep';
 import NearbyStoresStep, { NearbyStore } from './steps/NearbyStoresStep';
 
 // ── 하버사인 거리 (meters) ─────────────────────────────────────────
@@ -31,10 +37,10 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
   const a    = Math.sin(dLat / 2) ** 2
              + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
              * Math.sin(dLng / 2) ** 2;
-  return Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-type AuthStep = 1 | 2 | 3 | 4;
+type AuthStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 // ── 관리자 3탭 비밀 진입 ──────────────────────────────────────────
 function useAdminTap(onAdmin: () => void) {
@@ -60,8 +66,9 @@ export default function PhoneAuthScreen() {
   const [profile, setProfile] = useState<ProfileData>({
     nickname: '', birthMonth: '', birthDay: '', birthSkip: false,
   });
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState('');
+  const [profileReady, setProfileReady] = useState(false);
 
   const handleAdminTap = useAdminTap(() => {
     navigation.reset({ index: 0, routes: [{ name: 'CustomerTabs' }] });
@@ -70,7 +77,7 @@ export default function PhoneAuthScreen() {
   // ── 국제 전화번호 ─────────────────────────────────────────────────
   const intlPhone = (p: string) => '+82' + p.replace(/\D/g, '').slice(1); // 010→+8210
 
-  // ── Step 1 → Step 2: OTP 발송 ────────────────────────────────────
+  // ── S1 → S2: OTP 발송 ────────────────────────────────────────────
   const sendOtp = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -85,7 +92,7 @@ export default function PhoneAuthScreen() {
     }
   }, [phone]);
 
-  // ── Step 2 → Step 3: OTP 검증 ────────────────────────────────────
+  // ── S2 → S3: OTP 검증 ────────────────────────────────────────────
   const verifyOtp = useCallback(async (code: string) => {
     setLoading(true);
     setError('');
@@ -96,6 +103,14 @@ export default function PhoneAuthScreen() {
         type:  'sms',
       });
       if (e) throw e;
+
+      // 관리자에게 신규 인증 알림 (best-effort)
+      notifyAdmin(
+        '📱 안녕하세요!',
+        '언니픽에 오신 것을 환영합니다!',
+        { type: 'new_user_verified' },
+      ).catch(() => {});
+
       setStep(3);
     } catch (e: any) {
       setError(e?.message ?? '인증번호가 올바르지 않아요');
@@ -104,7 +119,7 @@ export default function PhoneAuthScreen() {
     }
   }, [phone]);
 
-  // ── Step 2: OTP 재발송 ────────────────────────────────────────────
+  // ── S2: OTP 재발송 ────────────────────────────────────────────────
   const resendOtp = useCallback(async () => {
     setError('');
     try {
@@ -114,18 +129,24 @@ export default function PhoneAuthScreen() {
     }
   }, [phone]);
 
-  // ── Step 3: 닉네임 중복 확인 ──────────────────────────────────────
+  // ── S3: 닉네임 중복 확인 (본인 제외) ────────────────────────────
   const checkNickname = useCallback(async (nick: string): Promise<boolean> => {
-    const { data } = await supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    const myId = session?.user?.id;
+
+    let query = supabase
       .from('profiles')
       .select('id')
-      .eq('nickname', nick.trim())
-      .maybeSingle();
+      .eq('nickname', nick.trim());
+
+    if (myId) query = query.neq('id', myId); // 자기 자신 제외
+
+    const { data } = await query.maybeSingle();
     return !data; // true = 사용 가능
   }, []);
 
-  // ── Step 3 → Step 4: 프로필 저장 ─────────────────────────────────
-  // DB 스키마 불일치 시에도 Step 4 진입은 반드시 보장
+  // ── S3 → S4: 프로필 저장 ─────────────────────────────────────────
+  // DB 스키마 불일치 시에도 S4 진입은 반드시 보장
   const saveProfile = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -133,7 +154,9 @@ export default function PhoneAuthScreen() {
       const { nickname, birthMonth, birthDay, birthSkip } = profile;
       const trimmed = nickname.trim();
 
-      const { data: { user } } = await supabase.auth.getUser();
+      // getSession() — 로컬 SecureStore에서 읽음 (네트워크 불필요, 안정적)
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('인증이 필요해요');
 
       // user_metadata 닉네임 (실패해도 계속)
@@ -143,7 +166,23 @@ export default function PhoneAuthScreen() {
         } catch { /* ignore */ }
       }
 
-      // profiles upsert — 기본 닉네임만 (birth 컬럼 없어도 안전)
+      // users 테이블 upsert — 전화번호가 메인 식별자
+      // email 컬럼이 NOT NULL인 경우를 위해 synthetic fallback 제공
+      try {
+        await supabase.from('users').upsert(
+          {
+            id:       user.id,
+            phone:    user.phone,              // Supabase auth 전화번호 (+82...)
+            email:    user.email ?? `phone_${user.id}@unniepick.app`,
+            name:     trimmed || '언니픽회원',
+            nickname: trimmed || '언니픽회원',
+            role:     'customer',
+          },
+          { onConflict: 'id' },
+        );
+      } catch { /* 컬럼 불일치 시 무시 */ }
+
+      // profiles upsert — 닉네임만 (birth 컬럼 없어도 안전)
       try {
         await supabase.from('profiles').upsert(
           { id: user.id, nickname: trimmed || null },
@@ -151,7 +190,7 @@ export default function PhoneAuthScreen() {
         );
       } catch { /* ignore */ }
 
-      // birth 컬럼이 있는 경우 추가 저장 시도
+      // birth 컬럼이 있는 경우 추가 저장
       if (!birthSkip && (birthMonth || birthDay)) {
         try {
           await supabase.from('profiles').upsert(
@@ -165,7 +204,7 @@ export default function PhoneAuthScreen() {
         } catch { /* 컬럼 없으면 무시 */ }
       }
 
-      setStep(4);
+      setStep(4); // → LocationPermissionStep
     } catch (e: any) {
       setError(e?.message ?? '프로필 저장에 실패했어요');
     } finally {
@@ -173,7 +212,12 @@ export default function PhoneAuthScreen() {
     }
   }, [profile]);
 
-  // ── Step 4: 주변 가게 조회 ────────────────────────────────────────
+  // ── S4 → S5: 위치 권한 완료 (LocationPermissionStep 내부에서 처리) ──
+  const handleLocationDone = useCallback(() => {
+    setStep(5); // → NearbyStoresStep
+  }, []);
+
+  // ── S5: 주변 가게 조회 ────────────────────────────────────────────
   const loadStores = useCallback(async (lat: number, lng: number): Promise<NearbyStore[]> => {
     const RADIUS_M = 500;
     const LIMIT    = 10;
@@ -201,7 +245,7 @@ export default function PhoneAuthScreen() {
       .from('stores')
       .select('id, name, category, emoji, latitude, longitude')
       .eq('is_active', true)
-      .limit(50); // 충분히 가져온 뒤 거리 필터
+      .limit(50);
 
     if (!stores?.length) return [];
 
@@ -215,63 +259,82 @@ export default function PhoneAuthScreen() {
         : 0,
     }));
 
-    // 위치 있으면 500m 필터 후 가까운 순 10개, 없으면 그냥 10개
-    const sorted = withDist.sort((a, b) => a.distance - b.distance);
-    const filtered = (lat && lng)
-      ? sorted.filter(s => s.distance <= RADIUS_M)
-      : sorted;
+    const sorted   = withDist.sort((a, b) => a.distance - b.distance);
+    const filtered = (lat && lng) ? sorted.filter(s => s.distance <= RADIUS_M) : sorted;
 
-    // 500m 내 가게가 5개 미만이면 반경 확장 (폴백)
+    // 500m 내 5개 미만이면 반경 확장 폴백
     return (filtered.length >= 5 ? filtered : sorted).slice(0, LIMIT);
   }, []);
 
-  // ── Step 4 → 홈: 팔로우 + 약관 저장 ─────────────────────────────
-  // DB 오류가 있어도 홈 진입은 반드시 보장
-  const completeSignup = useCallback(async (followed: string[], terms: TermsState) => {
+  // ── S5 → S6: 팔로우 + 약관 저장 ─────────────────────────────────
+  // DB 오류가 있어도 S6 진입은 반드시 보장
+  const completeFollows = useCallback(async (followed: string[], terms: TermsState) => {
     setLoading(true);
     setError('');
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error('인증이 필요해요');
 
-      // 팔로우 저장 (follows 테이블 없으면 무시)
+      // 팔로우 저장
       if (followed.length > 0) {
-        try {
-          await supabase.from('follows').upsert(
-            followed.map(storeId => ({ user_id: user.id, store_id: storeId })),
-            { onConflict: 'user_id,store_id', ignoreDuplicates: true },
-          );
-        } catch { /* 테이블 없으면 무시 */ }
+        const { error: followErr } = await supabase.from('follows').upsert(
+          followed.map(storeId => ({ user_id: user.id, store_id: storeId })),
+          { onConflict: 'user_id,store_id', ignoreDuplicates: true },
+        );
+        if (followErr) {
+          console.error('[Signup] follows upsert 실패:', followErr.message, followErr.code, followErr.details);
+        } else {
+          console.log('[Signup] follows 저장 완료:', followed.length, '개');
+        }
       }
 
-      // 약관 동의 기록 (컬럼 없으면 무시)
-      try {
-        await supabase.from('profiles').upsert(
-          {
-            id:               user.id,
-            terms_agreed:     true,
-            marketing_agreed: terms.marketing,
-            terms_agreed_at:  new Date().toISOString(),
-          },
-          { onConflict: 'id' },
-        );
-      } catch { /* 컬럼 없으면 무시 */ }
+      // 약관 동의 기록
+      const { error: termsErr } = await supabase.from('profiles').upsert(
+        {
+          id:               user.id,
+          terms_agreed:     true,
+          marketing_agreed: terms.marketing,
+          terms_agreed_at:  new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      );
+      if (termsErr) {
+        console.error('[Signup] terms upsert 실패:', termsErr.message, termsErr.code);
+      }
 
-      navigation.reset({ index: 0, routes: [{ name: 'CustomerTabs' }] });
+      completeSignup(); // 푸쉬 권한 단계 없이 바로 홈으로
     } catch (e: any) {
       setError(e?.message ?? '저장에 실패했어요');
+    } finally {
       setLoading(false);
     }
+  }, []);
+
+  // ── S6 → 홈 ──────────────────────────────────────────────────────
+  const completeSignup = useCallback(async () => {
+    // 온보딩 완료 플래그 저장 → 앱 재시작 시 PhoneAuth 재표시 방지
+    await supabase.auth.updateUser({ data: { onboarded: true } }).catch(() => {});
+
+    // 가입 완료 즉시 푸시 토큰 등록 (SplashScreen은 이미 실행 완료 상태라 다음 실행까지 대기 없음)
+    const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+    if (session?.user?.id) {
+      registerPushToken(session.user.id).catch(() => {});
+    }
+
+    navigation.reset({ index: 0, routes: [{ name: 'CustomerTabs' }] });
   }, [navigation]);
 
   // ── 뒤로가기 ──────────────────────────────────────────────────────
   const handleBack = () => {
-    if (step === 1) return;       // Step 1은 뒤로 없음 (Splash 거쳐 옴)
+    if (step === 1) return;
     setError('');
-    setStep((step - 1) as AuthStep);
+    // S5 → 뒤로: S4(위치권한)는 이미 granted 상태면 자동 skip되므로 S3로 바로 이동
+    const prev = step === 5 ? 3 : (step - 1);
+    setStep(prev as AuthStep);
   };
 
-  const TOTAL = 4;
+  const TOTAL = 5;
 
   return (
     <SafeAreaView style={s.root}>
@@ -280,6 +343,18 @@ export default function PhoneAuthScreen() {
         total={TOTAL}
         onBack={step === 1 ? handleAdminTap : handleBack}
         canBack={step > 1}
+        rightAction={step === 3 ? (
+          <TouchableOpacity
+            onPress={saveProfile}
+            disabled={!profileReady || loading}
+            style={[hs.nextBtn, (!profileReady || loading) && hs.nextBtnDisabled]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={[hs.nextText, (!profileReady || loading) && hs.nextTextDisabled]}>
+              다음
+            </Text>
+          </TouchableOpacity>
+        ) : undefined}
       />
 
       {step === 1 && (
@@ -308,18 +383,26 @@ export default function PhoneAuthScreen() {
           setProfile={setProfile}
           onCheckNick={checkNickname}
           onNext={saveProfile}
+          onValidChange={setProfileReady}
           loading={loading}
           error={error}
         />
       )}
 
       {step === 4 && (
+        <LocationPermissionStep
+          onNext={handleLocationDone}
+        />
+      )}
+
+      {step === 5 && (
         <NearbyStoresStep
           loadStores={loadStores}
-          onDone={completeSignup}
+          onDone={completeFollows}
           loading={loading}
         />
       )}
+
     </SafeAreaView>
   );
 }
@@ -328,5 +411,27 @@ const s = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+});
+
+// 헤더 오른쪽 '다음' 버튼 스타일
+const hs = StyleSheet.create({
+  nextBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: PALETTE.orange500,
+    marginRight: 8,
+  },
+  nextBtnDisabled: {
+    backgroundColor: PALETTE.gray200,
+  },
+  nextText: {
+    fontSize: 15,
+    fontFamily: 'WantedSans-Bold',
+    color: '#FFFFFF',
+  },
+  nextTextDisabled: {
+    color: PALETTE.gray400,
   },
 });

@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { supabase } from '../supabase';
 import { SUPER_ADMIN_EMAIL } from '../../constants/theme';
 
@@ -18,7 +19,10 @@ export interface PushHistoryRow {
 
 // ─── 푸시 토큰 등록 ─────────────────────────────
 export async function registerPushToken(userId: string): Promise<string | null> {
-  if (!Device.isDevice) return null;
+  if (!Device.isDevice) {
+    console.log('[Push] 실기기 아님 — 토큰 등록 건너뜀');
+    return null;
+  }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -28,16 +32,29 @@ export async function registerPushToken(userId: string): Promise<string | null> 
     finalStatus = status;
   }
 
-  if (finalStatus !== 'granted') return null;
+  if (finalStatus !== 'granted') {
+    console.log('[Push] 알림 권한 거부 — 토큰 등록 건너뜀');
+    return null;
+  }
 
-  const tokenData = await Notifications.getExpoPushTokenAsync();
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    '54738bf4-a020-47e1-a679-dbb210f30913';
+
+  const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
   const token = tokenData.data;
 
-  // Supabase에 토큰 저장 (upsert)
-  await supabase.from('push_tokens').upsert(
-    { user_id: userId, token, updated_at: new Date().toISOString() },
+  // Supabase에 토큰 저장 (upsert) — 권한 허용 = opt_in: true
+  const { error } = await supabase.from('push_tokens').upsert(
+    { user_id: userId, token, opt_in: true, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
+
+  if (error) {
+    console.error('[Push] push_tokens upsert 실패:', error.message, error.code, error.details);
+  } else {
+    console.log('[Push] 토큰 등록 성공:', token.slice(0, 30) + '…');
+  }
 
   return token;
 }
@@ -188,6 +205,35 @@ export async function notifyAdmin(
   } catch { /* best-effort — 알림 실패가 본 기능을 막으면 안 됨 */ }
 }
 
+// ─── 내 기기로 테스트 발송 ──────────────────────────
+export async function sendTestPushToSelf(userId: string): Promise<{
+  ok: boolean;
+  token: string | null;
+  message: string;
+}> {
+  const { data, error } = await supabase
+    .from('push_tokens')
+    .select('token')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data?.token) {
+    return { ok: false, token: null, message: '등록된 푸시 토큰이 없어요.\n앱에서 알림 권한을 허용해주세요.' };
+  }
+
+  const token = data.token as string;
+  const sent = await sendExpoPush(
+    [token],
+    '🧪 언니픽 테스트 알림',
+    '푸시 알림이 정상적으로 작동해요! ✅',
+    { type: 'test' },
+  );
+
+  return sent > 0
+    ? { ok: true,  token, message: '✅ 테스트 알림을 내 기기로 발송했어요!' }
+    : { ok: false, token, message: '발송 실패 — Expo 서버 오류일 수 있어요.' };
+}
+
 // ─── 푸시 읽음 처리 (+1) ─────────────────────────
 export async function incrementReadCount(historyId: string): Promise<void> {
   await supabase.rpc('increment_push_read_count', { history_id: historyId });
@@ -216,18 +262,21 @@ export async function fetchPushStats(): Promise<{
   totalRead: number;
   superAdminCount: number;
   ownerCount: number;
+  optInCount: number;   // push_tokens 테이블 opt_in=true 수신자 수
 }> {
-  const { data, error } = await supabase
-    .from('push_history')
-    .select('sender_type, sent_count, read_count');
+  const [histResult, tokenResult] = await Promise.all([
+    supabase.from('push_history').select('sender_type, sent_count, read_count'),
+    supabase.from('push_tokens').select('id', { count: 'exact', head: true }).eq('opt_in', true),
+  ]);
 
-  if (error) throw error;
+  if (histResult.error) throw histResult.error;
 
-  const rows = data ?? [];
+  const rows = histResult.data ?? [];
   return {
-    totalSent: rows.reduce((s: number, r: { sent_count: number }) => s + r.sent_count, 0),
-    totalRead: rows.reduce((s: number, r: { read_count: number }) => s + r.read_count, 0),
+    totalSent:       rows.reduce((s: number, r: { sent_count: number }) => s + r.sent_count, 0),
+    totalRead:       rows.reduce((s: number, r: { read_count: number }) => s + r.read_count, 0),
     superAdminCount: rows.filter((r: { sender_type: string }) => r.sender_type === 'superadmin').length,
-    ownerCount: rows.filter((r: { sender_type: string }) => r.sender_type === 'owner').length,
+    ownerCount:      rows.filter((r: { sender_type: string }) => r.sender_type === 'owner').length,
+    optInCount:      tokenResult.count ?? 0,
   };
 }

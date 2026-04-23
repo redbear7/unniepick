@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>UnniePick · iOS UI Kit (Print)</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="ui-kit.css">
+<link rel="stylesheet" href="home-screens.css">
+<style>
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { background: #fff; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); color: var(--fg1); }
+
+  /* Custom page size — tall enough for a 390×844 phone + header + caption with comfy margins */
+  @page { size: 900px 1280px; margin: 0; }
+
+  /* Cover page */
+  .page {
+    width: 900px;
+    height: 1280px;
+    box-sizing: border-box;
+    break-after: page;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 100px 80px;
+    background: linear-gradient(180deg, #FFF 0%, #FFF4EC 100%);
+  }
+  .cover h1 { font: 800 84px/1.05 var(--font-sans); color: var(--fg1); margin: 0 0 16px; letter-spacing: -0.03em; }
+  .cover .sub { font: 500 22px/1.5 var(--font-sans); color: var(--fg2); text-align: center; max-width: 640px; margin-bottom: 40px; }
+  .cover .meta { font: 600 14px/1.6 var(--font-sans); color: var(--fg3); text-align: center; }
+  .cover .brand-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--orange-500); margin-right: 10px; vertical-align: middle; }
+
+  /* Section divider pages */
+  .section-cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 120px 100px;
+    background: var(--orange-500);
+    color: #fff;
+  }
+  .section-cover .num { font: 800 120px/1 var(--font-sans); opacity: 0.4; margin-bottom: 24px; }
+  .section-cover h2 { font: 800 56px/1.1 var(--font-sans); margin: 0 0 16px; letter-spacing: -0.02em; }
+  .section-cover .desc { font: 500 20px/1.5 var(--font-sans); opacity: 0.9; max-width: 620px; }
+
+  /* Screen pages */
+  .screen-page {
+    padding: 60px 80px 80px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #F4F4F6 0%, #E8E8EC 100%);
+  }
+  .screen-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--fg1);
+  }
+  .screen-header .idx { font: 800 18px/1 var(--font-sans); color: var(--orange-500); letter-spacing: 0.05em; }
+  .screen-header .title { font: 800 26px/1.2 var(--font-sans); color: var(--fg1); flex: 1; }
+  .screen-header .group { font: 600 13px/1 var(--font-sans); color: var(--fg3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .screen-caption { font: 500 14px/1.5 var(--font-sans); color: var(--fg2); margin-bottom: 20px; max-width: 900px; }
+  .phones-wrap { display: flex; gap: 32px; justify-content: center; align-items: flex-start; margin-top: 40px; }
+  .phone-slot { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .phone-label { font: 600 13px/1.3 var(--font-sans); color: var(--fg2); text-align: center; }
+
+  /* Override IOSDevice scaling for print - force fixed size */
+  .print-phone { transform: none !important; }
+
+  /* Hide toolbar in print */
+  .print-hide { display: none !important; }
+
+  @media print {
+    body { background: #fff; }
+    .page { page-break-after: always; break-after: page; }
+  }
+  /* Screen preview (non-print) — scale pages down so they fit in browser */
+  @media screen {
+    body { background: #222; padding: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .page { box-shadow: 0 8px 32px rgba(0,0,0,0.3); transform-origin: top center; }
+    @media (max-width: 1000px) {
+      body { padding: 10px 0; gap: 10px; }
+      .page { transform: scale(0.6); margin-bottom: -512px; }
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="page cover">
+  <h1><span class="brand-dot"></span>언니픽</h1>
+  <div style="font: 800 28px/1.1 var(--font-sans); color: var(--orange-500); margin-bottom: 12px;">iOS UI Kit · Design Export</div>
+  <div class="sub">하이파이 프로토타입 · 스플래시부터 맛집 월드컵까지 전체 화면 모음</div>
+  <div class="meta">
+    Wanted Sans · Orange #FF6F0F<br/>
+    Based on unniepick/src/constants/theme.ts
+  </div>
+</div>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="Primitives.jsx"></script>
+<script type="text/babel" src="FeedPost.jsx"></script>
+<script type="text/babel" src="Wallet.jsx"></script>
+<script type="text/babel" src="StoreRow.jsx"></script>
+<script type="text/babel" src="OwnerDashboard.jsx"></script>
+<script type="text/babel" src="MyScreen.jsx"></script>
+<script type="text/babel" src="Splash.jsx"></script>
+<script type="text/babel" src="AuthFlow.jsx"></script>
+<script type="text/babel" src="IssueCouponFlow.jsx"></script>
+<script type="text/babel" src="worldcup-data.jsx"></script>
+<script type="text/babel" src="WorldCup.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="HomeScreens.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+// ─── Print-optimized IOSDevice (no scaling) ─────────────────────
+function PhoneFrame({ children }) {
+  return (
+    <div style={{
+      width: 390, height: 844, borderRadius: 48,
+      background: '#000', padding: 10, boxShadow: '0 20px 50px rgba(0,0,0,0.2), 0 0 0 2px #222',
+      position: 'relative', flexShrink: 0,
+    }}>
+      <div style={{
+        width: '100%', height: '100%', borderRadius: 38,
+        background: '#fff', overflow: 'hidden', position: 'relative',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Dynamic Island */}
+        <div style={{
+          position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
+          width: 120, height: 34, borderRadius: 20, background: '#000', zIndex: 100,
+        }}/>
+        {/* Status bar */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '14px 30px 6px', font: '700 15px/1 var(--font-sans)', color: '#000',
+          flexShrink: 0,
+        }}>
+          <span>9:41</span>
+          <span style={{ width: 120 }}/>
+          <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 10h2M5 7h2M9 4h2M13 1h2" stroke="#000" strokeWidth="2.5" strokeLinecap="round"/></svg>
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="none"><path d="M1 5.5C2 3 5 1 7.5 1S13 3 14 5.5" stroke="#000" strokeWidth="1.5" strokeLinecap="round" fill="none"/><circle cx="7.5" cy="9" r="1.5" fill="#000"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#000" strokeWidth="1.2"/><rect x="2.5" y="2.5" width="18" height="7" rx="1" fill="#000"/><rect x="23" y="4" width="1.5" height="4" rx="0.5" fill="#000"/></svg>
+          </span>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Screen renderers — simplified, deterministic state ────────
+const HomeFeedView = ({ tab = 'home' }) => {
+  const [posts] = useState(SAMPLE_POSTS);
+  const [cat] = useState('전체');
+  const [walletCoupons] = useState(SAMPLE_WALLET);
+  const [walletSeg] = useState('active');
+  const [stores] = useState(SAMPLE_STORES);
+  const activeW = walletCoupons.filter(c => c.status === 'active');
+  const usedW = walletCoupons.filter(c => c.status === 'used');
+  const expW = walletCoupons.filter(c => c.status === 'expired');
+
+  return (
+    <div className="up-screen">
+      {tab === 'home' && (<>
+        <Header location="상남동"/>
+        <ChipRow items={['전체','카페','음식','미용','네일','기타']} active={cat} onChange={()=>{}}/>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          {posts.slice(0,3).map(p => <FeedPost key={p.id} post={p} onSaveCoupon={()=>{}} onFollow={()=>{}}/>)}
+        </div>
+      </>)}
+      {tab === 'wallet' && (<>
+        <Header title="내 쿠폰함"/>
+        <Segment items={[
+          { key: 'active', label: '사용 가능', count: activeW.length },
+          { key: 'used', label: '사용 완료', count: usedW.length },
+          { key: 'expired', label: '만료', count: expW.length },
+        ]} active={walletSeg} onChange={()=>{}}/>
+        <div style={{ flex: 1, overflow: 'hidden', paddingTop: 4 }}>
+          {activeW.map(c => <WalletCard key={c.id} coupon={c} onUse={()=>{}}/>)}
+        </div>
+      </>)}
+      {tab === 'explore' && (<>
+        <div className="up-header">
+          <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+            <span style={{ font: '700 16px/1 var(--font-sans)', color: 'var(--fg1)' }}>📍 강남구 역삼동</span>
+            <span style={{ font: '600 12px/1 var(--font-sans)', color: 'var(--orange-500)' }}>변경</span>
+          </div>
+        </div>
+        <ChipRow items={['전체','카페','음식','미용','네일','편의점','기타']} active="전체" onChange={()=>{}}/>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 20px', background: '#fff', borderBottom: '1px solid var(--gray-150)', font: '500 13px/1 var(--font-sans)', color: 'var(--fg2)' }}>
+          <span>정렬: <b style={{color:'var(--fg1)'}}>거리순 ▾</b></span>
+          <span>반경: <b style={{color:'var(--fg1)'}}>500m ▾</b></span>
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          {stores.slice(0,4).map(s => <StoreRow key={s.id} store={s} onToggleFollow={()=>{}}/>)}
+        </div>
+      </>)}
+      {tab === 'profile' && <MyScreen/>}
+      {tab === 'owner' && <OwnerDashboard onIssueCoupon={()=>{}}/>}
+      <TabBar active={tab === 'owner' ? 'profile' : tab} onChange={()=>{}}/>
+    </div>
+  );
+};
+
+const HomeVariantView = ({ variant }) => {
+  const [posts] = useState(SAMPLE_POSTS);
+  return (
+    <div className="up-screen">
+      {variant === 'v1' && <HomeV1Standard posts={posts} onSaveCoupon={()=>{}} onFollow={()=>{}}/>}
+      {variant === 'v2' && <HomeV2Discovery onSaveCoupon={()=>{}}/>}
+      {variant === 'v3' && <HomeV3Social posts={posts} onSaveCoupon={()=>{}} onFollow={()=>{}}/>}
+      <TabBar active="home" onChange={()=>{}}/>
+    </div>
+  );
+};
+
+const IssueView = () => (
+  <div className="up-screen">
+    <IssueCouponFlow onClose={()=>{}}/>
+  </div>
+);
+
+// ─── Screen list — sections + pages ─────────────────────────────
+const SECTIONS = [
+  {
+    num: '01',
+    title: 'Splash',
+    desc: '앱 런칭 시 브랜드를 각인시키는 스플래시 스크린',
+    screens: [
+      { id: 's_v1', title: 'Splash · 중앙 정렬', caption: 'V1 · 워드마크 중앙 + 하단 태그라인. 가장 표준적인 레이아웃.', render: () => <Splash variant="centered"/> },
+      { id: 's_v6', title: 'Splash · 히어로', caption: 'V6 · 극대형 워드마크 단독. 미니멀 극단, 글자 자체가 주인공.', render: () => <Splash variant="hero"/> },
+    ]
+  },
+  {
+    num: '02',
+    title: '회원가입',
+    desc: '휴대폰 → SMS → 닉네임+생일 → 주변 가게 5개 팔로우 → 약관',
+    screens: [
+      { id: 'auth_basic', title: '회원가입 · 기본형', caption: '깔끔한 iOS 스타일. 기본 온보딩 플로우.', render: () => <AuthFlow variant="basic" onDone={()=>{}} onClose={()=>{}}/> },
+      { id: 'auth_enh', title: '회원가입 · 강화형', caption: '오렌지 포인트 + 🐻 보조 메시지로 친근함 강화.', render: () => <AuthFlow variant="enhanced" onDone={()=>{}} onClose={()=>{}}/> },
+    ]
+  },
+  {
+    num: '03',
+    title: '홈 피드',
+    desc: '팔로우한 가게의 쿠폰이 흐르는 메인 화면 — 3가지 레이아웃',
+    screens: [
+      { id: 'home', title: '홈 · 현재 버전', caption: 'Twitter식 세로 타임라인. 팔로우 가게의 최신 쿠폰 포스트.', render: () => <HomeFeedView tab="home"/> },
+      { id: 'home_v1', title: '홈 V1 · 표준형', caption: '위치바 → 긴급 쿠폰 스트립 → 내 주변 → 월드컵 배너 → 팔로우 피드.', render: () => <HomeVariantView variant="v1"/> },
+      { id: 'home_v2', title: '홈 V2 · 발견형', caption: '오늘의 Pick 대형 히어로 + 카테고리 그리드 + 에디터 pick + 지도.', render: () => <HomeVariantView variant="v2"/> },
+      { id: 'home_v3', title: '홈 V3 · 소셜형', caption: '스토리 릴 + 단골 스탬프 진행 + 팔로우 피드. 관계·소셜 중심.', render: () => <HomeVariantView variant="v3"/> },
+    ]
+  },
+  {
+    num: '04',
+    title: '쿠폰함 · 탐색 · MY',
+    desc: '저장, 발견, 프로필 — 사용자 핵심 탭',
+    screens: [
+      { id: 'wallet', title: '내 쿠폰함', caption: '저장한 쿠폰 · 만료일 프로그레스 · QR 풀스크린 사용.', render: () => <HomeFeedView tab="wallet"/> },
+      { id: 'explore', title: '가게 탐색', caption: 'GPS 반경 내 가게 목록 · 카테고리 필터 · 거리 정렬.', render: () => <HomeFeedView tab="explore"/> },
+      { id: 'my', title: 'MY (사용자)', caption: '프로필 · 레벨 · 활동/혜택/계정 메뉴.', render: () => <HomeFeedView tab="profile"/> },
+    ]
+  },
+  {
+    num: '05',
+    title: '사장님 앱',
+    desc: '팔로워 관리 · 쿠폰 발행 · 성과 대시보드',
+    screens: [
+      { id: 'owner', title: '사장님 홈', caption: '팔로워·발행·사용 대시보드 + 쿠폰 발행 CTA.', render: () => <HomeFeedView tab="owner"/> },
+      { id: 'issue', title: '쿠폰 발행', caption: '4단계 플로우 — 유형 · 내용 · 설정 · 미리보기 & 발행.', render: () => <IssueView/> },
+    ]
+  },
+  {
+    num: '06',
+    title: '맛집 월드컵',
+    desc: '8가지 상황 → 16강 토너먼트 → 우승. 재미 중심 발견 콘텐츠.',
+    screens: [
+      { id: 'wc_s', title: '월드컵 · 상황 선택', caption: '8가지 상황 카드 그리드 + AI 랜덤 추천.', render: () => <div className="up-screen"><SituationSelect onPick={()=>{}} onRandom={()=>{}} onExit={()=>{}}/></div> },
+      { id: 'wc_m', title: '16강 대결', caption: '좌/우 풀블리드 카드 대결 · VS 배지.', render: () => <div className="up-screen"><MatchScreen round={16} matchIdx={0} totalMatches={8} pair={[WORLDCUP_STORES[0], WORLDCUP_STORES[3]]} situation={SITUATIONS[0]} onPick={()=>{}} onExit={()=>{}}/></div> },
+      { id: 'wc_t', title: '라운드 전환', caption: '라운드 통과 축하 화면 · 생존자 썸네일.', render: () => <div className="up-screen"><RoundTransition fromRound={16} toRound={8} survivors={WORLDCUP_STORES.slice(0,8)} onNext={()=>{}}/></div> },
+      { id: 'wc_r', title: '우승 결과', caption: '트로피 · 챔피언 카드 · 상세 · 공유 CTA.', render: () => <div className="up-screen"><ResultScreen winner={WORLDCUP_STORES[10]} situation={SITUATIONS[0]} onRestart={()=>{}} onExit={()=>{}}/></div> },
+    ]
+  },
+];
+
+function SectionCover({ section }) {
+  return (
+    <div className="page section-cover">
+      <div className="num">{section.num}</div>
+      <h2>{section.title}</h2>
+      <div className="desc">{section.desc}</div>
+    </div>
+  );
+}
+
+function ScreenPage({ section, screen, idx, totalIdx }) {
+  return (
+    <div className="page screen-page">
+      <div className="screen-header">
+        <span className="idx">{String(totalIdx).padStart(2,'0')}</span>
+        <span className="title">{screen.title}</span>
+        <span className="group">{section.num} · {section.title}</span>
+      </div>
+      <div className="screen-caption">{screen.caption}</div>
+      <div className="phones-wrap">
+        <PhoneFrame>{screen.render()}</PhoneFrame>
+      </div>
+    </div>
+  );
+}
+
+function PrintApp() {
+  let totalIdx = 0;
+  return (
+    <>
+      {SECTIONS.map(section => (
+        <React.Fragment key={section.num}>
+          <SectionCover section={section}/>
+          {section.screens.map(screen => {
+            totalIdx++;
+            return <ScreenPage key={screen.id} section={section} screen={screen} idx={0} totalIdx={totalIdx}/>;
+          })}
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<PrintApp/>);
+
+// Auto-print: wait for fonts, Babel scripts, and layout settle
+(async () => {
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(e) {}
+  // Wait a tick for React tree + Babel-transpiled scripts to finish mounting
+  await new Promise(r => setTimeout(r, 1200));
+  window.print();
+})();
+</script>
+</body>
+</html>

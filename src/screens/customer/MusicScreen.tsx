@@ -18,7 +18,7 @@ import {
 import { fetchWeatherContext, WeatherContext } from '../../lib/services/weatherService';
 import { useMusicPlayer } from '../../contexts/MusicPlayerContext';
 import { MINI_PLAYER_HEIGHT } from '../../components/GlobalMiniPlayer';
-import { TAB_BAR_HEIGHT } from '../../navigation';
+import { TAB_BAR_HEIGHT } from '../../constants/layout';
 import { supabase } from '../../lib/supabase';
 
 // ─── 다크 테마 (뮤직탭은 항상 다크) ─────────────────────────────

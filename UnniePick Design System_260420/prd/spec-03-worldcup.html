@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Spec 03 · 월드컵 딜 소싱 · 언니픽</title>
+<link rel="stylesheet" href="spec-sheet.css">
+</head>
+<body>
+
+<div class="doc">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-top">
+    <div class="hero-brand">언니픽</div>
+    <div class="hero-crumb">Phase 1 Spec · 03 of 03<br>개발 핸드오프 · v0.1</div>
+  </div>
+  <div class="hero-num">03</div>
+  <div class="hero-eyebrow">Idea 03 · Worldcup-Powered Deal Sourcing</div>
+  <h1 class="hero-title">이미 있는 월드컵을<br>매장이 <em>쫓는다</em>.</h1>
+  <div class="hero-sub">사용자가 즐기는 매장 월드컵 → 매주 결과를 사장님께 리포트로 배달 → 상위 매장엔 프리미엄 슬롯·무료 크레딧. Yelp Ads의 $150/월 진입 장벽을 뒤집는 자율 수익 루프.</div>
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Impact</div>
+      <div class="hero-meta-val">Medium</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Confidence</div>
+      <div class="hero-meta-val"><em>High</em></div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Ease</div>
+      <div class="hero-meta-val"><em>High</em></div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Target Sprint</div>
+      <div class="hero-meta-val">S3 – S5 (5주)</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Owner</div>
+      <div class="hero-meta-val">PM · BE · Growth · Biz Ops</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 01 · Problem & Hypothesis ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <h2 class="sec-title">문제 정의<br>& 가설</h2>
+  </div>
+  <p class="sec-lede">매장 월드컵은 이미 있다. 하지만 결과가 <strong>어디에도 흘러가지 않는다</strong>. 사용자에겐 순위 차트로만 보이고, 사장님은 자기 매장이 몇 위인지도 모른다. 양쪽 가치가 버려지는 중.</p>
+
+  <div class="problem-grid">
+    <div class="problem-box ink">
+      <div class="plabel">Problem</div>
+      <div class="pbig">"열심히 뽑은 투표가<br>어디로도 안 간다."</div>
+      <div class="pbody">사용자 월드컵 플레이는 주 <strong style="color:#FF9A3D">1.4만 건</strong> 수준이지만, 이 데이터가 매장·딜·광고 어느 축에도 연결되지 않는다. 사장님은 "우리 가게가 뽑혔는지" 모르고, 사용자는 "내가 뽑은 곳이 혜택이 있는지" 모른다. 참여 루프가 소비되지 않고 휘발.</div>
+    </div>
+    <div class="problem-box orange">
+      <div class="plabel">Hypothesis</div>
+      <div class="pbig">"투표를 딜로 바꾸면<br>광고 매출 30%↑."</div>
+      <div class="pbody"><strong>IF</strong> 월드컵 결과를 매장 리포트·프리미엄 슬롯·무료 크레딧 루프로 연결한다면, <strong>THEN</strong> 사장님 유료 전환율 +15%pt, 언니픽 광고 매출 3개월 내 +30%, 사용자 월드컵 참여율 2.1배 (내 투표 = 실제 변화로 인식).</div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px;padding:28px 32px;background:var(--bg-warm);border-radius:16px">
+    <div class="eyebrow" style="color:var(--fg2)">Why now · Yelp Ads 반성</div>
+    <p class="body" style="margin-top:8px">Yelp Ads는 CPC 기반으로 동네 소상공인 진입 장벽이 <strong>월 $150+</strong>. 결과적으로 동네 개인 카페·네일샵은 사실상 광고 불가능. 언니픽은 이미 <strong>사용자가 자발적으로 참여하는 컨텐츠(월드컵)</strong>를 가졌고, 결과를 그대로 광고 상품으로 전환할 수 있다 — 마케팅 예산 대신 <em>투표 점수</em>가 노출의 자격이 됨.</p>
+  </div>
+</section>
+
+<!-- ═══ 02 · JTBD / User Stories ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <h2 class="sec-title">사용자 스토리<br>/ Jobs To Be Done</h2>
+  </div>
+
+  <div class="jtbd">
+    <div class="tag">JTBD 01</div>
+    <div class="stmt">사장님 — <em>"우리 가게가 동네에서 어떤 위치인지"</em>를 주기적으로, 비용 없이 알고 싶다.</div>
+  </div>
+  <div class="jtbd">
+    <div class="tag">JTBD 02</div>
+    <div class="stmt">사장님 — 큰 마케팅 예산 없이 <em>월드컵 우승</em>만으로 노출을 따낼 수 있다면 참여할 이유가 생긴다.</div>
+  </div>
+  <div class="jtbd">
+    <div class="tag">JTBD 03</div>
+    <div class="stmt">사용자 — 내가 투표한 매장이 실제로 <em>혜택을 받고 나에게도 돌아오는</em> 걸 보고 싶다.</div>
+  </div>
+
+  <div class="grid-2" style="margin-top:40px">
+    <div class="card">
+      <div class="eyebrow">Primary Persona · 사장님</div>
+      <h4 class="h4" style="margin-top:8px">준호 사장 · 36세 · 카페 운영 4년</h4>
+      <p class="body" style="margin-top:16px;font-size:15px">"인스타 광고 돌려도 <strong>효과 체감이 0</strong>입니다. 월 30만 원 날리는 기분이에요." 광고 예산 타이트하지만 손님 수는 늘리고 싶다. 주간 리포트로 <strong>'상남동 카페 7위'</strong> 같은 실제 지표가 오면 동기부여.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Secondary Persona · 사용자</div>
+      <h4 class="h4" style="margin-top:8px">소연 · 25세 · 창원 대학생</h4>
+      <p class="body" style="margin-top:16px;font-size:15px">월드컵을 <strong>심심풀이 컨텐츠로 주 2-3회 즐김</strong>. 내가 뽑은 매장이 결승까지 올라가면 뿌듯. 단, 내 투표가 어디로 가는지는 모름. "내 픽이 혜택으로 돌아온다면 더 정성껏 투표할 것."</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 · Solution Architecture ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <h2 class="sec-title">솔루션<br>아키텍처</h2>
+  </div>
+  <p class="sec-lede">세 개의 루프 — Vote (사용자) · Report (사장님) · Monetize (수익). 투표 데이터 한 번 수집하면 세 경로로 동시에 흐른다.</p>
+
+  <div class="arch">
+    <div class="arch-layer">
+      <div class="arch-side">
+        <div class="arch-tag">Loop 01</div>
+        <div class="arch-name">Vote<br>— 투표 캡쳐</div>
+      </div>
+      <div class="arch-body">
+        <div class="arch-mech">
+          <div class="mech-num">M1</div>
+          <div>
+            <h4 class="mech-title">카테고리 × 동네 세분 월드컵</h4>
+            <p class="mech-detail">기존 전체 월드컵을 <strong>카테고리 × 동네</strong> 단위로 쪼갠다. 예: 상남동 카페 월드컵, 양덕동 네일샵 월드컵. 한 번에 16강 — 동네 소상공인의 참여 가능성이 극적으로 상승.</p>
+          </div>
+        </div>
+        <div class="arch-mech">
+          <div class="mech-num">M2</div>
+          <div>
+            <h4 class="mech-title">주간 시즌 시스템</h4>
+            <p class="mech-detail">매주 월요일 00:00 새 시즌 시작, 일요일 23:59 결산. 매장별 승·패·총투표수 누적. <strong>투표 결과는 다음 주 월요일 오전 리포트</strong>로 사장님께 발송.</p>
+          </div>
+        </div>
+        <div class="arch-mech">
+          <div class="mech-num">M3</div>
+          <div>
+            <h4 class="mech-title">투표자 보상 — '픽이 실제가 됐어요'</h4>
+            <p class="mech-detail">내가 상위에 투표한 매장이 프리미엄 슬롯에 등장하면 <strong>'내 픽이 1등!' 뱃지 + 전용 쿠폰</strong> 자동 발급. 사용자 입장에선 투표가 게임 → 실제 혜택 루프로 진화.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-layer">
+      <div class="arch-side">
+        <div class="arch-tag">Loop 02</div>
+        <div class="arch-name">Report<br>— 주간 리포트</div>
+      </div>
+      <div class="arch-body">
+        <div class="arch-mech">
+          <div class="mech-num">M4</div>
+          <div>
+            <h4 class="mech-title">사장님 앱 홈 · 주간 Scoreboard</h4>
+            <p class="mech-detail">매주 월요일 사장님 앱 홈 상단에 <strong>"지난주 성적표"</strong> 카드 노출. 카테고리 순위·총 투표수·전주 대비 변화·다음 시즌 상대 매장 미리보기. <em>숫자 3개만 보여주는 간결함</em>.</p>
+          </div>
+        </div>
+        <div class="arch-mech">
+          <div class="mech-num">M5</div>
+          <div>
+            <h4 class="mech-title">이메일 · 카톡 리포트 (옵션 구독)</h4>
+            <p class="mech-detail">앱 외부 채널로도 리포트 발송. 월드컵에 참여도 안 한 사장님에게 <strong>"당신 매장이 카페 월드컵 32위에 진입"</strong>을 Push — 앱 재활성화 트리거.</p>
+          </div>
+        </div>
+        <div class="arch-mech">
+          <div class="mech-num">M6</div>
+          <div>
+            <h4 class="mech-title">투표 인사이트 (무료) — 투표자 페르소나</h4>
+            <p class="mech-detail">누가 당신 매장에 투표했나 — 20대 여성 67%, 주거리 반경 1.5km, 시간대 야간 집중 등 <strong>익명 집계 인사이트</strong>. PII 절대 비노출. Yelp Analytics의 무료 버전.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-layer">
+      <div class="arch-side">
+        <div class="arch-tag">Loop 03</div>
+        <div class="arch-name">Monetize<br>— 수익 전환</div>
+      </div>
+      <div class="arch-body">
+        <div class="arch-mech">
+          <div class="mech-num">M7</div>
+          <div>
+            <h4 class="mech-title">상위 매장 · 무료 프리미엄 슬롯 1주 증정</h4>
+            <p class="mech-detail">카테고리 월드컵 우승 매장은 <strong>다음 주 앱 홈 상단 프리미엄 슬롯 1주 무료</strong>. 광고 예산 없이도 '투표로 이기면 노출'이라는 신뢰 루프 확립 — Yelp Ads의 정반대.</p>
+          </div>
+        </div>
+        <div class="arch-mech">
+          <div class="mech-num">M8</div>
+          <div>
+            <h4 class="mech-title">유료 — 결승 고정 참여권 (₩30K/주)</h4>
+            <p class="mech-detail">다음 주 월드컵 '결승 8강 풀'에 자동 진출 보장. 투표 트래픽을 사는 것 — 기존 CPC보다 예측 가능한 상품. 소상공인에게도 명확한 가격.</p>
+          </div>
+        </div>
+        <div class="arch-mech">
+          <div class="mech-num">M9</div>
+          <div>
+            <h4 class="mech-title">프리미엄 — 카테고리 스폰서십 (월 단위)</h4>
+            <p class="mech-detail">"상남동 카페 월드컵 Presented by ○○" 형태. 월 ₩150K. 사용자 경험 훼손 없이(상단 노출 + 우승자 증정 이벤트 주최) 브랜드 인지 획득. Phase 2 이후 확장.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 · Weekly Report UX ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <h2 class="sec-title">주간 리포트<br>UX · 사장님 앱</h2>
+  </div>
+  <p class="sec-lede">사장님은 바쁘다. <strong>3초 안에 이해</strong>되는 숫자 3개 · 1개의 액션 CTA. 매주 월요일 오전 9시 푸시, 앱 진입 시 홈 상단 fixed.</p>
+
+  <div class="flow-grid">
+    <div class="flow-step">
+      <div class="flow-num">01</div>
+      <div class="flow-label">Mon 09:00</div>
+      <h4 class="flow-title">Push · "지난주 성적표 도착"</h4>
+      <p class="flow-detail">제목: <strong>"상남동 카페 7위 · 투표 142표"</strong>. 숫자 먼저, 수식어 없음. 탭하면 앱 홈으로 딥링크.</p>
+      <div class="flow-meta"><span class="pill pill-line">매주 월요일</span><span class="pill pill-line">APNs</span></div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">02</div>
+      <div class="flow-label">App Home</div>
+      <h4 class="flow-title">Scoreboard 카드 · 상단 고정</h4>
+      <p class="flow-detail">카테고리 순위 · 총 투표수 · 전주 대비 △▽ 화살표. <strong>3초 파싱 가능</strong>. 탭하면 상세 리포트 풀스크린.</p>
+      <div class="flow-meta"><span class="pill pill-line">3 metric</span><span class="pill pill-line">fixed top</span></div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">03</div>
+      <div class="flow-label">Detail</div>
+      <h4 class="flow-title">상세 리포트 — 페르소나·상대 분석</h4>
+      <p class="flow-detail">익명 집계 투표자 페르소나 · 다음 시즌 상대 매장 미리보기 · 이번 주 액션 제안 3개 ("프리미엄 슬롯 구매 시 +38% 예상 노출").</p>
+      <div class="flow-meta"><span class="pill pill-line">scrollable</span><span class="pill pill-line">export CSV</span></div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">04</div>
+      <div class="flow-label">Action</div>
+      <h4 class="flow-title">단일 CTA · "이번 주 슬롯 예약"</h4>
+      <p class="flow-detail">유료 상품은 한 번에 하나만 노출. 우승자에겐 "<strong>무료 슬롯 수령</strong>" 버튼. 나머지는 "결승 고정 ₩30,000/주" 단일 옵션.</p>
+      <div class="flow-meta"><span class="pill pill-line">1 CTA</span><span class="pill pill-line">inline 결제</span></div>
+    </div>
+  </div>
+
+  <!-- 샘플 리포트 디자인 프리뷰 -->
+  <div style="margin-top:56px">
+    <div class="eyebrow">Sample · 주간 리포트 Scoreboard 카드</div>
+    <h3 class="h3" style="margin-top:8px;margin-bottom:24px">사장님 앱 홈 상단 — 실제 레이아웃</h3>
+    <div style="display:grid;grid-template-columns:400px 1fr;gap:40px;align-items:start">
+      <!-- Mockup -->
+      <div style="background:var(--ink);border-radius:20px;padding:28px;color:#fff">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font:800 11px/1 'Wanted Sans';color:rgba(255,255,255,0.55);letter-spacing:1.5px;text-transform:uppercase">Weekly Scoreboard · 11/17 – 11/23</div>
+          <div style="font:700 10px/1 'Wanted Sans';color:var(--orange);padding:5px 10px;background:rgba(255,111,15,0.15);border-radius:999px">NEW</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;padding:20px 0;border-top:1px solid rgba(255,255,255,0.1);border-bottom:1px solid rgba(255,255,255,0.1)">
+          <div>
+            <div style="font:700 10px/1 'Wanted Sans';color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">순위</div>
+            <div style="font:900 36px/1 'Wanted Sans';color:#fff;letter-spacing:-1.5px">7<span style="font-size:18px;color:rgba(255,255,255,0.4);margin-left:4px">/64</span></div>
+            <div style="font:700 11px/1.3 'Wanted Sans';color:var(--orange);margin-top:6px">▲ 전주 11위</div>
+          </div>
+          <div>
+            <div style="font:700 10px/1 'Wanted Sans';color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">투표</div>
+            <div style="font:900 36px/1 'Wanted Sans';color:#fff;letter-spacing:-1.5px">142</div>
+            <div style="font:700 11px/1.3 'Wanted Sans';color:var(--orange);margin-top:6px">▲ +38 표</div>
+          </div>
+          <div>
+            <div style="font:700 10px/1 'Wanted Sans';color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">승률</div>
+            <div style="font:900 36px/1 'Wanted Sans';color:#fff;letter-spacing:-1.5px">68<span style="font-size:18px;color:rgba(255,255,255,0.4)">%</span></div>
+            <div style="font:700 11px/1.3 'Wanted Sans';color:#fff;opacity:0.5;margin-top:6px">— 전주 69%</div>
+          </div>
+        </div>
+        <div style="margin-top:18px;font:600 13px/1.5 'Wanted Sans';color:rgba(255,255,255,0.75)">카테고리: <strong style="color:#fff">상남동 카페</strong> · 다음 시즌 상대 <strong style="color:var(--orange)">3곳</strong> 미리보기 →</div>
+        <button style="margin-top:18px;width:100%;padding:14px;background:var(--orange);color:#fff;border:none;border-radius:12px;font:800 14px/1 'Wanted Sans';letter-spacing:-0.2px">리포트 상세 보기</button>
+      </div>
+      <!-- Copy principles -->
+      <div>
+        <h4 class="h4" style="margin-bottom:20px">리포트 카피 원칙 · 3가지</h4>
+        <div class="arch-mech" style="display:grid;grid-template-columns:56px 1fr;gap:20px;margin-bottom:24px">
+          <div class="mech-num">01</div>
+          <div>
+            <h5 class="h5" style="margin-bottom:6px">숫자 먼저, 수식어는 나중에</h5>
+            <p class="body" style="font-size:14px">"지난주 활약하셨네요!" X → "7위 · 142표 · 승률 68%" O. 칭찬은 사장님이 스스로 판단.</p>
+          </div>
+        </div>
+        <div class="arch-mech" style="display:grid;grid-template-columns:56px 1fr;gap:20px;margin-bottom:24px">
+          <div class="mech-num">02</div>
+          <div>
+            <h5 class="h5" style="margin-bottom:6px">비교는 자기 자신과만</h5>
+            <p class="body" style="font-size:14px">"1등 매장은 382표" 같은 타 매장 비교 배제. "전주 대비 △" 만 사용. 경쟁이 아니라 성장 감각.</p>
+          </div>
+        </div>
+        <div class="arch-mech" style="display:grid;grid-template-columns:56px 1fr;gap:20px">
+          <div class="mech-num">03</div>
+          <div>
+            <h5 class="h5" style="margin-bottom:6px">CTA는 한 번에 한 개</h5>
+            <p class="body" style="font-size:14px">"슬롯 구매"·"페르소나 상세"·"공유" 나열 X. 상황에 맞는 <strong>가장 중요한 액션 1개</strong>만 크게. 나머지는 스크롤 하단.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cross-spec reference -->
+  <div style="margin-top:40px;padding:20px 24px;background:#fff;border:1px dashed var(--orange);border-radius:14px;display:flex;gap:20px;align-items:flex-start">
+    <div style="font:900 28px/1 'Wanted Sans';color:var(--orange);flex-shrink:0">↔</div>
+    <div>
+      <div class="eyebrow" style="color:var(--fg2)">Cross-spec reference</div>
+      <p class="body" style="margin-top:6px;font-size:15px">프리미엄 슬롯 노출 = <strong>Spec 01 (Live Activity)</strong> 타깃팅 우선순위 +1. 우승 매장은 반경 내 사용자에게 자동 우선 리마인드. 우승 매장 시크릿 쿠폰은 <strong>Spec 02 (단골)</strong> 해금 카탈로그에도 옵션 노출.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 · Dependencies ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <h2 class="sec-title">시스템<br>의존성</h2>
+  </div>
+  <p class="sec-lede">기존 매장 월드컵 기능이 대부분의 인프라를 커버. 신규는 <strong>시즌·리포트·수익 상품</strong> 3가지.</p>
+
+  <div class="dep-list">
+    <div class="dep-row">
+      <div class="dep-ico">D1</div>
+      <div>
+        <h5 class="h5">기존 월드컵 엔진 · 매칭·투표 파이프라인 <span class="pill pill-filled" style="font-size:11px;margin-left:8px">재사용</span></h5>
+        <p class="body">현재 동작 중인 월드컵 엔진에 <strong>카테고리·동네 필터 파라미터</strong>만 추가. 투표 데이터 스키마도 동일 테이블 확장.</p>
+      </div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-ico">D2</div>
+      <div>
+        <h5 class="h5">시즌 스케줄러 · cron + Redis <span class="pill pill-warn" style="font-size:11px;margin-left:8px">신규</span></h5>
+        <p class="body">매주 월요일 00:00 새 시즌 시작, 일요일 23:59 결산. Redis로 active season id 관리. 리포트 생성은 월요일 07:00 배치.</p>
+      </div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-ico">D3</div>
+      <div>
+        <h5 class="h5">리포트 렌더링 엔진 · 서버 생성 이미지 <span class="pill pill-warn" style="font-size:11px;margin-left:8px">신규</span></h5>
+        <p class="body">이메일·카톡 리포트용 이미지 렌더링 (Puppeteer + HTML 템플릿). 앱 내 Scoreboard는 JSON API로 실시간.</p>
+      </div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-ico">D4</div>
+      <div>
+        <h5 class="h5">인앱 결제 · 프리미엄 슬롯·결승 고정 <span class="pill pill-warn" style="font-size:11px;margin-left:8px">신규</span></h5>
+        <p class="body">사장님 앱 내 ₩ 결제 (PG 토스·NICE). 자동 영수증·세금계산서 발행. 구독이 아닌 <strong>주 단위 선결제</strong> 방식.</p>
+      </div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-ico">D5</div>
+      <div>
+        <h5 class="h5">광고 슬롯 매니저 · 기존 홈 배너 확장 <span class="pill pill-line" style="font-size:11px;margin-left:8px">확장</span></h5>
+        <p class="body">앱 홈 상단의 기존 배너 슬롯에 <strong>"월드컵 우승" 라벨</strong> 붙인 프리미엄 슬롯 추가. Live Activity 타깃팅과 연동.</p>
+      </div>
+    </div>
+    <div class="dep-row">
+      <div class="dep-ico">D6</div>
+      <div>
+        <h5 class="h5">알림 채널 · 카톡 비즈·이메일 발송 <span class="pill pill-warn" style="font-size:11px;margin-left:8px">신규</span></h5>
+        <p class="body">앱 외부 사장님(앱 재활성화 타깃)에게 카톡 알림톡·이메일로 발송. 템플릿은 카톡 비즈 심사 필요 (사전 4주).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 · Data Model ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">06</div>
+    <h2 class="sec-title">데이터 모델<br>제안</h2>
+  </div>
+  <p class="sec-lede">신규 4개 — worldcup_season · worldcup_match · worldcup_vote · merchant_ad_slot. 기존 매장 월드컵 테이블은 season_id만 추가.</p>
+
+  <div class="grid-2">
+    <div class="code"><span class="c">-- 주간 시즌 · 카테고리 × 동네 단위</span>
+<span class="k">CREATE TABLE</span> worldcup_season (
+  id           <span class="k">BIGSERIAL</span> <span class="k">PRIMARY KEY</span>,
+  category_key <span class="k">VARCHAR</span>(<span class="n">20</span>)
+  <span class="c">-- 'cafe' | 'food' | 'beauty' ...</span>,
+  region_key   <span class="k">VARCHAR</span>(<span class="n">20</span>)
+  <span class="c">-- '상남동' | '양덕동' ...</span>,
+  started_at   <span class="k">TIMESTAMPTZ</span> <span class="k">NOT NULL</span>,
+  ends_at      <span class="k">TIMESTAMPTZ</span> <span class="k">NOT NULL</span>,
+  status       <span class="k">VARCHAR</span>(<span class="n">12</span>)
+  <span class="c">-- 'active' | 'closed' | 'archived'</span>,
+  <span class="k">UNIQUE</span>(category_key, region_key, started_at)
+);
+<span class="k">CREATE INDEX</span> ix_ws_active
+  <span class="k">ON</span> worldcup_season(status)
+  <span class="k">WHERE</span> status = <span class="s">'active'</span>;</div>
+    <div class="code"><span class="c">-- 투표 로그 · 성과 리포트 base</span>
+<span class="k">CREATE TABLE</span> worldcup_vote (
+  id          <span class="k">BIGSERIAL</span> <span class="k">PRIMARY KEY</span>,
+  season_id   <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  match_id    <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  user_id     <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  winner_mid  <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  loser_mid   <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  voted_at    <span class="k">TIMESTAMPTZ</span> <span class="k">DEFAULT</span> now(),
+  user_region <span class="k">VARCHAR</span>(<span class="n">20</span>),
+  user_age    <span class="k">INT</span>     <span class="c">-- 집계용, 저장은 bucket</span>,
+  user_gender <span class="k">VARCHAR</span>(<span class="n">2</span>)
+);
+<span class="k">CREATE INDEX</span> ix_wv_season
+  <span class="k">ON</span> worldcup_vote(season_id, winner_mid);
+<span class="c">-- 리포트 생성 쿼리 최적화용</span></div>
+  </div>
+
+  <div style="margin-top:32px">
+    <h4 class="h4" style="margin-bottom:16px">merchant_ad_slot — 광고 상품·구매 이력</h4>
+    <table class="field-tbl">
+      <thead>
+        <tr><th>필드</th><th>타입</th><th>의미</th><th>비고</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="key mono">id</td><td class="mono">BIGSERIAL</td><td>슬롯 레코드 ID</td><td>PK</td></tr>
+        <tr><td class="key mono">merchant_id</td><td class="mono">BIGINT</td><td>매장 ID</td><td>FK</td></tr>
+        <tr><td class="key mono">slot_type</td><td class="mono">VARCHAR(24)</td><td>'home_banner' · 'finals_pin' · 'category_sponsor'</td><td>수익 상품 3종</td></tr>
+        <tr><td class="key mono">source</td><td class="mono">VARCHAR(16)</td><td>'winner_free' · 'paid' · 'comp'</td><td>무료/유료 구분</td></tr>
+        <tr><td class="key mono">season_id</td><td class="mono">BIGINT</td><td>연결 시즌</td><td>우승 슬롯인 경우</td></tr>
+        <tr><td class="key mono">starts_at</td><td class="mono">TIMESTAMPTZ</td><td>노출 시작</td><td>주 단위</td></tr>
+        <tr><td class="key mono">ends_at</td><td class="mono">TIMESTAMPTZ</td><td>노출 종료</td><td>—</td></tr>
+        <tr><td class="key mono">price_krw</td><td class="mono">INT</td><td>결제 금액</td><td>무료 0</td></tr>
+        <tr><td class="key mono">payment_id</td><td class="mono">VARCHAR(40)</td><td>PG 결제 ID</td><td>null if free</td></tr>
+        <tr><td class="key mono">impressions</td><td class="mono">INT</td><td>노출 실측치</td><td>집계 배치</td></tr>
+        <tr><td class="key mono">clicks</td><td class="mono">INT</td><td>클릭 실측치</td><td>집계 배치</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:32px;padding:24px 28px;background:var(--bg-warm);border-radius:16px">
+    <div class="eyebrow" style="color:var(--fg2)">개인정보 처리</div>
+    <p class="body" style="margin-top:10px">worldcup_vote의 user_age·user_region은 <strong>집계 배치 완료 후 버킷</strong>(20s·30s·40+) 형식으로만 리포트에 노출. 개별 레코드 보존 90일 후 anonymize. 사장님에게는 <strong>절대 개별 user_id 미노출</strong>.</p>
+  </div>
+</section>
+
+<!-- ═══ 07 · API Endpoints ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">07</div>
+    <h2 class="sec-title">API 엔드포인트<br>제안</h2>
+  </div>
+  <p class="sec-lede">사용자 앱 2개 (월드컵 기존 엔드포인트 확장) · 사장님 앱 5개. 결제는 PG 콜백 포함.</p>
+
+  <div class="api-list">
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <div>
+        <div class="api-path">/v1/worldcup/active</div>
+        <div class="api-desc">현재 사용자의 동네·카테고리 기준 active 시즌 리스트. 홈 진입 시 호출. 시즌 남은 시간·현재 진행 라운드도 함께.</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">region_key</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">category_key</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <div>
+        <div class="api-path">/v1/worldcup/vote</div>
+        <div class="api-desc">매치 투표 저장. season_id · match_id · winner_mid. 사용자 메타(age bucket·region·gender)는 서버가 user_id로 lookup.</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">season_id</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">match_id</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">winner_mid</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-row" style="border-top:2px solid var(--orange-300);padding-top:22px">
+      <span class="api-method GET">GET</span>
+      <div>
+        <div class="api-path">/v1/merchants/:id/scoreboard <span class="pill pill-filled" style="font-size:10px;margin-left:8px;vertical-align:middle">사장님 앱</span></div>
+        <div class="api-desc">사장님 앱 홈 상단 Scoreboard 카드용. 지난주 순위·투표수·승률·전주 대비 변화·다음 시즌 상대 매장 3곳.</div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <div>
+        <div class="api-path">/v1/merchants/:id/report/:season <span class="pill pill-filled" style="font-size:10px;margin-left:8px;vertical-align:middle">사장님 앱</span></div>
+        <div class="api-desc">상세 리포트 풀스크린용. 투표자 페르소나(익명 집계)·시간대 분포·매치별 상세·제안 액션 3개 + CSV 다운로드 URL.</div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <div>
+        <div class="api-path">/v1/ad-slots/purchase <span class="pill pill-filled" style="font-size:10px;margin-left:8px;vertical-align:middle">사장님 앱</span></div>
+        <div class="api-desc">프리미엄 슬롯·결승 고정 구매. slot_type·주(week) 선택. PG 결제 토큰 반환 → 앱에서 결제 위젯 오픈.</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">slot_type</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">starts_at</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <div>
+        <div class="api-path">/v1/ad-slots/pg-callback <span class="pill pill-filled" style="font-size:10px;margin-left:8px;vertical-align:middle">PG 콜백</span></div>
+        <div class="api-desc">토스·NICE PG webhook. 결제 성공 시 merchant_ad_slot 레코드 active로 전환, 실패 시 refund flow.</div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <div>
+        <div class="api-path">/v1/reports/batch-send <span class="pill pill-line" style="font-size:10px;margin-left:8px;vertical-align:middle">internal cron</span></div>
+        <div class="api-desc">월요일 07:00 배치. 지난 시즌 종료된 모든 매장에 리포트 발송 (앱 푸시·카톡 알림톡·이메일). 외부 채널은 사장님 구독 설정 따름.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 · KPI & Instrumentation ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">08</div>
+    <h2 class="sec-title">KPI<br>& 계측</h2>
+  </div>
+  <p class="sec-lede">North Star는 <strong>광고 매출 MRR</strong>. 보조 지표는 월드컵 참여율·사장님 앱 활성화율.</p>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">North Star</div>
+      <div class="kpi-name">광고 매출 MRR</div>
+      <div class="kpi-target"><em>+30%</em></div>
+      <div class="kpi-detail">3개월 누적 기준. 프리미엄 슬롯·결승 고정·스폰서십 합계.</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Primary</div>
+      <div class="kpi-name">월드컵 참여율 (WAU)</div>
+      <div class="kpi-target">7% → <em>15%</em></div>
+      <div class="kpi-detail">주 1회 이상 투표 사용자 / WAU. '내 픽 보상' 루프 가동 후 목표치.</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Primary</div>
+      <div class="kpi-name">사장님 앱 W1 재방문</div>
+      <div class="kpi-target">22% → <em>48%</em></div>
+      <div class="kpi-detail">월요일 리포트 후 7일 내 앱 진입. 휴면 사장님 재활성화 지표.</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Secondary</div>
+      <div class="kpi-name">유료 슬롯 전환율</div>
+      <div class="kpi-target"><em>4.5%</em></div>
+      <div class="kpi-detail">리포트 수신 사장님 중 유료 구매율. 첫 달 목표.</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Secondary</div>
+      <div class="kpi-name">투표자 쿠폰 사용률</div>
+      <div class="kpi-target"><em>35%</em></div>
+      <div class="kpi-detail">'내 픽이 1등' 뱃지 쿠폰 30일 내 사용. 일반 쿠폰 대비 동등 이상.</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Guardrail</div>
+      <div class="kpi-name">사용자 월드컵 이탈률</div>
+      <div class="kpi-target">&lt; <em>5%</em></div>
+      <div class="kpi-detail">수익화 이후 월드컵 "게임감" 훼손 여부. 상승 시 슬롯 노출 톤다운.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px">
+    <h4 class="h4" style="margin-bottom:20px">계측 이벤트 · 8종</h4>
+    <table class="event-tbl">
+      <thead>
+        <tr><th>이벤트</th><th>트리거</th><th>속성</th><th>용도</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">worldcup_match_viewed</td><td>월드컵 매치 노출</td><td>season_id, match_id, round</td><td>engagement</td></tr>
+        <tr><td class="mono">worldcup_vote_cast</td><td>투표 제출</td><td>winner_mid, loser_mid, time_ms</td><td>참여율 funnel</td></tr>
+        <tr><td class="mono">pick_winner_badge_earned</td><td>내 픽이 1등 달성</td><td>season_id, winner_mid, coupon_id</td><td>보상 루프 검증</td></tr>
+        <tr><td class="mono">report_push_sent</td><td>월요일 리포트 발송</td><td>merchant_id, channel</td><td>발송 성공률</td></tr>
+        <tr><td class="mono">scoreboard_viewed</td><td>사장님 앱 홈 스코어보드 진입</td><td>merchant_id, season_id</td><td>리포트 도달률</td></tr>
+        <tr><td class="mono">report_detail_opened</td><td>상세 리포트 풀스크린</td><td>merchant_id, season_id</td><td>interest depth</td></tr>
+        <tr><td class="mono">ad_slot_purchase_started</td><td>슬롯 구매 CTA 탭</td><td>slot_type, price_krw</td><td>전환 funnel</td></tr>
+        <tr><td class="mono">ad_slot_paid</td><td>PG 결제 성공</td><td>slot_type, price_krw, payment_id</td><td>수익 집계</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 09 · Risks & Mitigation ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">09</div>
+    <h2 class="sec-title">리스크<br>& 완화</h2>
+  </div>
+  <p class="sec-lede">광고 상품화의 가장 큰 위험은 <strong>사용자 경험 훼손</strong>. 투표가 '돈으로 산 결과'처럼 보이는 순간 루프 붕괴.</p>
+
+  <div class="scenario">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 01 · Integrity</div>
+      <div class="scenario-title">투표 조작 의심 — 월드컵 결과 신뢰성 하락</div>
+      <div class="scenario-detail">유료 슬롯을 산 매장이 '우승'한 것처럼 보이면 사용자가 월드컵 자체를 불신.</div>
+    </div>
+    <div>
+      <div class="scenario-label">완화</div>
+      <div class="scenario-detail">프리미엄 슬롯과 월드컵 결과 UI를 <strong>시각적으로 완전 분리</strong>. "광고" 라벨 명시. 월드컵 랭킹은 투표 수 그대로.</div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 02 · Vote Manipulation</div>
+      <div class="scenario-title">사장님이 지인 동원해 투표 조작</div>
+      <div class="scenario-detail">친척·알바 계정으로 대량 투표. 우승 → 무료 슬롯 수령으로 부정 이득.</div>
+    </div>
+    <div>
+      <div class="scenario-label">완화</div>
+      <div class="scenario-detail">사용자당 시즌 <strong>동일 매장 10표 상한</strong>. IP·디바이스 ID 동일 패턴 탐지. 의심 시즌은 결과 재검증 프로세스.</div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 03 · Small Merchant Exclusion</div>
+      <div class="scenario-title">큰 가게만 계속 우승 → 소상공인 격차 고착</div>
+      <div class="scenario-detail">유명 카페가 매주 우승 → 신규·작은 매장은 노출 기회 없음.</div>
+    </div>
+    <div>
+      <div class="scenario-label">완화</div>
+      <div class="scenario-detail">우승은 <strong>직전 4주 연속 우승 시 1주 쿨다운</strong>. 또한 '신규 매장 피켓' 월드컵 별도 트랙 운영.</div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 04 · Report Fatigue</div>
+      <div class="scenario-title">주간 리포트 푸시가 스팸처럼 느껴짐</div>
+      <div class="scenario-detail">매주 월요일 발송이 사장님에게 피로. 3주 차 오픈율 급락 가능.</div>
+    </div>
+    <div>
+      <div class="scenario-label">완화</div>
+      <div class="scenario-detail">첫 번째 리포트는 강렬 (순위·투표수 큼직). 2번째부터는 <strong>전주 대비 변화가 클 때만</strong> 푸시. 외부 채널은 구독 토글.</div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 05 · Monetize Over-stretch</div>
+      <div class="scenario-title">수익화 우선 → 월드컵 재미 감소</div>
+      <div class="scenario-detail">결승 고정 유료 상품이 많아지면 사용자 매치에 '광고 매장'만 보여 흥미 감소.</div>
+    </div>
+    <div>
+      <div class="scenario-label">완화</div>
+      <div class="scenario-detail">결승 고정은 8강 풀의 <strong>최대 25%(2석)만 허용</strong>. 나머지는 투표수 순. 유료 슬롯과 오가닉 슬롯 비율 모니터링 KPI.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 · Rollout Plan ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">10</div>
+    <h2 class="sec-title">롤아웃<br>플랜</h2>
+  </div>
+  <p class="sec-lede">Spec 01·02 GA 후 출시. 리포트 먼저 → 수익 상품은 2주 후 순차 오픈.</p>
+
+  <div class="rollout">
+    <div class="rollout-col">
+      <div class="rollout-phase">Phase P0</div>
+      <div class="rollout-when">W1 – W2 · Foundation</div>
+      <ul class="rollout-list">
+        <li>worldcup_season · vote 스키마 배포</li>
+        <li>시즌 스케줄러 cron 구축</li>
+        <li>리포트 템플릿 디자인 완료</li>
+        <li>카톡 비즈 발송 템플릿 심사 제출</li>
+      </ul>
+    </div>
+    <div class="rollout-col">
+      <div class="rollout-phase">Phase P1</div>
+      <div class="rollout-when">W3 · Report Beta</div>
+      <ul class="rollout-list">
+        <li>상남동 카페·네일 2개 카테고리만</li>
+        <li>리포트 앱 내 Scoreboard 배포</li>
+        <li>수익 상품은 비활성 (무료만)</li>
+        <li>사장님 1:1 리포트 해설 피드백</li>
+      </ul>
+    </div>
+    <div class="rollout-col">
+      <div class="rollout-phase">Phase P2</div>
+      <div class="rollout-when">W4 · Monetize Soft</div>
+      <ul class="rollout-list">
+        <li>우승 매장 무료 슬롯 1주 증정 시작</li>
+        <li>결승 고정 유료 상품 오픈</li>
+        <li>창원 전역 카테고리로 확장</li>
+        <li>PG 결제·환불 flow QA</li>
+      </ul>
+    </div>
+    <div class="rollout-col rollout-col-end">
+      <div class="rollout-phase">Phase P3</div>
+      <div class="rollout-when">W5 · GA</div>
+      <ul class="rollout-list">
+        <li>전국 확대 · 외부 채널(카톡·이메일) 발송</li>
+        <li>스폰서십 상품 파일럿 문의 오픈</li>
+        <li>광고 매출 대시보드 사내 공개</li>
+        <li>투표자 쿠폰 루프 전면 활성</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 · Open Questions ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">11</div>
+    <h2 class="sec-title">오픈 퀘스천</h2>
+  </div>
+  <p class="sec-lede">스펙 확정 전 PM·비즈·디자인이 함께 답할 질문들.</p>
+
+  <div class="scenario open">
+    <div class="scenario-icon">?</div>
+    <div>
+      <div class="scenario-label">Q1 · Monetize</div>
+      <div class="scenario-title">결승 고정 가격 ₩30K/주가 적정한가?</div>
+      <div class="scenario-detail">너무 낮으면 매출 의미 없고, 너무 높으면 소상공인 진입 불가. Yelp Ads($150/월 $ = ₩35K/주) 벤치마크와 유사.</div>
+    </div>
+    <div>
+      <div class="scenario-label">결정 기준</div>
+      <div class="scenario-detail">P2에 ₩30K로 시작. 구매 전환율 5% 미달이면 인하, 10% 초과면 인상 A/B.</div>
+    </div>
+  </div>
+
+  <div class="scenario open">
+    <div class="scenario-icon">?</div>
+    <div>
+      <div class="scenario-label">Q2 · UX</div>
+      <div class="scenario-title">사용자에게 '내 픽 보상'을 얼마나 강조할 것인가?</div>
+      <div class="scenario-detail">강조하면 참여율 ↑ 하지만 "혜택 사냥꾼"만 남을 위험. 약하면 루프 가동 안됨.</div>
+    </div>
+    <div>
+      <div class="scenario-label">결정 기준</div>
+      <div class="scenario-detail">투표 중엔 숨기고, 결과 발표 후에만 뱃지·쿠폰 서프라이즈. Instagram Stories 스타일.</div>
+    </div>
+  </div>
+
+  <div class="scenario open">
+    <div class="scenario-icon">?</div>
+    <div>
+      <div class="scenario-label">Q3 · Business</div>
+      <div class="scenario-title">매장 월드컵 자체에 투표하지 않은 매장 → 제외할 것인가?</div>
+      <div class="scenario-detail">현재 월드컵 엔진은 매장 자체 등록이 불필요. 하지만 '경쟁 상대가 올라왔는데 본인은 모름' 시나리오 가능.</div>
+    </div>
+    <div>
+      <div class="scenario-label">결정 기준</div>
+      <div class="scenario-detail">전 매장 자동 참여 (opt-out만). opt-out 매장도 리포트는 받음 — 참여 유도.</div>
+    </div>
+  </div>
+
+  <div class="scenario open">
+    <div class="scenario-icon">?</div>
+    <div>
+      <div class="scenario-label">Q4 · Legal</div>
+      <div class="scenario-title">매장 '우승' 타이틀 광고 사용은 허용되는가?</div>
+      <div class="scenario-detail">사장님이 자기 매장 외부에 "언니픽 상남동 카페 월드컵 우승"을 표기하고 싶어할 수 있음. 법적·브랜드 가이드 필요.</div>
+    </div>
+    <div>
+      <div class="scenario-label">결정 기준</div>
+      <div class="scenario-detail">공식 배지 이미지 제공 + 사용 가이드(글꼴·로고 병기 등). 매장 외부 사용은 환영.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer nav -->
+<div class="doc-foot">
+  <div>Phase 1 · Spec 03 of 03 · v0.1 · 2025.11</div>
+  <div style="display:flex;gap:12px">
+    <a href="spec-02-stamp.html">← Spec 02</a>
+    <a href="index.html">인덱스</a>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

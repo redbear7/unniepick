@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>언니픽 메인 폰트 비교 · 4 candidates</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+
+<!-- Candidate fonts via CDN -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- Paperlogy (fonts-archive CDN) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/Paperlogy.css" type="text/css"/>
+
+<!-- Freesentation (projectnoonnu 2404 CDN) -->
+<style>
+@font-face {
+  font-family: 'Freesentation';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-4Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Freesentation';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-7Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Freesentation';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-8ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Freesentation';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2404@1.0/Freesentation-9Black.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
+</style>
+<style>
+@font-face {
+  font-family: 'Wanted Sans Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 1000;
+  src: url('https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@main/packages/wanted-sans/fonts/webfonts/variable/complete/woff2/WantedSansVariable.woff2') format('woff2-variations');
+}
+@font-face {
+  font-family: 'SUIT Variable';
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.woff2') format('woff2-variations');
+}
+
+/* ── Serif (명조) candidates via direct @font-face (CDN) ── */
+/* Nanum Myeongjo (Google Fonts CDN) */
+@font-face {
+  font-family: 'Nanum Myeongjo';
+  src: url('https://fonts.gstatic.com/s/nanummyeongjo/v23/9Btx6Ay5NLG78YX3rzs.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'Nanum Myeongjo';
+  src: url('https://fonts.gstatic.com/s/nanummyeongjo/v23/9Bty6Ay5NLG78fD3TQ_MzJQ.woff2') format('woff2');
+  font-weight: 700; font-display: swap;
+}
+@font-face {
+  font-family: 'Nanum Myeongjo';
+  src: url('https://fonts.gstatic.com/s/nanummyeongjo/v23/9Bty6Ay5NLG78ez3TQ_MzJQ.woff2') format('woff2');
+  font-weight: 800; font-display: swap;
+}
+
+/* Noto Serif KR (본명조) — fontsource CDN */
+@font-face {
+  font-family: 'Noto Serif KR';
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/fontsource/fonts/noto-serif-kr:vf@latest/korean-wght-normal.woff2') format('woff2-variations');
+}
+
+/* KoPubWorld Batang — noonfonts */
+@font-face {
+  font-family: 'KoPubWorldBatang';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/KoPubWorldBatangLight.woff') format('woff');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'KoPubWorldBatang';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/KoPubWorldBatangMedium.woff') format('woff');
+  font-weight: 600; font-display: swap;
+}
+@font-face {
+  font-family: 'KoPubWorldBatang';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/KoPubWorldBatangBold.woff') format('woff');
+  font-weight: 800; font-display: swap;
+}
+
+/* MaruBuri (네이버) */
+@font-face {
+  font-family: 'MaruBuri';
+  src: url('https://cdn.jsdelivr.net/gh/wizfile/font-maruburi/MaruBuri-Regular.woff2') format('woff2');
+  font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: 'MaruBuri';
+  src: url('https://cdn.jsdelivr.net/gh/wizfile/font-maruburi/MaruBuri-SemiBold.woff2') format('woff2');
+  font-weight: 600; font-display: swap;
+}
+@font-face {
+  font-family: 'MaruBuri';
+  src: url('https://cdn.jsdelivr.net/gh/wizfile/font-maruburi/MaruBuri-Bold.woff2') format('woff2');
+  font-weight: 700; font-display: swap;
+}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Serif+KR:wght@400;700;900&display=swap">
+
+<style>
+  body {
+    margin: 0;
+    padding: 40px 32px 80px;
+    background: var(--gray-50);
+    color: var(--fg1);
+    font-family: var(--font-sans);
+  }
+
+  .page-title {
+    max-width: 1200px;
+    margin: 0 auto 32px;
+  }
+  .page-title h1 { font: 900 28px/1.2 'Pretendard', sans-serif; letter-spacing: -0.6px; margin: 0 0 8px; }
+  .page-title p { font: 400 14px/1.5 'Pretendard', sans-serif; color: var(--fg3); margin: 0; }
+
+  .grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    border: 1px solid var(--gray-150);
+    padding: 28px 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--gray-150);
+  }
+  .card-head .name { font: 900 22px/1 'Pretendard', sans-serif; letter-spacing: -0.4px; }
+  .card-head .meta { font: 500 11px/1.4 'Pretendard', sans-serif; color: var(--fg4); text-align: right; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font: 700 10px/1 'Pretendard', sans-serif; margin-right: 6px; }
+  .b-open { background: #E8F5EA; color: #1E7A32; }
+  .b-weights { background: #FFF1E6; color: var(--orange-600); }
+
+  /* Sample blocks */
+  .sample {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .lbl { font: 500 10px/1 'Pretendard', sans-serif; color: var(--fg4); text-transform: uppercase; letter-spacing: 0.8px; }
+
+  .wordmark { font-size: 52px; line-height: 1; color: var(--orange-500); letter-spacing: -1.2px; font-weight: 900; }
+  .headline { font-size: 28px; line-height: 1.25; color: var(--fg1); letter-spacing: -0.7px; font-weight: 900; }
+  .body-row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .body-15 { font-size: 15px; line-height: 1.5; color: var(--fg2); font-weight: 400; }
+  .body-15-bold { font-size: 15px; line-height: 1.5; color: var(--fg1); font-weight: 700; }
+  .numbers { font-size: 32px; line-height: 1; color: var(--fg1); font-weight: 800; letter-spacing: -0.6px; }
+  .button-pill {
+    align-self: flex-start;
+    padding: 10px 18px; border-radius: 999px;
+    background: var(--orange-500); color: #fff;
+    font-size: 14px; font-weight: 700;
+  }
+
+  /* Per-candidate font application */
+  .f-paperlogy, .f-paperlogy * { font-family: 'Paperlogy', 'Pretendard', sans-serif; }
+  .f-freesentation, .f-freesentation * { font-family: 'Freesentation', 'Pretendard', sans-serif; }
+  .f-wanted, .f-wanted * { font-family: 'Wanted Sans Variable', 'Wanted Sans', 'Pretendard', sans-serif; }
+  .f-suit, .f-suit * { font-family: 'SUIT Variable', 'SUIT', 'Pretendard', sans-serif; }
+  .f-pretendard, .f-pretendard * { font-family: 'Pretendard', sans-serif; }
+  /* serif candidates */
+  .f-nanum-myeongjo, .f-nanum-myeongjo * { font-family: 'Nanum Myeongjo', serif; }
+  .f-noto-serif, .f-noto-serif * { font-family: 'Noto Serif KR', serif; }
+  .f-kopub, .f-kopub * { font-family: 'KoPubWorldBatang', serif; }
+  .f-maruburi, .f-maruburi * { font-family: 'MaruBuri', serif; }
+  /* keep labels in Pretendard */
+  .card-head *, .lbl, .badge { font-family: 'Pretendard', sans-serif !important; }
+
+  .section-title {
+    max-width: 1200px; margin: 48px auto 20px;
+    font: 900 20px/1.2 'Pretendard', sans-serif; letter-spacing: -0.4px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .section-title .desc { font: 500 13px/1 'Pretendard', sans-serif; color: var(--fg3); letter-spacing: 0; }
+  .b-serif { background: #EEE8F5; color: #6A4B93; }
+
+  /* Baseline row (Pretendard reference) */
+  .baseline {
+    max-width: 1200px;
+    margin: 0 auto 32px;
+    background: #fff;
+    border: 1px dashed var(--gray-200);
+    border-radius: 20px;
+    padding: 24px 28px;
+  }
+  .baseline h3 { font: 800 14px/1 'Pretendard', sans-serif; color: var(--fg3); margin: 0 0 12px; letter-spacing: -0.2px; }
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>메인 폰트 후보 비교</h1>
+  <p>Pretendard보다 굵은 고딕 · 각 카드에 언니픽 워드마크, 헤드라인, 본문, 숫자, 버튼을 같은 조건으로 배치했어요. 가장 언니픽다운 느낌을 골라주세요.</p>
+</div>
+
+<!-- Pretendard baseline -->
+<div class="baseline">
+  <h3>BASELINE · Pretendard 900 (현재)</h3>
+  <div class="f-pretendard" style="display:flex;align-items:baseline;gap:40px;flex-wrap:wrap">
+    <div style="font:900 44px/1; color: var(--orange-500); letter-spacing:-1px">언니픽</div>
+    <div style="font:900 24px/1.25; letter-spacing:-0.5px">오늘 뭐 먹지? 쿠폰 월드컵!</div>
+    <div style="font:800 28px/1; letter-spacing:-0.5px">3,200원 할인</div>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- 1. Paperlogy -->
+  <div class="card f-paperlogy">
+    <div class="card-head">
+      <div>
+        <span class="badge b-open">OFL</span>
+        <span class="badge b-weights">9 weights</span>
+        <div class="name" style="margin-top:8px">Paperlogy</div>
+      </div>
+      <div class="meta">
+        도톰한 세로획 · 각진 느낌<br>
+        타이틀·헤딩에 존재감 강함
+      </div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Wordmark</div>
+      <div class="wordmark">언니픽</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Headline 28 · 900</div>
+      <div class="headline">오늘 뭐 먹지?<br>쿠폰 월드컵 시작! 🏆</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Body + Numbers</div>
+      <div class="body-row">
+        <div class="body-15">아메리카노 1+1 쿠폰 발급 중</div>
+        <div class="body-15-bold">10분 남음</div>
+      </div>
+      <div class="numbers">3,200원 · 08:42</div>
+    </div>
+    <button class="button-pill">쿠폰 받으러 가기</button>
+  </div>
+
+  <!-- 2. Freesentation -->
+  <div class="card f-freesentation">
+    <div class="card-head">
+      <div>
+        <span class="badge b-open">OFL</span>
+        <span class="badge b-weights">9 weights</span>
+        <div class="name" style="margin-top:8px">Freesentation</div>
+      </div>
+      <div class="meta">
+        탄탄한 종성 · 숫자 가독성 ↑<br>
+        쿠폰·가격에 강함
+      </div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Wordmark</div>
+      <div class="wordmark">언니픽</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Headline 28 · 900</div>
+      <div class="headline">오늘 뭐 먹지?<br>쿠폰 월드컵 시작! 🏆</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Body + Numbers</div>
+      <div class="body-row">
+        <div class="body-15">아메리카노 1+1 쿠폰 발급 중</div>
+        <div class="body-15-bold">10분 남음</div>
+      </div>
+      <div class="numbers">3,200원 · 08:42</div>
+    </div>
+    <button class="button-pill">쿠폰 받으러 가기</button>
+  </div>
+
+  <!-- 3. Wanted Sans -->
+  <div class="card f-wanted">
+    <div class="card-head">
+      <div>
+        <span class="badge b-open">OFL</span>
+        <span class="badge b-weights">Variable</span>
+        <div class="name" style="margin-top:8px">Wanted Sans</div>
+      </div>
+      <div class="meta">
+        Pretendard와 같은 뼈대<br>
+        Black weight 더 굵음
+      </div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Wordmark</div>
+      <div class="wordmark">언니픽</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Headline 28 · 900</div>
+      <div class="headline">오늘 뭐 먹지?<br>쿠폰 월드컵 시작! 🏆</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Body + Numbers</div>
+      <div class="body-row">
+        <div class="body-15">아메리카노 1+1 쿠폰 발급 중</div>
+        <div class="body-15-bold">10분 남음</div>
+      </div>
+      <div class="numbers">3,200원 · 08:42</div>
+    </div>
+    <button class="button-pill">쿠폰 받으러 가기</button>
+  </div>
+
+  <!-- 4. SUIT -->
+  <div class="card f-suit">
+    <div class="card-head">
+      <div>
+        <span class="badge b-open">OFL</span>
+        <span class="badge b-weights">Variable</span>
+        <div class="name" style="margin-top:8px">SUIT</div>
+      </div>
+      <div class="meta">
+        중성적이고 차분한 인상<br>
+        900에서 확연히 굵음
+      </div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Wordmark</div>
+      <div class="wordmark">언니픽</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Headline 28 · 900</div>
+      <div class="headline">오늘 뭐 먹지?<br>쿠폰 월드컵 시작! 🏆</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Body + Numbers</div>
+      <div class="body-row">
+        <div class="body-15">아메리카노 1+1 쿠폰 발급 중</div>
+        <div class="body-15-bold">10분 남음</div>
+      </div>
+      <div class="numbers">3,200원 · 08:42</div>
+    </div>
+    <button class="button-pill">쿠폰 받으러 가기</button>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!-- 명조 (Serif) 4 candidates -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="section-title">
+  명조 폰트 후보 4종
+  <span class="desc">감성·손편지 톤 · 사장님 한마디·쿠폰 메모에 어울림</span>
+</div>
+
+<div class="grid">
+
+  <!-- 1. Nanum Myeongjo -->
+  <div class="card f-nanum-myeongjo">
+    <div class="card-head">
+      <div>
+        <span class="badge b-open">OFL</span>
+        <span class="badge b-serif">Serif</span>
+        <div class="name" style="margin-top:8px">나눔명조</div>
+      </div>
+      <div class="meta">
+        가장 친숙한 명조<br>
+        획 대비 보통 · 무난함
+      </div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Wordmark</div>
+      <div class="wordmark">언니픽</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Headline 28 · 800</div>
+      <div class="headline">사장님의 한마디,<br>오늘도 반갑습니다</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Body + Numbers</div>
+      <div class="body-row">
+        <div class="body-15">오늘 아침에 내린 커피, 드시러 오세요</div>
+        <div class="body-15-bold">10분 남음</div>
+      </div>
+      <div class="numbers">3,200원 · 08:42</div>
+    </div>
+    <button class="button-pill">쿠폰 받으러 가기</button>
+  </div>
+
+  <!-- 2. Noto Serif KR -->
+  <div class="card f-noto-serif">
+    <div class="card-head">
+      <div>
+        <span class="badge b-open">OFL</span>
+        <span class="badge b-serif">Serif</span>
+        <div class="name" style="margin-top:8px">본명조 (Noto Serif KR)</div>
+      </div>
+      <div class="meta">
+        획 대비 크고 모던<br>
+        900 가능 · 존재감 있음
+      </div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Wordmark</div>
+      <div class="wordmark">언니픽</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Headline 28 · 900</div>
+      <div class="headline">사장님의 한마디,<br>오늘도 반갑습니다</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Body + Numbers</div>
+      <div class="body-row">
+        <div class="body-15">오늘 아침에 내린 커피, 드시러 오세요</div>
+        <div class="body-15-bold">10분 남음</div>
+      </div>
+      <div class="numbers">3,200원 · 08:42</div>
+    </div>
+    <button class="button-pill">쿠폰 받으러 가기</button>
+  </div>
+
+  <!-- 3. KoPubWorld Batang -->
+  <div class="card f-kopub">
+    <div class="card-head">
+      <div>
+        <span class="badge b-open">OFL</span>
+        <span class="badge b-serif">Serif</span>
+        <div class="name" style="margin-top:8px">KoPub월드 바탕</div>
+      </div>
+      <div class="meta">
+        국내 출판용 명조 · 정갈<br>
+        긴 본문 가독성 강함
+      </div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Wordmark</div>
+      <div class="wordmark">언니픽</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Headline 28 · 800</div>
+      <div class="headline">사장님의 한마디,<br>오늘도 반갑습니다</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Body + Numbers</div>
+      <div class="body-row">
+        <div class="body-15">오늘 아침에 내린 커피, 드시러 오세요</div>
+        <div class="body-15-bold">10분 남음</div>
+      </div>
+      <div class="numbers">3,200원 · 08:42</div>
+    </div>
+    <button class="button-pill">쿠폰 받으러 가기</button>
+  </div>
+
+  <!-- 4. MaruBuri -->
+  <div class="card f-maruburi">
+    <div class="card-head">
+      <div>
+        <span class="badge b-open">OFL</span>
+        <span class="badge b-serif">Serif</span>
+        <div class="name" style="margin-top:8px">마루 부리</div>
+      </div>
+      <div class="meta">
+        우아하고 따뜻한 획<br>
+        손편지·감성 브랜드 톤
+      </div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Wordmark</div>
+      <div class="wordmark">언니픽</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Headline 28 · 800</div>
+      <div class="headline">사장님의 한마디,<br>오늘도 반갑습니다</div>
+    </div>
+    <div class="sample">
+      <div class="lbl">Body + Numbers</div>
+      <div class="body-row">
+        <div class="body-15">오늘 아침에 내린 커피, 드시러 오세요</div>
+        <div class="body-15-bold">10분 남음</div>
+      </div>
+      <div class="numbers">3,200원 · 08:42</div>
+    </div>
+    <button class="button-pill">쿠폰 받으러 가기</button>
+  </div>
+
+</div>
+
+</body>
+</html>

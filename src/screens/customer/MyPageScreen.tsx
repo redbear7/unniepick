@@ -1,12 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, Modal,
+  View, Text, StyleSheet, Modal, Image,
   TouchableOpacity, ScrollView, Switch, Alert,
   TextInput, ActivityIndicator, Pressable,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getNotificationOptIn,
   setNotificationOptIn,
@@ -20,6 +23,10 @@ import {
 import { getMyStats } from '../../lib/services/receiptService';
 import { supabase } from '../../lib/supabase';
 import { useMiniPlayerPadding } from '../../hooks/useMiniPlayerPadding';
+
+// 배너 이미지 로컬 경로
+const BANNER_KEY  = 'my_banner_image_v1';
+const BANNER_DEST = (FileSystem.documentDirectory ?? '') + 'my_page_banner.jpg';
 
 // ── 동물 캐릭터 5종 ──────────────────────────────────────────────────────────
 const CHARACTERS = [
@@ -186,6 +193,14 @@ export default function MyPageScreen() {
   } | null>(null);
   const [stats,      setStats]      = useState({ totalAmount: 0, receiptCount: 0, couponUsedCount: 0 });
   const [stampCards, setStampCards] = useState<StampCardRow[]>([]);
+  const [bannerUri,  setBannerUri]  = useState<string | null>(null);
+
+  // 배너 이미지 초기 로드
+  useEffect(() => {
+    AsyncStorage.getItem(BANNER_KEY).then(uri => {
+      if (uri) setBannerUri(uri);
+    });
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -193,6 +208,68 @@ export default function MyPageScreen() {
       getNotificationOptIn().then(setNotificationOn);
     }, [])
   );
+
+  // ── 배너 사진 변경 ──────────────────────────────────────────────────────────
+  const saveBanner = async (uri: string) => {
+    await FileSystem.copyAsync({ from: uri, to: BANNER_DEST });
+    await AsyncStorage.setItem(BANNER_KEY, BANNER_DEST);
+    setBannerUri(BANNER_DEST + '?t=' + Date.now()); // 캐시 무효화
+  };
+
+  const handleChangeBanner = () => {
+    const options: any[] = [
+      {
+        text: '📷 카메라로 촬영',
+        onPress: async () => {
+          const perm = await ImagePicker.requestCameraPermissionsAsync();
+          if (!perm.granted) {
+            Alert.alert('권한 필요', '설정에서 카메라 권한을 허용해주세요.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [3, 1],
+            quality: 0.85,
+          });
+          if (!result.canceled) await saveBanner(result.assets[0].uri);
+        },
+      },
+      {
+        text: '🖼 갤러리에서 선택',
+        onPress: async () => {
+          const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!perm.granted) {
+            Alert.alert('권한 필요', '설정에서 사진 접근 권한을 허용해주세요.');
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [3, 1],
+            quality: 0.85,
+          });
+          if (!result.canceled) await saveBanner(result.assets[0].uri);
+        },
+      },
+    ];
+
+    if (bannerUri) {
+      options.push({
+        text: '🗑 기본 배경으로 돌리기',
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.removeItem(BANNER_KEY);
+          await FileSystem.deleteAsync(BANNER_DEST, { idempotent: true });
+          setBannerUri(null);
+        },
+      });
+    }
+
+    options.push({ text: '취소', style: 'cancel' });
+
+    Alert.alert('배경 사진 변경', '', options);
+  };
 
   const loadUser = async () => {
     const profile = await getCurrentUserProfile();
@@ -245,52 +322,69 @@ export default function MyPageScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={[styles.container, { paddingBottom: bottomPad }]}>
-        <Text style={styles.title}>마이페이지</Text>
 
-        {/* ── 프로필 카드 ── */}
-        <Text style={styles.sectionHeader}>프로필</Text>
-        {user ? (
-          <View style={styles.profileCard}>
-            {/* 아바타 (탭 → 편집) */}
-            <TouchableOpacity
-              onPress={() => setEditModalVisible(true)}
-              activeOpacity={0.8}
-              style={styles.avatarWrap}
-            >
-              <Text style={styles.avatar}>{user.avatarEmoji}</Text>
-              <View style={styles.avatarEditBadge}>
-                <Text style={styles.avatarEditBadgeText}>✏️</Text>
-              </View>
-            </TouchableOpacity>
+        {/* ── 히어로 배너 (배경 사진 + 프로필) ── */}
+        <View style={styles.heroBanner}>
+          {/* 배경: 사진 or 오렌지 */}
+          {bannerUri ? (
+            <Image
+              source={{ uri: bannerUri }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+          ) : null}
+          {/* 어두운 오버레이 (사진일 때 텍스트 가독성) */}
+          <View style={[
+            styles.heroBannerOverlay,
+            bannerUri ? styles.heroBannerOverlayPhoto : styles.heroBannerOverlayOrange,
+          ]} />
 
-            <View style={{ flex: 1 }}>
-              <Text style={styles.userName}>{user.nickname}님</Text>
-              <View style={styles.loginBadge}>
-                <Text style={styles.loginBadgeText}>✅ 로그인 중</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={() => setEditModalVisible(true)}
-            >
-              <Text style={styles.editBtnText}>✏️ 편집</Text>
+          {/* 상단: 타이틀 + 배너 편집 버튼 */}
+          <View style={styles.heroBannerTop}>
+            <Text style={styles.heroTitle}>마이페이지</Text>
+            <TouchableOpacity style={styles.heroCameraBtn} onPress={handleChangeBanner} activeOpacity={0.8}>
+              <Text style={styles.heroCameraBtnText}>📷</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.loginCard}
-            onPress={() => navigation.navigate('Login')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.loginCardEmoji}>🐻</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.loginCardTitle}>로그인 / 회원가입</Text>
-              <Text style={styles.loginCardSub}>쿠폰 · 스탬프 · 랭킹 이용 가능</Text>
+
+          {/* 하단: 프로필 정보 */}
+          {user ? (
+            <View style={styles.heroProfile}>
+              <TouchableOpacity
+                onPress={() => setEditModalVisible(true)}
+                activeOpacity={0.8}
+                style={styles.heroAvatarWrap}
+              >
+                <Text style={styles.heroAvatar}>{user.avatarEmoji}</Text>
+                <View style={styles.heroAvatarBadge}>
+                  <Text style={{ fontSize: 9 }}>✏️</Text>
+                </View>
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.heroName}>{user.nickname}님</Text>
+                <View style={styles.heroLoginBadge}>
+                  <Text style={styles.heroLoginBadgeText}>✅ 로그인 중</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.heroEditBtn} onPress={() => setEditModalVisible(true)}>
+                <Text style={styles.heroEditBtnText}>✏️ 편집</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.loginCardArrow}>›</Text>
-          </TouchableOpacity>
-        )}
+          ) : (
+            <TouchableOpacity
+              style={styles.heroProfile}
+              onPress={() => navigation.navigate('Login')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.heroAvatar}>🐻</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.heroName}>로그인 / 회원가입</Text>
+                <Text style={styles.heroLoginBadgeText}>쿠폰 · 스탬프 · 랭킹 이용 가능</Text>
+              </View>
+              <Text style={[styles.heroEditBtnText, { fontSize: 20 }]}>›</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* ── 요약 통계 ── */}
         <Text style={styles.sectionHeader}>활동 요약</Text>
@@ -427,7 +521,7 @@ export default function MyPageScreen() {
         <Text style={styles.sectionHeader}>서비스</Text>
         <View style={styles.menuCard}>
           {[
-            { icon: '💰', label: '언니코인 지갑',  onPress: () => navigation.navigate('Wallet') },
+            { icon: '💰', label: '픽포인트 지갑',  onPress: () => navigation.navigate('Wallet') },
             { icon: '🍀', label: '스탬프 카드',    onPress: () => navigation.navigate('StampCard'), badge: 'NEW' },
             { icon: '🎡', label: '행운 돌림판',    onPress: () => navigation.navigate('SpinWheel'), badge: 'NEW' },
             { icon: '🧾', label: '영수증 인증',   onPress: () => navigation.navigate('ReceiptScan') },
@@ -566,10 +660,73 @@ const pm = StyleSheet.create({
 const styles = StyleSheet.create({
   safe:      { flex: 1, backgroundColor: A.bg },
   container: { paddingBottom: 40 },
-  title: {
-    fontSize: 34, fontWeight: '700', color: A.label,
-    letterSpacing: -0.5, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4,
+
+  // ── 히어로 배너 ──────────────────────────────────────────────────────────
+  heroBanner: {
+    width: '100%',
+    height: 200,
+    backgroundColor: A.orange,
+    overflow: 'hidden',
+    justifyContent: 'space-between',
   },
+  heroBannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroBannerOverlayOrange: {
+    backgroundColor: 'transparent', // 오렌지 자체가 배경이므로 오버레이 불필요
+  },
+  heroBannerOverlayPhoto: {
+    backgroundColor: 'rgba(0,0,0,0.38)',
+  },
+  heroBannerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  heroTitle: {
+    fontSize: 28, fontWeight: '700', color: '#fff',
+    letterSpacing: -0.5,
+  },
+  heroCameraBtn: {
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    borderRadius: 20, width: 36, height: 36,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  heroCameraBtnText: { fontSize: 18 },
+  heroProfile: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingBottom: 18, gap: 14,
+  },
+  heroAvatarWrap: { position: 'relative' },
+  heroAvatar: { fontSize: 48 },
+  heroAvatarBadge: {
+    position: 'absolute', bottom: -2, right: -2,
+    backgroundColor: 'rgba(255,111,15,0.9)',
+    borderRadius: 10, width: 20, height: 20,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
+  },
+  heroName: {
+    fontSize: 20, fontWeight: '700', color: '#fff',
+    letterSpacing: -0.3,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  heroLoginBadge: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2,
+    alignSelf: 'flex-start', marginTop: 4,
+  },
+  heroLoginBadgeText: { fontSize: 11, fontWeight: '600', color: '#fff' },
+  heroEditBtn: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
+  },
+  heroEditBtnText: { fontSize: 14, fontWeight: '500', color: '#fff' },
+
   sectionHeader: {
     fontSize: 13, fontWeight: '400', color: A.label3,
     textTransform: 'uppercase', letterSpacing: 0.4,

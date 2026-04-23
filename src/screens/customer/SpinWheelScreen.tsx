@@ -15,12 +15,12 @@ const WHEEL_SIZE = Math.min(SCREEN_W - 48, 320);
 // ── 돌림판 세그먼트 ──────────────────────────────────────────────────────────
 const SEGMENTS = [
   { label: '꽝',         emoji: '😢', color: '#E0E0E0', coins: 0   },
-  { label: '10코인',     emoji: '🪙', color: '#FFC107', coins: 10  },
+  { label: '10P',     emoji: '🪙', color: '#FFC107', coins: 10  },
   { label: '꽝',         emoji: '😢', color: '#E0E0E0', coins: 0   },
-  { label: '30코인',     emoji: '💰', color: '#FF9800', coins: 30  },
-  { label: '5코인',      emoji: '🪙', color: '#FFE082', coins: 5   },
-  { label: '50코인',     emoji: '🎉', color: '#FF6B6B', coins: 50  },
-  { label: '20코인',     emoji: '💫', color: '#AB47BC', coins: 20  },
+  { label: '30P',     emoji: '💰', color: '#FF9800', coins: 30  },
+  { label: '5P',      emoji: '🪙', color: '#FFE082', coins: 5   },
+  { label: '50P',     emoji: '🎉', color: '#FF6B6B', coins: 50  },
+  { label: '20P',     emoji: '💫', color: '#AB47BC', coins: 20  },
   { label: '스탬프 보너스', emoji: '🍀', color: '#4CAF50', coins: 15 },
 ];
 
@@ -129,7 +129,7 @@ export default function SpinWheelScreen() {
         if (won.coins > 0) {
           Alert.alert(
             `${won.emoji} ${won.label} 당첨!`,
-            `언니코인 ${won.coins}개가 지갑에 적립됐어요!`,
+            `픽포인트 ${won.coins}P가 적립됐어요!`,
             [{ text: '확인' }],
           );
         } else {
@@ -157,7 +157,7 @@ export default function SpinWheelScreen() {
 
       <View style={s.container}>
         {/* 안내 */}
-        <Text style={s.desc}>하루 1회 · 언니코인 적립 찬스!</Text>
+        <Text style={s.desc}>하루 1회 · 픽포인트 적립 찬스!</Text>
 
         {/* 화살표 (고정) */}
         <View style={s.arrowWrap}>
@@ -199,7 +199,7 @@ export default function SpinWheelScreen() {
             <Text style={s.resultEmoji}>{result.emoji}</Text>
             <Text style={s.resultLabel}>{result.label}</Text>
             {result.coins > 0 && (
-              <Text style={s.resultCoins}>+{result.coins} 언니코인 🪙</Text>
+              <Text style={s.resultCoins}>+{result.coins}P 픽포인트 🎯</Text>
             )}
           </View>
         )}

@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { TAB_BAR_HEIGHT } from '../constants/layout';
+export { TAB_BAR_HEIGHT };
 
 import { ToastProvider } from '../contexts/ToastContext';
 import { navigationRef } from './navigationRef';
@@ -20,12 +22,26 @@ import LoginScreen             from '../screens/customer/LoginScreen';
 import SignUpScreen            from '../screens/customer/SignUpScreen';
 import AnnouncementBoardScreen from '../screens/customer/AnnouncementBoardScreen';
 import StoreHomeScreen         from '../screens/customer/StoreHomeScreen';
-import WalletScreen            from '../screens/customer/WalletScreen';
+import WalletScreen            from '../screens/Wallet/WalletScreen';   // Spec 01 재설계
+import RedeemScreen            from '../screens/Coupon/RedeemScreen';
+import DiscoverySettingsScreen from '../screens/Settings/DiscoverySettingsScreen';
 import StoreCheckinScreen      from '../screens/customer/StoreCheckinScreen';
 import SpinWheelScreen         from '../screens/customer/SpinWheelScreen';
+import NotificationScreen      from '../screens/customer/NotificationScreen';
+import NotificationSettingScreen from '../screens/customer/NotificationSettingScreen';
 import MapScreen               from '../screens/customer/MapScreen';
 import NearbyFeedScreen        from '../screens/customer/NearbyFeedScreen';
 import StoreFeedScreen         from '../screens/customer/StoreFeedScreen';
+import MyLocationScreen        from '../screens/My/MyLocationScreen';
+import ProfileEditScreen       from '../screens/My/ProfileEditScreen';
+import PriceReportScreen       from '../screens/customer/PriceReportScreen';
+import ReceiptReviewScreen     from '../screens/customer/ReceiptReviewScreen';
+
+// ── 탐색 탭 ───────────────────────────────────────────────────────
+import ExploreScreen           from '../screens/Explore/ExploreScreen';
+
+// ── MY 탭 ─────────────────────────────────────────────────────────
+import MyScreen                from '../screens/My/MyScreen';
 
 // ── 스플래시 ──────────────────────────────────────────────────────
 import SplashScreen            from '../screens/Splash/SplashScreen';
@@ -46,20 +62,33 @@ import StoreQRScreen           from '../screens/owner/StoreQRScreen';
 import SuperAdminLoginScreen        from '../screens/superadmin/SuperAdminLoginScreen';
 import SuperAdminDashboardScreen    from '../screens/superadmin/SuperAdminDashboardScreen';
 import SuperAdminCouponCreateScreen from '../screens/superadmin/SuperAdminCouponCreateScreen';
-import SuperAdminPlaylistScreen     from '../screens/superadmin/SuperAdminPlaylistScreen';
+import SuperAdminPlaylistScreen       from '../screens/superadmin/SuperAdminPlaylistScreen';
+import SuperAdminPointSettingsScreen  from '../screens/superadmin/SuperAdminPointSettingsScreen';
 
 const RootStack = createNativeStackNavigator();
 const Tab       = createBottomTabNavigator();
 
-export const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 82 : 64;
+import { Ionicons } from '@expo/vector-icons';
 
 const ACTIVE   = '#FF6F0F';  // 활성: 오렌지
 const INACTIVE = '#ADB5BD';  // 비활성: 회색
 
-// ── 탭 아이콘 (이모지) ────────────────────────────────────────────
-function TabIcon({ emoji, active }: { emoji: string; active: boolean }) {
+// ── 탭 아이콘 (Ionicons 선 아이콘 — 통일된 스타일) ──────────────
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+function TabIcon({
+  name,
+  focused,
+}: {
+  name: IoniconName;
+  focused: boolean;
+}) {
   return (
-    <Text style={{ fontSize: 22, opacity: active ? 1 : 0.5 }}>{emoji}</Text>
+    <Ionicons
+      name={name}
+      size={24}
+      color={focused ? ACTIVE : INACTIVE}
+    />
   );
 }
 
@@ -89,17 +118,27 @@ function CustomerTabs() {
       <Tab.Screen name="Home" component={HomeV1Screen}
         options={{
           tabBarLabel: '홈',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" active={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'home' : 'home-outline'} focused={focused} />,
         }} />
-      <Tab.Screen name="NearbyFeed" component={NearbyFeedScreen}
+      <Tab.Screen name="NearbyFeed" component={ExploreScreen}
         options={{
           tabBarLabel: '탐색',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🔍" active={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'search' : 'search-outline'} focused={focused} />,
+        }} />
+      <Tab.Screen name="MapTab" component={MapScreen}
+        options={{
+          tabBarLabel: '지도',
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'map' : 'map-outline'} focused={focused} />,
         }} />
       <Tab.Screen name="Wallet" component={WalletScreen}
         options={{
           tabBarLabel: '쿠폰함',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🎟" active={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'ticket' : 'ticket-outline'} focused={focused} />,
+        }} />
+      <Tab.Screen name="My" component={MyScreen}
+        options={{
+          tabBarLabel: 'MY',
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'person' : 'person-outline'} focused={focused} />,
         }} />
     </Tab.Navigator>
   );
@@ -184,6 +223,16 @@ export default function Navigation() {
           <RootStack.Screen name="AnnouncementBoard" component={AnnouncementBoardScreen} />
           <RootStack.Screen name="Map"               component={MapScreen} />
           <RootStack.Screen name="CouponList"        component={NearbyFeedScreen} />
+          {/* ── Spec 01 ────────────────────────────────────────── */}
+          <RootStack.Screen name="Redeem"            component={RedeemScreen}
+            options={{ presentation: 'fullScreenModal', headerShown: false }} />
+          <RootStack.Screen name="DiscoverySettings"   component={DiscoverySettingsScreen} />
+          <RootStack.Screen name="Notification"        component={NotificationScreen} />
+          <RootStack.Screen name="NotificationSetting" component={NotificationSettingScreen} />
+          <RootStack.Screen name="MyLocation"          component={MyLocationScreen} />
+          <RootStack.Screen name="ProfileEdit"         component={ProfileEditScreen} />
+          <RootStack.Screen name="PriceReport"         component={PriceReportScreen} />
+          <RootStack.Screen name="ReceiptReview"       component={ReceiptReviewScreen} />
 
           {/* ── 사장님 ────────────────────────────────────────────── */}
           <RootStack.Screen name="OwnerLogin"     component={OwnerLoginScreen} />
@@ -198,7 +247,8 @@ export default function Navigation() {
           <RootStack.Screen name="SuperAdminLogin"        component={SuperAdminLoginScreen} />
           <RootStack.Screen name="SuperAdminDashboard"    component={SuperAdminDashboardScreen} />
           <RootStack.Screen name="SuperAdminCouponCreate" component={SuperAdminCouponCreateScreen} />
-          <RootStack.Screen name="SuperAdminPlaylist"     component={SuperAdminPlaylistScreen} options={{ headerShown: false }} />
+          <RootStack.Screen name="SuperAdminPlaylist"      component={SuperAdminPlaylistScreen} options={{ headerShown: false }} />
+          <RootStack.Screen name="SuperAdminPointSettings" component={SuperAdminPointSettingsScreen} />
         </RootStack.Navigator>
       </NavigationContainer>
     </ToastProvider>

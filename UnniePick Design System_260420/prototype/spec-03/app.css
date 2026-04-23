@@ -1,0 +1,287 @@
+/* ═══════════════════════════════════════════════════════════════
+   Spec 01 Prototype · Wallet Auto-Discovery
+   ═══════════════════════════════════════════════════════════════ */
+@import url('../../colors_and_type.css');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #1A1A1D;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  color: var(--fg1);
+  overflow: hidden;
+}
+
+/* ─── Workspace layout ─── */
+.ws {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  height: 100vh;
+  background: #F4F2ED;
+}
+.ws-sidebar {
+  background: #0D0E0F;
+  color: #fff;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.ws-sidebar.right { border-right: none; border-left: 1px solid rgba(255,255,255,0.06); }
+.ws-stage {
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255,111,15,0.06), transparent 60%),
+    #F4F2ED;
+}
+
+/* ─── Sidebar (left) ─── */
+.sb-header {
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sb-brand {
+  font: 900 18px/1 var(--font-sans);
+  color: var(--orange-500);
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+.sb-sub {
+  font: 600 11px/1.4 var(--font-sans);
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.sb-section {
+  padding: 20px 16px 8px;
+  font: 800 10px/1 var(--font-sans);
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.sb-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  margin: 2px 8px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.78);
+  font: 600 13px/1.3 var(--font-sans);
+  letter-spacing: -0.1px;
+  cursor: pointer;
+  text-align: left;
+  width: calc(100% - 16px);
+  transition: background 0.15s, color 0.15s;
+}
+.sb-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+.sb-item.active {
+  background: rgba(255,111,15,0.14);
+  color: var(--orange-300);
+}
+.sb-item.active .sb-dot { background: var(--orange-500); }
+.sb-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+.sb-label { flex: 1; }
+.sb-hint {
+  font: 600 10px/1 var(--font-sans);
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.3px;
+}
+
+/* Context note in sidebar */
+.sb-note {
+  margin: 12px 16px;
+  padding: 14px;
+  background: rgba(255,111,15,0.08);
+  border-radius: 10px;
+  font: 500 12px/1.55 var(--font-sans);
+  color: rgba(255,255,255,0.75);
+  letter-spacing: -0.1px;
+}
+.sb-note b { color: var(--orange-300); font-weight: 800; }
+
+/* ─── Stage screen label ─── */
+.screen-label {
+  position: absolute;
+  top: 28px; left: 50%; transform: translateX(-50%);
+  background: rgba(13,14,15,0.9);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font: 700 12px/1 var(--font-sans);
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(8px);
+  z-index: 5;
+  display: flex; align-items: center; gap: 10px;
+}
+.screen-label .ix {
+  background: var(--orange-500);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font: 900 10px/1 var(--font-sans);
+}
+
+/* ─── Tweaks panel (right sidebar) ─── */
+.tw-header {
+  padding: 22px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.tw-title {
+  font: 900 14px/1 var(--font-sans);
+  color: #fff;
+  letter-spacing: -0.2px;
+  margin-bottom: 4px;
+}
+.tw-sub {
+  font: 500 12px/1.5 var(--font-sans);
+  color: rgba(255,255,255,0.5);
+  letter-spacing: -0.1px;
+}
+.tw-group { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.tw-group-title {
+  font: 800 10px/1 var(--font-sans);
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.tw-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0;
+}
+.tw-label {
+  font: 600 13px/1.3 var(--font-sans);
+  color: rgba(255,255,255,0.85);
+  letter-spacing: -0.1px;
+  flex: 1;
+}
+.tw-desc {
+  font: 500 11px/1.5 var(--font-sans);
+  color: rgba(255,255,255,0.45);
+  margin-top: 3px;
+  letter-spacing: -0.05px;
+}
+.tw-seg {
+  display: flex;
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 2px;
+  margin-top: 8px;
+}
+.tw-seg-btn {
+  flex: 1;
+  padding: 7px 10px;
+  font: 700 12px/1 var(--font-sans);
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.55);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: -0.1px;
+}
+.tw-seg-btn.on {
+  background: var(--orange-500);
+  color: #fff;
+}
+.tw-switch {
+  width: 44px; height: 26px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+}
+.tw-switch.on { background: var(--orange-500); }
+.tw-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+.tw-switch.on::after { transform: translateX(18px); }
+.tw-slider {
+  width: 100%;
+  accent-color: var(--orange-500);
+}
+.tw-value {
+  font: 700 13px/1 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--orange-300);
+  margin-top: 4px;
+}
+
+/* ─── Event simulator (sidebar bottom) ─── */
+.sim-title {
+  padding: 18px 20px 8px;
+  font: 800 10px/1 var(--font-sans);
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.sim-btn {
+  display: block; width: calc(100% - 32px);
+  margin: 6px 16px;
+  padding: 10px 14px;
+  background: rgba(255,111,15,0.12);
+  border: 1px solid rgba(255,111,15,0.3);
+  border-radius: 10px;
+  color: var(--orange-300);
+  font: 700 12px/1.3 var(--font-sans);
+  letter-spacing: -0.1px;
+  cursor: pointer;
+  text-align: left;
+}
+.sim-btn:hover { background: rgba(255,111,15,0.2); }
+
+/* Toggle panel (hidden when tweaks off) */
+.ws.tweaks-off { grid-template-columns: 280px 1fr; }
+.ws.tweaks-off .ws-sidebar.right { display: none; }
+.ws.sidebar-off { grid-template-columns: 1fr 320px; }
+.ws.sidebar-off .ws-sidebar:not(.right) { display: none; }
+.ws.both-off { grid-template-columns: 1fr; }
+.ws.both-off .ws-sidebar { display: none; }
+
+/* ─── iOS content variables ─── */
+.ios-light { color: #000; }
+.ios-dark { color: #fff; }
+
+/* Hide scrollbars inside device */
+.device-scroll::-webkit-scrollbar { width: 0; display: none; }
+.device-scroll { scrollbar-width: none; }
+
+/* Pulse animation for ripple */
+@keyframes pulse-ring {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+@keyframes slide-up-in {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes haptic-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

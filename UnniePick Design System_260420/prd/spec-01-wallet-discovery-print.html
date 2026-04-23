@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Spec 01 · 지갑 자동 발견 · 언니픽</title>
+<link rel="stylesheet" href="spec-sheet.css">
+<style>
+  /* ═══ Print-ready overrides ═══ */
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm;
+  }
+
+  html, body {
+    background: #fff !important;
+  }
+  body {
+    padding-bottom: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Tighter container for print */
+  .doc {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Hero — compact, page 1 only */
+  .hero {
+    margin: 0 0 28px !important;
+    padding: 40px 36px 48px !important;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .hero-top { margin-bottom: 48px !important; }
+  .hero-num {
+    font-size: 140px !important;
+    top: 60px !important;
+    left: 20px !important;
+  }
+  .hero-title {
+    font-size: 56px !important;
+    line-height: 0.98 !important;
+    letter-spacing: -2px !important;
+    margin-top: 18px !important;
+  }
+  .hero-sub {
+    font-size: 18px !important;
+    margin-top: 20px !important;
+  }
+  .hero-meta {
+    margin-top: 36px !important;
+    padding-top: 22px !important;
+    gap: 20px !important;
+  }
+  .hero-meta-val { font-size: 16px !important; }
+
+  /* Sections — tighter + avoid breaks */
+  section.block {
+    padding: 28px 20px !important;
+    border-bottom: 1px solid var(--line-soft);
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+  /* Large sections sometimes must break; allow inside for those */
+  section.block.allow-break {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .sec-head { margin-bottom: 24px !important; gap: 20px !important; }
+  .sec-num { font-size: 44px !important; min-width: 72px !important; }
+  .sec-title { font-size: 32px !important; letter-spacing: -1px !important; }
+  .sec-lede {
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 24px !important;
+  }
+
+  /* Force breaks before each main section (except the first one after hero) */
+  section.block {
+    break-before: page;
+    page-break-before: always;
+  }
+  section.block:first-of-type {
+    break-before: auto;
+    page-break-before: auto;
+  }
+
+  /* Headings */
+  .h3 { font-size: 20px !important; }
+  .h4 { font-size: 16px !important; }
+  .h5 { font-size: 13px !important; }
+  .body { font-size: 14px !important; line-height: 1.55 !important; }
+  .caption { font-size: 12px !important; }
+
+  /* Cards — reduce padding */
+  .card, .card-accent, .card-dark, .card-warm {
+    padding: 20px !important;
+    border-radius: 14px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Grids — keep 2/3/4 col but tighter gaps */
+  .grid-2, .grid-3, .grid-4 { gap: 14px !important; }
+
+  /* JTBD */
+  .jtbd {
+    padding: 18px 20px !important;
+    gap: 16px !important;
+    grid-template-columns: 72px 1fr !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .jtbd .stmt { font-size: 17px !important; }
+
+  /* Flow steps */
+  .flow-step {
+    padding: 16px !important;
+    gap: 14px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .flow-num { width: 38px !important; height: 38px !important; font-size: 16px !important; }
+  .flow-step-name { font-size: 15px !important; }
+  .flow-step-detail { font-size: 13px !important; }
+  .flow-step-tech { font-size: 11px !important; padding: 8px 10px !important; }
+
+  .flow-grid { gap: 10px !important; }
+  .flow-grid .flow-step { padding: 16px !important; }
+  .flow-title { font-size: 14px !important; }
+  .flow-detail { font-size: 12px !important; }
+
+  /* API rows */
+  .api-row {
+    padding: 14px 16px !important;
+    gap: 14px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .api-path { font-size: 13px !important; }
+  .api-desc { font-size: 12px !important; }
+
+  /* Code blocks */
+  .code {
+    font-size: 11px !important;
+    line-height: 1.55 !important;
+    padding: 16px 18px !important;
+    border-radius: 10px !important;
+    white-space: pre-wrap !important;
+    word-break: break-word;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Tables */
+  .spec-table, .field-tbl, .event-tbl {
+    font-size: 12px !important;
+    break-inside: auto;
+  }
+  .spec-table th, .field-tbl th, .event-tbl th {
+    padding: 10px 12px !important;
+    font-size: 10px !important;
+  }
+  .spec-table td, .field-tbl td, .event-tbl td {
+    padding: 10px 12px !important;
+  }
+  .spec-table td.mono, .field-tbl td.mono, .event-tbl td.mono {
+    font-size: 11px !important;
+  }
+  .spec-table tr, .field-tbl tr, .event-tbl tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* KPI cards */
+  .kpi-card, .kpi {
+    padding: 16px !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .kpi-val { font-size: 26px !important; }
+  .kpi-target { font-size: 26px !important; }
+  .kpi-name { font-size: 15px !important; }
+  .kpi-detail { font-size: 11px !important; }
+
+  /* Scenarios */
+  .scenario {
+    padding: 16px !important;
+    gap: 16px !important;
+    grid-template-columns: 36px 1fr 1fr !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .scenario-icon { width: 30px !important; height: 30px !important; font-size: 14px !important; }
+  .scenario-title { font-size: 14px !important; }
+  .scenario-detail { font-size: 12px !important; }
+
+  /* Timeline / rollout */
+  .timeline, .rollout { page-break-inside: avoid; break-inside: avoid; }
+  .timeline-col, .rollout-col { padding: 16px !important; }
+  .timeline-title, .rollout-when { font-size: 14px !important; }
+  .timeline-list li, .rollout-list li { font-size: 12px !important; }
+
+  /* Phones — shrink */
+  .phone-row { gap: 20px !important; margin-top: 18px !important; }
+  .phone {
+    width: 200px !important;
+    height: 420px !important;
+    padding: 6px !important;
+    box-shadow: 0 0 0 1.5px #25282C !important;
+  }
+  .phone-screen { border-radius: 24px !important; }
+  .phone .notch { top: 12px !important; width: 70px !important; height: 18px !important; }
+  .phone-label { font-size: 11px !important; }
+  .phone-note { font-size: 10px !important; }
+
+  /* Architecture layers */
+  .arch-layer {
+    padding: 20px !important;
+    gap: 20px !important;
+    grid-template-columns: 180px 1fr !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .arch-name { font-size: 20px !important; }
+  .mech-num { width: 34px !important; height: 34px !important; font-size: 11px !important; }
+  .mech-title { font-size: 14px !important; }
+  .mech-detail { font-size: 12px !important; }
+
+  /* Celebrate sequence */
+  .celebrate-seq { padding: 18px 20px !important; }
+  .celebrate-step {
+    grid-template-columns: 100px 1fr !important;
+    gap: 16px !important;
+  }
+  .celebrate-what { font-size: 13px !important; }
+  .celebrate-time { font-size: 12px !important; }
+
+  /* Edge grid */
+  .edge-box { padding: 14px !important; }
+  .edge-head { font-size: 12px !important; }
+  .edge-body { font-size: 11px !important; }
+
+  /* Dep list / chart */
+  .dep-chart { gap: 10px 16px !important; }
+  .dep-item { padding: 6px 10px !important; font-size: 12px !important; }
+  .dep-row { padding: 14px 16px !important; }
+
+  /* Problem grid */
+  .problem-box { padding: 20px !important; }
+  .problem-box .pbig { font-size: 22px !important; margin-bottom: 10px !important; }
+  .problem-box .pbody { font-size: 13px !important; }
+  .problem-box .plabel { font-size: 10px !important; margin-bottom: 10px !important; }
+
+  /* Footer navigation — hide in print */
+  .doc-foot { display: none !important; }
+
+  /* No hover effects in print */
+  .spec-table tr:hover { background: transparent !important; }
+
+  /* Prevent widowed headings */
+  .h3, .h4, .h5, .sec-head, .eyebrow {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-top">
+    <div class="hero-brand">언니픽</div>
+    <div class="hero-crumb">Phase 1 Spec · 01 of 03<br>개발 핸드오프 · v0.1</div>
+  </div>
+  <div class="hero-num">01</div>
+  <div class="hero-eyebrow">Idea 01 · Wallet Auto-Discovery</div>
+  <h1 class="hero-title">지갑 속 쿠폰이 <em>스스로</em><br>말을 건다.</h1>
+  <div class="hero-sub">매장 반경 100m 진입 시, 사용자가 저장해둔 쿠폰을 iOS Live Activity·Widget으로 능동 리마인드. Honey의 자동 발견 로직을 오프라인으로 이식한다.</div>
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Impact</div>
+      <div class="hero-meta-val"><em>High</em></div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Confidence</div>
+      <div class="hero-meta-val"><em>High</em></div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Ease</div>
+      <div class="hero-meta-val">Medium</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Target Sprint</div>
+      <div class="hero-meta-val">S1 – S3 (6주)</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Owner</div>
+      <div class="hero-meta-val">PM · iOS · Backend</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 01 · Problem & Hypothesis ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <h2 class="sec-title">문제 정의<br>& 가설</h2>
+  </div>
+  <p class="sec-lede">저장된 쿠폰의 대부분은 '만료되고 나서' 존재가 기억된다. 앱을 열지 않은 순간이 가장 중요한 접점이다.</p>
+
+  <div class="problem-grid">
+    <div class="problem-box ink">
+      <div class="plabel">Problem</div>
+      <div class="pbig">"쿠폰 저장해놓고<br>까먹어요."</div>
+      <div class="pbody">언니픽 사용자의 저장된 쿠폰 중 <strong style="color:#FF9A3D">약 58%가 사용 없이 만료</strong>된다 (내부 가정치). 사용자는 가게 앞을 지나가면서도 쿠폰의 존재를 기억하지 못한다. 쿠폰은 '저장하는 순간'이 아니라 '결제 직전'에 가치가 발생한다.</div>
+    </div>
+    <div class="problem-box orange">
+      <div class="plabel">Hypothesis</div>
+      <div class="pbig">"위치 기반 능동 알림이<br>사용률을 2배로."</div>
+      <div class="pbody"><strong>IF</strong> 저장된 쿠폰이 있는 매장 반경 100m에 진입할 때 Live Activity·Widget으로 자동 리마인드한다면, <strong>THEN</strong> 쿠폰 사용률이 40% → 65%로 상승하고 W1 리텐션이 +8%pt 개선된다.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px;padding:28px 32px;background:var(--bg-warm);border-radius:16px">
+    <div class="eyebrow" style="color:var(--fg2)">Why now</div>
+    <p class="body" style="margin-top:8px">iOS 16+ Live Activity·Dynamic Island API가 안정화되면서 잠금화면 접근 비용이 낮아졌다. 경쟁 서비스 중 로컬 커머스 카테고리에서 Live Activity를 전면 채택한 곳은 아직 없다 — <strong>선점 기회</strong>.</p>
+  </div>
+</section>
+
+<!-- ═══ 02 · JTBD / User Stories ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <h2 class="sec-title">사용자 스토리<br>/ Jobs To Be Done</h2>
+  </div>
+
+  <div class="jtbd">
+    <div class="tag">JTBD 01</div>
+    <div class="stmt">동네를 걷다가 <em>"여기 쓸만한 쿠폰 있나?"</em>를 떠올릴 때 — 앱을 열지 않고도 바로 알고 싶다.</div>
+  </div>
+  <div class="jtbd">
+    <div class="tag">JTBD 02</div>
+    <div class="stmt">쿠폰 만료가 임박했을 때 — <em>"지금 근처에 있는데"</em>라는 타이밍에 알림이 오면 좋겠다.</div>
+  </div>
+  <div class="jtbd">
+    <div class="tag">JTBD 03</div>
+    <div class="stmt">친구와 약속 장소를 정할 때 — 내가 쿠폰 가진 가게를 <em>자연스럽게</em> 제안하고 싶다.</div>
+  </div>
+
+  <div class="grid-2" style="margin-top:40px">
+    <div class="card">
+      <div class="eyebrow">Primary Persona</div>
+      <h4 class="h4" style="margin-top:8px">혜린 · 28세 · 창원 상남동 직장인</h4>
+      <p class="body" style="margin-top:16px;font-size:15px">점심·저녁으로 외식 주 5회. 언니픽으로 쿠폰을 자주 저장하지만 결제할 때쯤 잊어버린다. "앱 알림은 귀찮은데 <strong>잠금화면에 자연스럽게 떠있는 건 좋아</strong>"</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Secondary Persona</div>
+      <h4 class="h4" style="margin-top:8px">지은 · 32세 · 마산 직장인 / 유모차</h4>
+      <p class="body" style="margin-top:16px;font-size:15px">카페·네일 위주로 동선 짧게 이동. 푸시 알림은 대부분 끄지만 <strong>위젯은 항상 본다</strong>. 만료 쿠폰 확인용으로 위젯을 원한다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 · UX Flow ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <h2 class="sec-title">UX 플로우 ·<br>Step by Step</h2>
+  </div>
+  <p class="sec-lede">백그라운드에서 위치 변경 감지 → 후보 쿠폰 매칭 → Live Activity 시작 → 탭하면 매장 상세로.</p>
+
+  <div class="flow-list">
+
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-step-name"><span class="step-label">Background</span>위치 변화 감지</div>
+      <div class="flow-step-detail">기기가 <strong>유의미한 위치 변화</strong>(약 500m)를 감지하면 OS가 언니픽 앱을 잠깐 깨운다. 실시간 GPS가 아니라서 배터리 소모 거의 없음.</div>
+      <div class="flow-step-tech">CLLocationManager.startMonitoringSignificantLocationChanges()</div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-step-name"><span class="step-label">Background</span>후보 쿠폰 매칭</div>
+      <div class="flow-step-detail">현재 위치에서 500m 반경 내 매장 중, <strong>사용자 지갑에 저장된 active 쿠폰이 있고 만료가 72시간 이내</strong>인 케이스를 쿼리.</div>
+      <div class="flow-step-tech">GET /v1/wallet/nearby?lat=..&amp;lng=..&amp;radius=500</div>
+    </div>
+
+    <div class="flow-step alt">
+      <div class="flow-num">3</div>
+      <div class="flow-step-name"><span class="step-label">Foreground</span>Live Activity 시작</div>
+      <div class="flow-step-detail">매칭된 쿠폰이 있으면 Live Activity를 시작. 잠금화면과 Dynamic Island에 "쿠폰 1장 · 파니스 · 18:00 만료" 표시. 알림음 없음, 배지만.</div>
+      <div class="flow-step-tech">ActivityKit.Activity&lt;CouponAttributes&gt;.request()</div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-step-name"><span class="step-label">User</span>탭 → 매장 상세</div>
+      <div class="flow-step-detail">사용자가 Live Activity를 탭하면 앱이 열리고 <strong>해당 쿠폰의 매장 상세 화면으로 딥링크</strong>. 쿠폰 사용 CTA 1탭 거리 (§04 쿠폰 사용 UX 참조).</div>
+      <div class="flow-step-tech">unniepick://coupon/{coupon_id}</div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-step-name"><span class="step-label">System</span>자동 종료</div>
+      <div class="flow-step-detail">사용자가 반경에서 벗어나거나, 쿠폰을 사용하거나, 8시간이 지나면 Live Activity 종료. 스팸 방지.</div>
+      <div class="flow-step-tech">activity.end(.dismissalPolicy(.immediate))</div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:32px;padding:24px 28px;background:#fff;border:1px dashed var(--line);border-radius:14px">
+    <div class="eyebrow" style="color:var(--fg2)">Throttling rules</div>
+    <ul class="body" style="margin-top:12px;padding-left:24px;font-size:15px">
+      <li>동일 매장당 <strong>최대 1회/일</strong> 알림</li>
+      <li>전체 합산 <strong>하루 최대 3회</strong></li>
+      <li>사용자가 Live Activity를 dismiss하면 해당 쿠폰은 <strong>24시간 쿨다운</strong></li>
+      <li>22:00 – 09:00 <strong>quiet hours</strong>는 Widget만 업데이트, Live Activity 미시작</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ 04 · Redeem UX (Touch-to-reveal, anti-capture) ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <h2 class="sec-title">쿠폰 사용 UX<br>· 터치형 & 캡쳐 방지</h2>
+  </div>
+  <p class="sec-lede">QR 스캔 대신, 사용자가 쿠폰 카드를 <strong>길게 눌러 현장 토큰을 생성</strong>하고 사장님이 눈으로 확인하는 방식. 캡쳐·공유·재사용을 기술적으로 차단한다. 이 UX는 Phase 1 <strong>3개 아이디어 모두에서 공용</strong>으로 사용된다.</p>
+
+  <!-- Why not QR -->
+  <div class="problem-grid" style="margin-bottom:40px">
+    <div class="problem-box ink">
+      <div class="plabel">Why not QR</div>
+      <div class="pbig">QR은 <br>동네 가게에 맞지 않는다.</div>
+      <div class="pbody">소상공인은 고정 QR 스탠드를 새로 두고, 네트워크 문제나 카메라 초점이 안 맞으면 줄이 밀린다. "손님 앞에서 헤매면 안 된다"는 게 사장님들 1순위 요구. 게다가 QR은 <strong style="color:#FF9A3D">화면만 보여주면 되는 '인증'이 아니라 '스캔'이 필요</strong>해 양쪽 다 번거롭다.</div>
+    </div>
+    <div class="problem-box orange">
+      <div class="plabel">Touch-to-reveal</div>
+      <div class="pbig">꾹 누르면 열린다.<br>사장님이 눈으로 본다.</div>
+      <div class="pbody">사용자가 쿠폰 카드를 <strong>1.5초 길게 누르면</strong> 전체 화면 '사용 모드' 진입 → 빨간 사용 CTA + 실시간 시각 애니메이션 + <strong>6자리 현장 토큰</strong>. 사장님은 숫자·애니메이션만 눈으로 확인 → "사용완료" 탭. 스캔도 없고 추가 하드웨어도 없다.</div>
+    </div>
+  </div>
+
+  <!-- Anti-capture mechanics -->
+  <div style="margin-bottom:32px">
+    <div class="eyebrow">Anti-Capture · 3중 방어</div>
+    <h4 class="h4" style="margin-top:8px;margin-bottom:20px">캡쳐·공유·재사용을 어떻게 막는가</h4>
+
+    <div class="grid-3">
+      <div class="card-dark">
+        <div class="pill" style="background:rgba(255,154,61,0.2);color:#FF9A3D;margin-bottom:14px">🛡 Layer 1</div>
+        <h5 class="h5" style="color:#fff">동적 토큰<br>(시각 혼합 시리얼)</h5>
+        <p class="body" style="color:rgba(255,255,255,0.75);margin-top:12px;font-size:14px">쿠폰 일련번호와 현재 시각(초 단위)을 HMAC-SHA256으로 섞어 <strong style="color:#fff">10초마다 갱신되는 6자리 코드</strong> 생성. 10초 지난 토큰은 서버에서 거부. 스크린샷은 도착 전에 이미 만료.</p>
+      </div>
+      <div class="card-dark">
+        <div class="pill" style="background:rgba(255,154,61,0.2);color:#FF9A3D;margin-bottom:14px">🛡 Layer 2</div>
+        <h5 class="h5" style="color:#fff">FLAG_SECURE<br>(스크린샷 차단)</h5>
+        <p class="body" style="color:rgba(255,255,255,0.75);margin-top:12px;font-size:14px">사용 모드 진입 시 iOS <code class="mono" style="color:#FF9A3D">UIScreen.captured</code> 감지 → 화면 블러. Android는 <code class="mono" style="color:#FF9A3D">FLAG_SECURE</code>로 OS 레벨 캡쳐 자체 불가. 녹화·미러링도 차단.</p>
+      </div>
+      <div class="card-dark">
+        <div class="pill" style="background:rgba(255,154,61,0.2);color:#FF9A3D;margin-bottom:14px">🛡 Layer 3</div>
+        <h5 class="h5" style="color:#fff">라이브 애니메이션<br>(시각 서명)</h5>
+        <p class="body" style="color:rgba(255,255,255,0.75);margin-top:12px;font-size:14px">쿠폰 배경의 <strong style="color:#fff">브랜드 그라디언트·파동 애니메이션</strong>이 매초 움직인다. 사장님 체크리스트의 1번은 "움직이는지". 정지 이미지는 무효.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technical spec: token -->
+  <div class="grid-2" style="margin-bottom:32px">
+    <div>
+      <div class="eyebrow">Token 생성 규칙</div>
+      <h4 class="h4" style="margin-top:8px;margin-bottom:16px">서버·기기 공통 HMAC 알고리즘</h4>
+      <div class="code"><span class="c">// 기기·서버 양쪽에서 동일 계산</span>
+<span class="k">function</span> redeemToken(couponId, userId, now) {
+  <span class="k">const</span> window = <span class="m">Math</span>.floor(now / <span class="n">10000</span>);
+  <span class="c">// 10초 윈도우</span>
+  <span class="k">const</span> message = <span class="s">`${couponId}:${userId}:${window}`</span>;
+  <span class="k">const</span> hmac = <span class="m">crypto</span>.hmac(
+    <span class="s">'SHA256'</span>, SECRET_KEY, message
+  );
+  <span class="c">// 6자리 숫자로 축약 (100만 개 공간)</span>
+  <span class="k">return</span> parseInt(
+    hmac.slice(<span class="n">0</span>, <span class="n">8</span>), <span class="n">16</span>
+  ) % <span class="n">1000000</span>;
+}</div>
+      <p class="caption" style="margin-top:12px">서버는 현재 윈도우 ± 1개 (이전·현재·다음 10초) 까지만 유효 — 시계 오차 ±10초 허용, 그 이상은 거부.</p>
+    </div>
+
+    <div>
+      <div class="eyebrow">재사용 차단</div>
+      <h4 class="h4" style="margin-top:8px;margin-bottom:16px">POST /v1/coupons/redeem</h4>
+      <div class="code"><span class="c">// 사장님 앱 → 서버 (사용완료 버튼)</span>
+<span class="k">POST</span> /v1/coupons/redeem
+{
+  <span class="k">coupon_id</span>: <span class="s">"cpn_7h2k..."</span>,
+  <span class="k">redeem_token</span>: <span class="n">429183</span>,
+  <span class="k">user_device_hash</span>: <span class="s">"sha256..."</span>,
+  <span class="k">merchant_id</span>: <span class="s">"mrc_paani_..."</span>,
+  <span class="k">client_ts</span>: <span class="n">1730123456</span>
+}
+
+<span class="c">// 서버 검증 순서</span>
+<span class="c">// 1. 토큰이 해당 쿠폰·유저 조합으로</span>
+<span class="c">//    현재 10초 윈도우에 유효한가</span>
+<span class="c">// 2. coupon.status = 'active' 인가</span>
+<span class="c">// 3. redeemed_at IS NULL 인가 (멱등)</span>
+<span class="c">// 4. 매장 GPS 반경 100m 이내인가</span>
+<span class="c">// → 통과 시 status='redeemed' UPDATE</span>
+<span class="c">//   동시 요청은 SELECT FOR UPDATE 잠금</span></div>
+    </div>
+  </div>
+
+  <!-- User flow -->
+  <div class="flow-list" style="margin-bottom:32px">
+    <div class="flow-step">
+      <div class="flow-num">A</div>
+      <div class="flow-step-name"><span class="step-label">사용자 앱</span>쿠폰 카드 롱프레스 1.5초</div>
+      <div class="flow-step-detail">지갑에서 쿠폰 카드를 길게 누르면 햅틱 + 카드가 풀스크린으로 확장. <strong>실수 탭 방지</strong>를 위해 1.5초 홀드.</div>
+      <div class="flow-step-tech">onLongPressStart → Haptic.medium · expand 300ms</div>
+    </div>
+    <div class="flow-step alt">
+      <div class="flow-num">B</div>
+      <div class="flow-step-name"><span class="step-label">사용자 앱</span>풀스크린 '사용 모드'</div>
+      <div class="flow-step-detail">화면 전체가 쿠폰. 중앙에 <strong>6자리 현장 토큰</strong> + 10초 카운트다운 링. 배경엔 브랜드 그라디언트 애니메이션. FLAG_SECURE ON.</div>
+      <div class="flow-step-tech">activityType=RedeemSession · captureGuard.start()</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">C</div>
+      <div class="flow-step-name"><span class="step-label">사용자 → 사장님</span>화면만 보여준다</div>
+      <div class="flow-step-detail">사용자가 카운터에 폰을 건네준다. 사장님은 <strong>(1) 토큰 숫자</strong>, <strong>(2) 애니메이션이 살아있는지</strong> 둘 다 확인. 0.5초면 끝.</div>
+      <div class="flow-step-tech">시각 체크만 · 터치 없음</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">D</div>
+      <div class="flow-step-name"><span class="step-label">사장님 앱</span>"사용완료" 탭</div>
+      <div class="flow-step-detail">사장님 앱 홈에서 "쿠폰 확인" 버튼 → 현재 매장 근처 대기 중인 쿠폰 리스트 → 해당 쿠폰 "사용완료". 서버 검증 후 즉시 반영.</div>
+      <div class="flow-step-tech">POST /v1/coupons/redeem · 매장 GPS 반경 내 한정</div>
+    </div>
+    <div class="flow-step alt">
+      <div class="flow-num">E</div>
+      <div class="flow-step-name"><span class="step-label">사용자 앱</span>즉시 '사용 완료' 전환</div>
+      <div class="flow-step-detail">서버 push로 Live Activity와 풀스크린 모드 즉시 종료 → <strong>'사용 완료' 리포트 카드</strong>. 다른 기기·세션에서도 동기화.</div>
+      <div class="flow-step-tech">APNs content-available=1 · 지갑 refresh</div>
+    </div>
+  </div>
+
+  <!-- Wireframes for redeem mode -->
+  <div class="phone-row">
+    <div class="phone-slot">
+      <div class="phone-label"><span class="step">State 1</span>지갑 · 쿠폰 카드</div>
+      <div class="phone">
+        <div class="phone-screen" style="background:#F2F4F6">
+          <div class="notch"></div>
+          <div class="phone-statusbar">
+            <span>9:41</span>
+            <span style="display:flex;gap:4px">
+              <svg width="16" height="10" viewBox="0 0 16 10"><path d="M1 9h1M4 7h1M7 5h1M10 3h1M13 1h1" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
+              <svg width="22" height="10" viewBox="0 0 22 10"><rect x="1" y="1" width="18" height="8" rx="2" stroke="#000" stroke-width="1"/><rect x="2.5" y="2.5" width="15" height="5" rx="0.8" fill="#000"/></svg>
+            </span>
+          </div>
+          <div style="padding:12px 20px 14px">
+            <div style="font:800 22px/1 'Wanted Sans';color:var(--ink);letter-spacing:-0.6px">내 쿠폰함</div>
+            <div style="font:500 12px/1 'Wanted Sans';color:var(--fg3);margin-top:6px">사용 가능 3장</div>
+          </div>
+          <!-- Coupon card -->
+          <div style="margin:0 16px;background:linear-gradient(135deg,#FF6F0F,#FF9A3D);border-radius:20px;padding:18px;color:#fff;box-shadow:0 10px 24px rgba(255,111,15,0.3);position:relative;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font:700 11px/1 'Wanted Sans';opacity:0.85;letter-spacing:0.5px;text-transform:uppercase">카페</div>
+                <div style="font:900 22px/1.1 'Wanted Sans';margin-top:6px;letter-spacing:-0.5px">파니스</div>
+              </div>
+              <div style="padding:4px 10px;background:rgba(255,255,255,0.22);backdrop-filter:blur(10px);border-radius:999px;font:800 10px/1 'Wanted Sans'">D-day</div>
+            </div>
+            <div style="font:900 32px/1 'Wanted Sans';margin-top:18px;letter-spacing:-1.5px">아메 <span style="opacity:0.85">30%</span></div>
+            <div style="border-top:1px dashed rgba(255,255,255,0.35);margin-top:18px;padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+              <div style="font:500 11px/1.3 'Wanted Sans';opacity:0.85">오늘 18:00 만료</div>
+              <div style="font:800 11px/1 'Wanted Sans';letter-spacing:0.3px">🫳 꾹 눌러 사용</div>
+            </div>
+          </div>
+          <!-- Second card (grey) -->
+          <div style="margin:12px 16px 0;background:#fff;border-radius:18px;padding:14px 18px;border:1px solid var(--line-soft)">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font:700 10px/1 'Wanted Sans';color:var(--fg3);letter-spacing:0.3px;text-transform:uppercase">네일</div>
+                <div style="font:800 16px/1.2 'Wanted Sans';color:var(--ink);margin-top:4px">네일바 상남</div>
+              </div>
+              <div style="font:800 22px/1 'Wanted Sans';color:var(--orange)">-5,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-note">평상시 지갑 화면. 카드 하단에 "꾹 눌러 사용" 힌트.</div>
+    </div>
+
+    <div class="phone-slot">
+      <div class="phone-label"><span class="step">State 2</span>사용 모드 · 풀스크린</div>
+      <div class="phone">
+        <div class="phone-screen" style="background:radial-gradient(circle at 30% 20%,#FFB475,#FF6F0F 60%,#E85D00);color:#fff;position:relative">
+          <div class="notch" style="background:#000"></div>
+          <!-- Decorative waves -->
+          <svg width="280" height="580" viewBox="0 0 280 580" style="position:absolute;top:0;left:0;opacity:0.2" preserveAspectRatio="none">
+            <path d="M0 140 Q 70 100 140 140 T 280 140 L 280 200 L 0 200 Z" fill="#fff"/>
+            <path d="M0 340 Q 70 300 140 340 T 280 340 L 280 400 L 0 400 Z" fill="#fff"/>
+          </svg>
+          <!-- Top bar -->
+          <div style="position:relative;z-index:2;padding:52px 20px 0;display:flex;justify-content:space-between;align-items:center">
+            <div style="font:700 12px/1 'Wanted Sans';opacity:0.85;letter-spacing:1px;text-transform:uppercase">사용 모드</div>
+            <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font:800 14px/1 'Wanted Sans'">✕</div>
+          </div>
+          <!-- Store + offer -->
+          <div style="position:relative;z-index:2;padding:40px 24px 0;text-align:center">
+            <div style="font:800 14px/1 'Wanted Sans';opacity:0.85;letter-spacing:0.5px">파니스 · 상남점</div>
+            <div style="font:900 36px/1.05 'Wanted Sans';margin-top:10px;letter-spacing:-1px">아메리카노<br>30% 할인</div>
+          </div>
+          <!-- Token -->
+          <div style="position:relative;z-index:2;margin:40px 24px 0;background:rgba(0,0,0,0.35);backdrop-filter:blur(20px);border:1.5px solid rgba(255,255,255,0.25);border-radius:22px;padding:20px 16px 24px;text-align:center">
+            <div style="font:700 10px/1 'Wanted Sans';opacity:0.7;letter-spacing:1.5px;text-transform:uppercase">현장 토큰</div>
+            <div style="font:900 56px/1 'JetBrains Mono', monospace;margin-top:10px;letter-spacing:6px;color:#fff">4 2 9 1 8 3</div>
+            <!-- Countdown -->
+            <div style="margin-top:18px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden;position:relative">
+              <div style="height:100%;width:72%;background:#fff;border-radius:2px"></div>
+            </div>
+            <div style="font:700 10px/1 'Wanted Sans';margin-top:8px;opacity:0.7">7초 후 자동 갱신</div>
+          </div>
+          <!-- Instructions -->
+          <div style="position:relative;z-index:2;padding:24px 24px 0;text-align:center">
+            <div style="font:800 14px/1.4 'Wanted Sans'">사장님께 이 화면을 보여주세요</div>
+            <div style="font:500 11px/1.4 'Wanted Sans';opacity:0.75;margin-top:6px">🛡 캡쳐 방지 · 애니메이션 필수</div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-note">10초마다 토큰 갱신 · 움직이는 그라디언트 · 스크린샷 차단.</div>
+    </div>
+
+    <div class="phone-slot">
+      <div class="phone-label"><span class="step">State 3</span>사장님 앱 · 사용 확인</div>
+      <div class="phone">
+        <div class="phone-screen" style="background:#fff">
+          <div class="notch"></div>
+          <div class="phone-statusbar">
+            <span>9:41</span>
+            <span style="display:flex;gap:4px">
+              <svg width="16" height="10" viewBox="0 0 16 10"><path d="M1 9h1M4 7h1M7 5h1M10 3h1M13 1h1" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
+              <svg width="22" height="10" viewBox="0 0 22 10"><rect x="1" y="1" width="18" height="8" rx="2" stroke="#000" stroke-width="1"/><rect x="2.5" y="2.5" width="15" height="5" rx="0.8" fill="#000"/></svg>
+            </span>
+          </div>
+          <!-- Header -->
+          <div style="padding:12px 20px 14px;border-bottom:1px solid var(--line-soft)">
+            <div style="font:800 18px/1 'Wanted Sans';color:var(--ink);letter-spacing:-0.4px">쿠폰 확인</div>
+            <div style="font:500 12px/1 'Wanted Sans';color:var(--fg3);margin-top:6px">파니스 · 상남점</div>
+          </div>
+          <!-- Active pending -->
+          <div style="padding:16px 16px 0">
+            <div style="font:700 10px/1 'Wanted Sans';color:var(--orange);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">대기 중 · 1명</div>
+            <div style="background:var(--orange-50);border:2px solid var(--orange);border-radius:18px;padding:16px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div style="font:700 10px/1 'Wanted Sans';color:var(--orange-600);letter-spacing:0.3px">방금 전</div>
+                  <div style="font:800 16px/1.2 'Wanted Sans';color:var(--ink);margin-top:4px">아메리카노 30%</div>
+                  <div style="font:500 11px/1.3 'Wanted Sans';color:var(--fg2);margin-top:4px">혜린 · 단골 Lv.3</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font:700 9px/1 'Wanted Sans';color:var(--fg3);letter-spacing:0.3px">토큰</div>
+                  <div style="font:900 18px/1 'JetBrains Mono',monospace;color:var(--ink);letter-spacing:1px;margin-top:4px">429183</div>
+                </div>
+              </div>
+              <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <button style="padding:11px;background:var(--ink);color:#fff;border:none;border-radius:12px;font:800 13px/1 'Wanted Sans'">✓ 사용완료</button>
+                <button style="padding:11px;background:#fff;color:var(--fg2);border:1px solid var(--line);border-radius:12px;font:700 13px/1 'Wanted Sans'">거부</button>
+              </div>
+            </div>
+          </div>
+          <!-- Recently done -->
+          <div style="padding:20px 16px 0">
+            <div style="font:700 10px/1 'Wanted Sans';color:var(--fg3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">오늘 사용 완료 · 8건</div>
+            <div style="background:#fff;border:1px solid var(--line-soft);border-radius:14px;padding:12px 14px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <div style="font:700 13px/1.2 'Wanted Sans';color:var(--ink)">라떼 20%</div>
+                  <div style="font:500 11px/1.3 'Wanted Sans';color:var(--fg3);margin-top:2px">14:32 · 지은</div>
+                </div>
+                <div style="font:700 10px/1 'Wanted Sans';color:var(--green);padding:4px 10px;background:#DEF5E8;border-radius:999px">완료</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-note">사장님 앱 홈에 "쿠폰 확인" 상시 탭 · 대기 중 건은 오렌지 강조.</div>
+    </div>
+
+    <div class="phone-slot">
+      <div class="phone-label"><span class="step">State 4</span>사용 완료 · 리포트</div>
+      <div class="phone">
+        <div class="phone-screen" style="background:#fff">
+          <div class="notch"></div>
+          <!-- Success overlay -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;position:relative">
+            <!-- Check icon -->
+            <div style="width:80px;height:80px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(18,181,105,0.3)">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M10 20 L 18 28 L 30 14" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div style="font:900 28px/1.1 'Wanted Sans';color:var(--ink);margin-top:24px;letter-spacing:-0.8px;text-align:center">사용 완료!</div>
+            <div style="font:500 14px/1.5 'Wanted Sans';color:var(--fg2);margin-top:10px;text-align:center">아메리카노 30% 할인<br>파니스 · 상남점</div>
+            <!-- Savings -->
+            <div style="margin-top:28px;padding:16px 20px;background:var(--orange-50);border:1px solid var(--orange-100);border-radius:14px;text-align:center;min-width:200px">
+              <div style="font:700 10px/1 'Wanted Sans';color:var(--orange-600);letter-spacing:1px;text-transform:uppercase">오늘 아낀 금액</div>
+              <div style="font:900 26px/1 'Wanted Sans';color:var(--orange);margin-top:6px;letter-spacing:-0.8px">₩1,500</div>
+            </div>
+            <!-- Stamp next -->
+            <div style="margin-top:20px;padding:12px 18px;background:var(--bg-warm);border-radius:12px;text-align:center">
+              <div style="font:700 11px/1.3 'Wanted Sans';color:var(--fg2)">스탬프 1개 적립 · <span style="color:var(--orange);font-weight:800">3/10</span></div>
+            </div>
+          </div>
+          <!-- CTA -->
+          <div style="padding:20px 16px 30px">
+            <button style="width:100%;padding:16px;background:var(--ink);color:#fff;border:none;border-radius:14px;font:800 15px/1 'Wanted Sans'">확인</button>
+          </div>
+        </div>
+      </div>
+      <div class="phone-note">자동으로 스탬프·리뷰 훅까지 — Idea 02 연결.</div>
+    </div>
+  </div>
+
+  <!-- Merchant-side consideration -->
+  <div style="margin-top:40px" class="card-accent">
+    <div class="eyebrow">사장님 UX 원칙</div>
+    <h4 class="h4" style="margin-top:8px">"일 바쁠 때 1초 안에 끝나야 한다"</h4>
+    <div class="grid-3" style="margin-top:24px">
+      <div>
+        <div class="pill pill-ink" style="margin-bottom:10px">1</div>
+        <div class="body" style="font-size:15px"><strong>스캐너 설치 없음.</strong> 기존에 쓰던 사장님 앱 홈에 "쿠폰 확인" 상시 버튼 한 개. 고정 QR 스탠드 불필요.</div>
+      </div>
+      <div>
+        <div class="pill pill-ink" style="margin-bottom:10px">2</div>
+        <div class="body" style="font-size:15px"><strong>눈 체크 0.5초.</strong> "숫자 6자리 + 움직임" 두 조건만 확인. 정지 이미지·스크린샷은 즉시 거부.</div>
+      </div>
+      <div>
+        <div class="pill pill-ink" style="margin-bottom:10px">3</div>
+        <div class="body" style="font-size:15px"><strong>의심 시 거부 가능.</strong> 토큰이 이상하거나 매장 위치가 어긋나면 "거부" 버튼. 사용자 쿠폰은 그대로 남음.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cross-spec note -->
+  <div style="margin-top:24px;padding:20px 24px;background:#fff;border:1px dashed var(--orange);border-radius:14px;display:flex;gap:20px;align-items:flex-start">
+    <div style="font:900 28px/1 'Wanted Sans';color:var(--orange);flex-shrink:0">↔</div>
+    <div>
+      <div class="eyebrow" style="color:var(--fg2)">Cross-spec reference</div>
+      <p class="body" style="margin-top:6px;font-size:15px">이 쿠폰 사용 UX는 <strong>Spec 02 (방문 스탬프)</strong>·<strong>Spec 03 (월드컵 딜)</strong> 에서도 동일하게 사용. 스탬프 적립은 '사용완료' 이벤트 직후 자동 발생 (§상호 블로커 참조).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 · Wireframes ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <h2 class="sec-title">주요 화면<br>와이어프레임</h2>
+  </div>
+  <p class="sec-lede">3개 표면 (Lock screen · Dynamic Island · Widget) + 앱 내 설정 화면. 쿠폰 사용 UX는 §04 참조.</p>
+
+  <div class="phone-row">
+
+    <!-- 1. Lock screen Live Activity -->
+    <div class="phone-slot">
+      <div class="phone-label"><span class="step">Surface 1</span>잠금화면 Live Activity</div>
+      <div class="phone" style="background:#1a1a1a">
+        <div class="phone-screen" style="background:linear-gradient(180deg,#3a2a1f 0%,#1a1a1a 100%);color:#fff">
+          <div class="notch" style="background:#000"></div>
+          <!-- time -->
+          <div style="padding-top:70px;text-align:center">
+            <div style="font:500 15px/1 'Wanted Sans';opacity:0.7">월요일, 10월 28일</div>
+            <div style="font:200 84px/1 'Wanted Sans';margin-top:8px;letter-spacing:-3px">6:12</div>
+          </div>
+          <!-- Live Activity card -->
+          <div style="margin:40px 16px 0;background:rgba(255,255,255,0.12);backdrop-filter:blur(20px);border-radius:22px;padding:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <div style="width:18px;height:18px;border-radius:6px;background:var(--orange);display:flex;align-items:center;justify-content:center;font:900 10px/1 'Wanted Sans'">언</div>
+              <div style="font:700 11px/1 'Wanted Sans';opacity:0.7;letter-spacing:0.5px;text-transform:uppercase">언니픽 · 지금</div>
+            </div>
+            <div style="font:800 18px/1.25 'Wanted Sans';letter-spacing:-0.3px">저장한 쿠폰 있어요</div>
+            <div style="font:600 14px/1.4 'Wanted Sans';opacity:0.85;margin-top:4px">파니스 · 아메리카노 30% 할인</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.12)">
+              <div style="font:500 12px/1 'Wanted Sans';opacity:0.7">📍 앞 · 35m</div>
+              <div style="font:800 12px/1 'Wanted Sans';color:#FF9A3D">18:00 만료 ·</div>
+            </div>
+          </div>
+          <!-- Other notif stubs -->
+          <div style="margin:16px 16px 0">
+            <div style="background:rgba(255,255,255,0.08);border-radius:18px;padding:14px;margin-bottom:6px">
+              <div style="font:600 11px/1 'Wanted Sans';opacity:0.6;letter-spacing:0.3px">메시지 · 2분 전</div>
+              <div style="font:600 13px/1.3 'Wanted Sans';margin-top:4px;opacity:0.85">엄마: 저녁에 올거야?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-note">500m 이내 진입 즉시 Live Activity 시작. 탭 → 앱 딥링크.</div>
+    </div>
+
+    <!-- 2. Dynamic Island -->
+    <div class="phone-slot">
+      <div class="phone-label"><span class="step">Surface 2</span>Dynamic Island</div>
+      <div class="phone">
+        <div class="phone-screen">
+          <!-- Expanded Dynamic Island at top -->
+          <div style="padding:16px 12px 0">
+            <div style="background:#000;border-radius:32px;padding:14px 18px;display:flex;align-items:center;gap:12px;color:#fff">
+              <div style="width:36px;height:36px;border-radius:10px;background:var(--orange);display:flex;align-items:center;justify-content:center;font:900 14px/1 'Wanted Sans'">파니</div>
+              <div style="flex:1;min-width:0">
+                <div style="font:800 13px/1.2 'Wanted Sans'">아메리카노 30% 할인</div>
+                <div style="font:500 11px/1.3 'Wanted Sans';opacity:0.7;margin-top:2px">파니스 · 18:00 만료</div>
+              </div>
+              <div style="padding:8px 14px;background:var(--orange);border-radius:999px;font:800 11px/1 'Wanted Sans'">사용</div>
+            </div>
+          </div>
+          <!-- Home screen mock below -->
+          <div style="padding:60px 16px 16px;background:#F2F4F6;flex:1;display:flex;flex-direction:column;gap:12px">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px 12px">
+              <div style="aspect-ratio:1;background:#5298FF;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#34C759;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#FF9500;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#AF52DE;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:var(--orange);border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#FF3B30;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#64D2FF;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#32D74B;border-radius:14px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-note">홈 화면 사용 중일 때 — 확장형 Dynamic Island로 상시 표시.</div>
+    </div>
+
+    <!-- 3. Home Widget -->
+    <div class="phone-slot">
+      <div class="phone-label"><span class="step">Surface 3</span>홈 위젯 (Medium)</div>
+      <div class="phone">
+        <div class="phone-screen" style="background:#F2F4F6">
+          <div class="notch"></div>
+          <div class="phone-statusbar">
+            <span>9:41</span>
+            <span style="display:flex;gap:4px;align-items:center">
+              <svg width="16" height="10" viewBox="0 0 16 10"><path d="M1 9h1M4 7h1M7 5h1M10 3h1M13 1h1" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
+              <svg width="22" height="10" viewBox="0 0 22 10"><rect x="1" y="1" width="18" height="8" rx="2" stroke="#000" stroke-width="1"/><rect x="2.5" y="2.5" width="15" height="5" rx="0.8" fill="#000"/><rect x="20" y="3" width="1.5" height="4" fill="#000"/></svg>
+            </span>
+          </div>
+          <!-- Wallpaper -->
+          <div style="flex:1;position:relative;background:linear-gradient(135deg,#FFF4EC 0%,#FFE0C8 100%);padding:0 16px 20px">
+            <!-- Widget -->
+            <div style="margin-top:12px;background:#fff;border-radius:22px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.06)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="width:16px;height:16px;border-radius:5px;background:var(--orange);display:flex;align-items:center;justify-content:center;font:900 9px/1 'Wanted Sans';color:#fff">언</div>
+                  <div style="font:800 11px/1 'Wanted Sans';color:var(--fg2);letter-spacing:0.3px">내 쿠폰 근처</div>
+                </div>
+                <div style="font:700 10px/1 'Wanted Sans';color:var(--orange)">3장</div>
+              </div>
+              <div style="background:var(--orange-50);border-radius:12px;padding:10px 12px;margin-bottom:6px">
+                <div style="font:800 13px/1.2 'Wanted Sans';color:var(--ink)">파니스</div>
+                <div style="font:500 11px/1.3 'Wanted Sans';color:var(--fg2);margin-top:2px">아메 30% · 35m · 오늘 만료</div>
+              </div>
+              <div style="background:#F2F4F6;border-radius:12px;padding:10px 12px;margin-bottom:6px">
+                <div style="font:800 13px/1.2 'Wanted Sans';color:var(--ink)">네일바 상남</div>
+                <div style="font:500 11px/1.3 'Wanted Sans';color:var(--fg2);margin-top:2px">젤 -5,000원 · 120m</div>
+              </div>
+              <div style="background:#F2F4F6;border-radius:12px;padding:10px 12px">
+                <div style="font:800 13px/1.2 'Wanted Sans';color:var(--ink)">본가 돼지갈비</div>
+                <div style="font:500 11px/1.3 'Wanted Sans';color:var(--fg2);margin-top:2px">세트 15% · 280m</div>
+              </div>
+            </div>
+            <!-- Second widget -->
+            <div style="margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+              <div style="aspect-ratio:1;background:#fff;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#fff;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#fff;border-radius:14px"></div>
+              <div style="aspect-ratio:1;background:#fff;border-radius:14px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-note">앱 열기 없이도 항상 3장 노출. 15분마다 갱신.</div>
+    </div>
+
+    <!-- 4. In-app settings -->
+    <div class="phone-slot">
+      <div class="phone-label"><span class="step">Surface 4</span>앱 내 설정</div>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="notch"></div>
+          <div class="phone-statusbar">
+            <span>9:41</span>
+            <span style="display:flex;gap:4px">
+              <svg width="16" height="10" viewBox="0 0 16 10"><path d="M1 9h1M4 7h1M7 5h1M10 3h1M13 1h1" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
+              <svg width="22" height="10" viewBox="0 0 22 10"><rect x="1" y="1" width="18" height="8" rx="2" stroke="#000" stroke-width="1"/><rect x="2.5" y="2.5" width="15" height="5" rx="0.8" fill="#000"/></svg>
+            </span>
+          </div>
+          <!-- Header -->
+          <div style="padding:16px 20px 12px;display:flex;align-items:center;gap:12px">
+            <div style="font:700 22px/1 'Wanted Sans';color:var(--fg2)">←</div>
+            <div style="font:800 17px/1 'Wanted Sans';color:var(--ink)">자동 발견</div>
+          </div>
+          <!-- Hero toggle -->
+          <div style="margin:8px 16px;background:var(--ink);color:#fff;border-radius:16px;padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font:800 15px/1.2 'Wanted Sans'">근처 쿠폰 알림</div>
+                <div style="font:500 11px/1.4 'Wanted Sans';opacity:0.7;margin-top:4px;max-width:160px">매장 근처 지나갈 때<br>잠금화면에 알려드려요</div>
+              </div>
+              <div style="width:48px;height:28px;border-radius:14px;background:var(--orange);position:relative">
+                <div style="position:absolute;right:2px;top:2px;width:24px;height:24px;border-radius:50%;background:#fff"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Options -->
+          <div style="flex:1;overflow:hidden;padding:0 16px;margin-top:16px">
+            <div style="font:700 11px/1 'Wanted Sans';color:var(--fg3);letter-spacing:1px;text-transform:uppercase;padding:0 4px 10px">알림 범위</div>
+            <div style="background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--line-soft)">
+              <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line-soft)">
+                <div style="font:600 14px/1.2 'Wanted Sans'">반경</div>
+                <div style="font:700 13px/1 'Wanted Sans';color:var(--orange)">500m ›</div>
+              </div>
+              <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line-soft)">
+                <div style="font:600 14px/1.2 'Wanted Sans'">하루 최대</div>
+                <div style="font:700 13px/1 'Wanted Sans';color:var(--fg2)">3회</div>
+              </div>
+              <div style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+                <div style="font:600 14px/1.2 'Wanted Sans'">방해금지</div>
+                <div style="font:700 13px/1 'Wanted Sans';color:var(--fg2)">22–9시</div>
+              </div>
+            </div>
+            <div style="font:700 11px/1 'Wanted Sans';color:var(--fg3);letter-spacing:1px;text-transform:uppercase;padding:20px 4px 10px">카테고리</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="pill pill-brand" style="font-size:11px">카페 ✓</span>
+              <span class="pill pill-brand" style="font-size:11px">음식 ✓</span>
+              <span class="pill pill-line" style="font-size:11px">미용</span>
+              <span class="pill pill-line" style="font-size:11px">네일</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone-note">기본 ON. 반경·빈도·카테고리·시간 전부 조정 가능.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ 05 · Data Model ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">06</div>
+    <h2 class="sec-title">데이터 모델<br>/ 스키마</h2>
+  </div>
+  <p class="sec-lede">기존 <code class="mono" style="color:var(--orange-600)">Coupon</code>·<code class="mono" style="color:var(--orange-600)">Wallet</code>에 테이블 2개 추가. 대부분 재사용.</p>
+
+  <div class="grid-2" style="margin-bottom:32px">
+    <div>
+      <div class="eyebrow">New Table</div>
+      <h4 class="h4" style="margin-top:8px;margin-bottom:16px">user_location_setting</h4>
+      <div class="code"><span class="c">-- 사용자별 자동 발견 설정</span>
+<span class="k">CREATE TABLE</span> user_location_setting (
+  user_id        <span class="k">BIGINT</span> <span class="k">PRIMARY KEY</span>,
+  enabled        <span class="k">BOOLEAN</span>  <span class="k">DEFAULT</span> <span class="n">true</span>,
+  radius_m       <span class="k">INT</span>      <span class="k">DEFAULT</span> <span class="n">500</span>,
+  daily_cap      <span class="k">SMALLINT</span> <span class="k">DEFAULT</span> <span class="n">3</span>,
+  quiet_start    <span class="k">TIME</span>     <span class="k">DEFAULT</span> <span class="s">'22:00'</span>,
+  quiet_end      <span class="k">TIME</span>     <span class="k">DEFAULT</span> <span class="s">'09:00'</span>,
+  enabled_cats   <span class="k">TEXT[]</span>,  <span class="c">-- ['cafe','food',...]</span>
+  updated_at     <span class="k">TIMESTAMPTZ</span> <span class="k">DEFAULT</span> now()
+);</div>
+    </div>
+    <div>
+      <div class="eyebrow">New Table</div>
+      <h4 class="h4" style="margin-top:8px;margin-bottom:16px">live_activity_event</h4>
+      <div class="code"><span class="c">-- 발송·상호작용 이벤트 로그</span>
+<span class="k">CREATE TABLE</span> live_activity_event (
+  id             <span class="k">BIGSERIAL</span> <span class="k">PRIMARY KEY</span>,
+  user_id        <span class="k">BIGINT</span>    <span class="k">NOT NULL</span>,
+  coupon_id      <span class="k">BIGINT</span>    <span class="k">NOT NULL</span>,
+  store_id       <span class="k">BIGINT</span>    <span class="k">NOT NULL</span>,
+  event_type     <span class="k">VARCHAR</span>(<span class="n">24</span>),
+  <span class="c">-- 'started' | 'tapped' | 'dismissed'</span>
+  <span class="c">-- | 'expired' | 'redeemed'</span>
+  distance_m     <span class="k">INT</span>,
+  trigger_lat    <span class="k">DECIMAL</span>(<span class="n">9</span>,<span class="n">6</span>),
+  trigger_lng    <span class="k">DECIMAL</span>(<span class="n">9</span>,<span class="n">6</span>),
+  created_at     <span class="k">TIMESTAMPTZ</span> <span class="k">DEFAULT</span> now()
+);
+<span class="k">CREATE INDEX</span> idx_lae_user_day
+  <span class="k">ON</span> live_activity_event(user_id, created_at);</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="eyebrow">Modified (existing)</div>
+    <h4 class="h4" style="margin-top:8px;margin-bottom:16px">store · 필드 추가</h4>
+    <table class="spec-table">
+      <thead><tr><th style="width:220px">필드</th><th style="width:140px">타입</th><th>설명</th><th>주석</th></tr></thead>
+      <tbody>
+        <tr><td class="key mono">geo_point</td><td class="mono">GEOGRAPHY(POINT)</td><td>매장 위경도 — PostGIS 인덱스</td><td>ST_DWithin 쿼리용</td></tr>
+        <tr><td class="key mono">geo_discoverable</td><td class="mono">BOOLEAN</td><td>자동 발견 대상 매장인지</td><td>사장님이 토글 가능</td></tr>
+        <tr><td class="key mono">category_key</td><td class="mono">VARCHAR(20)</td><td>cafe / food / beauty / nail ...</td><td>사용자 설정과 매칭</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:32px">
+    <div class="eyebrow">New Table · 쿠폰 사용 UX용 (§04)</div>
+    <h4 class="h4" style="margin-top:8px;margin-bottom:16px">redeem_token_log — 재사용·충돌 차단</h4>
+    <div class="grid-2">
+      <div class="code"><span class="c">-- 토큰 사용 이력 · 멱등성 보장</span>
+<span class="k">CREATE TABLE</span> redeem_token_log (
+  id            <span class="k">BIGSERIAL</span> <span class="k">PRIMARY KEY</span>,
+  coupon_id     <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  user_id       <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  token_window  <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  <span class="c">-- floor(epoch_ms / 10000)</span>
+  redeem_token  <span class="k">INT</span>     <span class="k">NOT NULL</span>,
+  merchant_id   <span class="k">BIGINT</span>  <span class="k">NOT NULL</span>,
+  verified_at   <span class="k">TIMESTAMPTZ</span> <span class="k">DEFAULT</span> now(),
+  gps_distance_m <span class="k">INT</span>,
+  status        <span class="k">VARCHAR</span>(<span class="n">16</span>)
+  <span class="c">-- 'success' | 'expired' | 'reused'</span>
+  <span class="c">-- | 'store_mismatch' | 'rejected'</span>
+);
+<span class="k">CREATE UNIQUE INDEX</span> ux_rtl_coupon_success
+  <span class="k">ON</span> redeem_token_log(coupon_id)
+  <span class="k">WHERE</span> status = <span class="s">'success'</span>;
+<span class="c">-- 동일 쿠폰 2번 성공 불가 (멱등)</span></div>
+      <div>
+        <h5 class="h5" style="margin-bottom:14px">왜 이 테이블이 필요한가</h5>
+        <ul class="body" style="padding-left:22px;font-size:15px;margin-top:10px">
+          <li><strong>재사용 방지</strong> · <code class="mono" style="color:var(--orange-600)">UNIQUE INDEX WHERE status='success'</code> 로 DB 레벨에서 동일 쿠폰 재사용 자체가 불가능.</li>
+          <li><strong>공격 탐지</strong> · 만료된 토큰·다른 매장 시도는 <code class="mono" style="color:var(--orange-600)">expired / store_mismatch</code> 로 기록 → 이상치 모니터링.</li>
+          <li><strong>사장님 분쟁 대응</strong> · "정말 썼는지" 이력 조회 가능. verified_at + gps_distance_m 으로 증거.</li>
+          <li><strong>감사 로그</strong> · 캡쳐 방지 로직이 작동 안 된 케이스 역추적.</li>
+        </ul>
+        <div style="margin-top:16px;padding:14px 16px;background:var(--bg-warm);border-radius:12px">
+          <div class="eyebrow" style="color:var(--fg2)">Retention</div>
+          <p class="body" style="font-size:14px;margin-top:6px">성공 건은 영구. 실패 건은 30일 후 파티션 DROP.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 · API Endpoints ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">07</div>
+    <h2 class="sec-title">API 엔드포인트<br>제안</h2>
+  </div>
+  <p class="sec-lede">앱 쪽은 엔드포인트 2개, 사장님 앱은 1개. Live Activity 상태 동기화는 APNs Liveness Token으로 서버 → 기기 푸시.</p>
+
+  <div class="api-list">
+
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <div>
+        <div class="api-path">/v1/wallet/nearby</div>
+        <div class="api-desc">현재 위치 기준 active 쿠폰 있는 매장 반경 내 매칭. 앱 백그라운드 태스크가 호출. 스로틀링 규칙도 서버에서 적용.</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">lat</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">lng</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">radius_m</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">limit=3</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <div>
+        <div class="api-path">/v1/live-activity/events</div>
+        <div class="api-desc">기기에서 started · tapped · dismissed · redeemed 이벤트 배치 업로드. 리텐션 지표 계산 기반.</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">body: [{coupon_id, type, distance_m, ts}]</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method PATCH">PATCH</span>
+      <div>
+        <div class="api-path">/v1/me/location-setting</div>
+        <div class="api-desc">사용자 설정 업데이트. enabled·radius_m·daily_cap·quiet_start·quiet_end·enabled_cats.</div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method POST">POST</span>
+      <div>
+        <div class="api-path">/v1/live-activity/push-token</div>
+        <div class="api-desc">기기에서 ActivityKit push-to-start token·update token을 서버에 등록. 쿠폰 만료 임박 시 서버가 remote update 가능.</div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method WS">APNs</span>
+      <div>
+        <div class="api-path">apns-push-type: liveactivity</div>
+        <div class="api-desc">서버 → 기기. 쿠폰이 다른 기기에서 사용되거나 만료될 때 Live Activity 실시간 업데이트·종료.</div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <div>
+        <div class="api-path">/v1/widget/nearby-coupons</div>
+        <div class="api-desc">위젯 타임라인용. 최대 3장, 거리순. 캐시 15분.</div>
+      </div>
+    </div>
+
+    <div class="api-row" style="border-top:2px solid var(--orange-300);padding-top:22px">
+      <span class="api-method POST">POST</span>
+      <div>
+        <div class="api-path">/v1/coupons/redeem <span class="pill pill-filled" style="font-size:10px;margin-left:8px;vertical-align:middle">§04 사용 UX</span></div>
+        <div class="api-desc">터미널이 10초 토큰을 서버로 전송. 서버가 쿠폰·매장·GPS·재사용 전부 검증 후 성공 시 <code class="mono">redeem_token_log</code> 에 INSERT. 실패 원인은 status 코드로 분류.</div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">coupon_id</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">redeem_token</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">token_window</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">merchant_id</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">client_lat</span>
+          <span class="pill pill-line" style="font-size:11px;font-family:monospace">client_lng</span>
+        </div>
+        <div style="margin-top:14px;padding:12px 14px;background:var(--bg-warm);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8">
+          <div style="color:var(--fg2)">→ 200 <span style="color:#2F855A">success</span> · <span style="color:#C53030">expired</span> · <span style="color:#C53030">reused</span> · <span style="color:#C53030">store_mismatch</span> · <span style="color:#C53030">out_of_range</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-row">
+      <span class="api-method GET">GET</span>
+      <div>
+        <div class="api-path">/v1/merchants/:id/redeem-terminal <span class="pill pill-filled" style="font-size:10px;margin-left:8px;vertical-align:middle">사장님 앱</span></div>
+        <div class="api-desc">사장님 앱 터미널 화면 진입용. 매장 인증된 사장님 계정만 열람. 최근 5분 내 성공 redeem 리스트도 함께 반환 (영수증 역할).</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ 07 · KPIs ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">08</div>
+    <h2 class="sec-title">성공 지표 ·<br>KPI</h2>
+  </div>
+  <p class="sec-lede">North Star는 <strong>쿠폰 사용률</strong>. 카운터는 <strong>dismiss율</strong>(스팸 방지).</p>
+
+  <div class="grid-4">
+    <div class="kpi-card primary">
+      <div class="kpi-label">North Star</div>
+      <div class="kpi-val"><em>65%</em></div>
+      <div class="kpi-from">쿠폰 사용률 · 현재 40%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">W1 Retention</div>
+      <div class="kpi-val">+8<em>%p</em></div>
+      <div class="kpi-from">vs. 미노출 대조군</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Opt-in 유지율</div>
+      <div class="kpi-val">80%<em>+</em></div>
+      <div class="kpi-from">30일 내 OFF 비율 20% 이하</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Dismiss rate</div>
+      <div class="kpi-val">&lt;15%</div>
+      <div class="kpi-from">카운터 지표 · 높으면 스팸</div>
+    </div>
+  </div>
+
+  <div style="margin-top:28px" class="grid-3">
+    <div class="card-warm">
+      <div class="eyebrow" style="color:var(--fg2)">Leading indicator</div>
+      <h5 class="h5" style="margin-top:8px">알림 → 클릭율 (CTR)</h5>
+      <p class="body" style="margin-top:10px;font-size:15px">Live Activity 탭 전환율. <strong>목표 25%+</strong>. 10% 이하 지속 시 매칭 로직 재검토.</p>
+    </div>
+    <div class="card-warm">
+      <div class="eyebrow" style="color:var(--fg2)">Leading indicator</div>
+      <h5 class="h5" style="margin-top:8px">클릭 → 사용 전환율</h5>
+      <p class="body" style="margin-top:10px;font-size:15px">탭 후 30분 내 쿠폰 실사용율. <strong>목표 40%+</strong>. 딥링크 UX 건강지표.</p>
+    </div>
+    <div class="card-warm">
+      <div class="eyebrow" style="color:var(--fg2)">Lagging indicator</div>
+      <h5 class="h5" style="margin-top:8px">매장 재방문율</h5>
+      <p class="body" style="margin-top:10px;font-size:15px">자동 발견으로 쿠폰 사용한 유저의 해당 매장 30일 재방문. <strong>목표 25%+</strong>.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;padding:24px 28px;background:var(--bg-warm);border-radius:16px">
+    <div class="eyebrow" style="color:var(--fg2)">측정 방법</div>
+    <p class="body" style="margin-top:8px;font-size:15px"><strong>A/B 테스트</strong> · 옵트인 사용자 50% 랜덤 홀드아웃 → 2주간 쿠폰 사용률·W1 리텐션 비교. 통계적 유의성 p&lt;0.05 달성까지 결과 판단 보류.</p>
+  </div>
+</section>
+
+<!-- ═══ 08 · Edge Cases ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">09</div>
+    <h2 class="sec-title">엣지 케이스<br>/ 실패 시나리오</h2>
+  </div>
+
+  <div class="scenario edge">
+    <div class="scenario-icon">⚠</div>
+    <div>
+      <div class="scenario-label">Edge 01</div>
+      <div class="scenario-title">위치 권한을 "앱 사용 중"만 허용한 경우</div>
+      <div class="scenario-detail">Significant Location Change는 Always 권한이 필요. <strong>Always 요청 프라이머 화면</strong>을 먼저 노출 → 거부 시 "앱 사용 중에만 근처 쿠폰 배너"로 다운그레이드.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">권한 상태를 이벤트로 기록 → Always 전환율 지표화. 첫 주 이후 리마인드 1회 허용.</div>
+    </div>
+  </div>
+
+  <div class="scenario edge">
+    <div class="scenario-icon">⚠</div>
+    <div>
+      <div class="scenario-label">Edge 02</div>
+      <div class="scenario-title">사용자가 여러 매장이 몰린 거리(상가)에 있을 때</div>
+      <div class="scenario-detail">반경 500m 내 쿠폰 5장 이상 매칭 → Live Activity 1개에 <strong>"근처 쿠폰 5장"</strong> 요약 표시. 탭 시 전용 리스트 페이지.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">단일 > 그룹 결정 기준: 3장 이상이면 그룹. 만료 임박(6시간 이내)은 항상 단일 우선.</div>
+    </div>
+  </div>
+
+  <div class="scenario edge">
+    <div class="scenario-icon">⚠</div>
+    <div>
+      <div class="scenario-label">Edge 03</div>
+      <div class="scenario-title">쿠폰을 이미 다른 기기에서 사용함</div>
+      <div class="scenario-detail">APNs Live Activity update로 <strong>즉시 종료</strong>. 사용자가 탭했을 때 이미 사용된 쿠폰을 보는 일 방지.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">쿠폰 redeem webhook → Activity end push 발송. 서버가 단일 소스.</div>
+    </div>
+  </div>
+
+  <div class="scenario edge">
+    <div class="scenario-icon">⚠</div>
+    <div>
+      <div class="scenario-label">Edge 04</div>
+      <div class="scenario-title">Dynamic Island 없는 기기 (iPhone 14 이하 일반)</div>
+      <div class="scenario-detail">잠금화면·홈 위젯만 활용. 앱 사용 중일 때는 <strong>상단 배너</strong>로 대체.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">타겟 기기 iPhone Pro 라인 우선 → 14일 실험. 일반 모델은 Widget 중심으로 가치 측정.</div>
+    </div>
+  </div>
+
+  <div class="scenario edge">
+    <div class="scenario-icon">⚠</div>
+    <div>
+      <div class="scenario-label">Edge 05</div>
+      <div class="scenario-title">지하철 탑승 중 수많은 매장을 빠르게 통과</div>
+      <div class="scenario-detail">속도 감지 (&gt;30km/h) → <strong>자동 발견 일시 중지</strong>. 하차 후 5분 + 도보 속도 확인되면 재개.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">CLActivityType.automotiveNavigation 감지. 모호한 경우는 발송 보류가 디폴트.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 · Dependencies ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">10</div>
+    <h2 class="sec-title">의존성 ·<br>전제 조건</h2>
+  </div>
+  <p class="sec-lede">초록 = 이미 있음 · 주황 = 이번 스펙에서 신규 · 보라 = 외부 의존.</p>
+
+  <div class="dep-chart">
+    <div class="dep-label">앱 / 기존</div>
+    <div class="dep-items">
+      <span class="dep-item existing">Coupon · Wallet 구조</span>
+      <span class="dep-item existing">매장 상세 딥링크</span>
+      <span class="dep-item new">터치형 사용 UX (§04)</span>
+      <span class="dep-item existing">알림 권한 온보딩</span>
+    </div>
+
+    <div class="dep-label">앱 / 신규</div>
+    <div class="dep-items">
+      <span class="dep-item new">ActivityKit 통합</span>
+      <span class="dep-item new">CoreLocation SLC 모니터링</span>
+      <span class="dep-item new">WidgetKit Medium 위젯</span>
+      <span class="dep-item new">설정 화면 (MY &gt; 자동 발견)</span>
+      <span class="dep-item new">Always 권한 프라이머</span>
+    </div>
+
+    <div class="dep-label">백엔드 / 신규</div>
+    <div class="dep-items">
+      <span class="dep-item new">PostGIS geo_point 인덱스</span>
+      <span class="dep-item new">/wallet/nearby 엔드포인트</span>
+      <span class="dep-item new">APNs Live Activity push</span>
+      <span class="dep-item new">throttle rule engine</span>
+      <span class="dep-item new">event 로깅 파이프라인</span>
+    </div>
+
+    <div class="dep-label">외부</div>
+    <div class="dep-items">
+      <span class="dep-item ext">Apple ActivityKit (iOS 16.1+)</span>
+      <span class="dep-item ext">APNs with priority=10</span>
+      <span class="dep-item ext">매장 좌표 확보 (영업팀)</span>
+    </div>
+
+    <div class="dep-label">상호 블로커</div>
+    <div class="dep-items">
+      <span class="dep-item" style="background:#fff;border-color:var(--red);color:var(--red)">매장 geo_point 적재 없으면 GA 불가</span>
+      <span class="dep-item" style="background:#fff;border-color:var(--red);color:var(--red)">Always 권한 전환율 &lt; 30% 시 효과 반토막</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 · Milestones ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">11</div>
+    <h2 class="sec-title">마일스톤 ·<br>스프린트 분할</h2>
+  </div>
+  <p class="sec-lede">총 6주 · 3개 스프린트. Alpha(내부) → Beta(상남동 100명) → GA.</p>
+
+  <div class="timeline">
+    <div class="timeline-col">
+      <div class="timeline-week">Sprint 1 · 2주</div>
+      <div class="timeline-title">백엔드 기반 구축</div>
+      <ul class="timeline-list">
+        <li>PostGIS 인덱스 마이그레이션</li>
+        <li>매장 좌표 일괄 확보 (영업팀 협업)</li>
+        <li>/wallet/nearby 엔드포인트 MVP</li>
+        <li>user_location_setting 테이블</li>
+        <li>내부 테스트용 admin 토글</li>
+      </ul>
+    </div>
+    <div class="timeline-col">
+      <div class="timeline-week">Sprint 2 · 2주</div>
+      <div class="timeline-title">앱 Live Activity</div>
+      <ul class="timeline-list">
+        <li>ActivityKit attributes·widget 구현</li>
+        <li>CLLocationManager SLC 통합</li>
+        <li>Always 권한 프라이머 UI</li>
+        <li>설정 화면 (MY &gt; 자동 발견)</li>
+        <li>Alpha (팀 내부 드레싱룸)</li>
+      </ul>
+    </div>
+    <div class="timeline-col">
+      <div class="timeline-week">Sprint 3 · 2주</div>
+      <div class="timeline-title">위젯 + 실험 기반</div>
+      <ul class="timeline-list">
+        <li>Medium 위젯 (내 쿠폰 근처)</li>
+        <li>APNs Liveness push 서버</li>
+        <li>A/B 플래그 & 이벤트 로깅</li>
+        <li>Beta · 상남동 100명 모집</li>
+        <li>2주 실험 후 GA 판단</li>
+      </ul>
+    </div>
+    <div class="timeline-col">
+      <div class="timeline-week">Post-GA</div>
+      <div class="timeline-title">확장</div>
+      <ul class="timeline-list">
+        <li>Android 대응 (Live Tile 검토)</li>
+        <li>"친구가 근처" 사회적 트리거</li>
+        <li>Dynamic Island 미니멀 카운트</li>
+        <li>매장 geo_discoverable 토글 사장님 앱</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 · Risks ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">12</div>
+    <h2 class="sec-title">리스크<br>& 대응</h2>
+  </div>
+
+  <div class="scenario risk">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 01 · Privacy</div>
+      <div class="scenario-title">"앱이 내 위치를 항상 추적한다"는 인식</div>
+      <div class="scenario-detail">Always 권한 요청이 iOS에서 가장 강한 경고 문구를 띄움. 사용자가 거부하면 기능 자체가 반쪽.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">(1) Significant Location <strong>실시간 아님</strong>을 프라이머에서 강조 (2) "서버에 위치 저장 안 함 · 매칭만 사용" 약속 + 실제로 저장 안 함 (3) 언제든 OFF 1탭. <strong>온보딩 중엔 물어보지 않음</strong>, 첫 쿠폰 저장 후 자연스럽게.</div>
+    </div>
+  </div>
+
+  <div class="scenario risk">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 02 · Accuracy</div>
+      <div class="scenario-title">도심 GPS 오차 50-100m</div>
+      <div class="scenario-detail">반경 100m로 설정하면 실제로는 가게 바로 앞에 있어도 놓치고, 반대로 옆 건물에서 뜬다.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">기본 반경 <strong>500m</strong>에서 시작 → 실사용 데이터로 조정. 빌딩 내부 보정은 Phase 2에서 iBeacon 검토.</div>
+    </div>
+  </div>
+
+  <div class="scenario risk">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 03 · Battery</div>
+      <div class="scenario-title">배터리 소모 우려로 초기 부정 리뷰</div>
+      <div class="scenario-detail">사용자가 느끼지 못해도 "위치 추적"이라는 단어에 대한 반감.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">SLC는 셀타워 기반이라 실제 배터리 영향 &lt;1%. App Store 상세·온보딩에 <strong>배터리 임팩트 정량</strong> 명시.</div>
+    </div>
+  </div>
+
+  <div class="scenario risk">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 04 · Spam 체감</div>
+      <div class="scenario-title">3회 상한 넘지 않아도 "자주 뜬다" 인식</div>
+      <div class="scenario-detail">알림 피로는 빈도보다 <strong>타이밍 미스</strong>에서 생긴다. "그 시간에 왜 뜸?"이 반복되면 OFF.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">dismiss 쿨다운 24시간 엄수 · 식사 시간대(11:30-13:30, 18:00-20:00) 가중치 · 방해금지 시간 기본 22-9시.</div>
+    </div>
+  </div>
+
+  <div class="scenario risk">
+    <div class="scenario-icon">!</div>
+    <div>
+      <div class="scenario-label">Risk 05 · Store Coverage</div>
+      <div class="scenario-title">매장 좌표 데이터 품질 편차</div>
+      <div class="scenario-detail">기존 매장 등록 시 좌표가 도로명 주소 geocoding으로만 들어가 있어 실제 위치와 50m 이상 차이나는 경우.</div>
+    </div>
+    <div>
+      <div class="scenario-label">대응</div>
+      <div class="scenario-detail">사장님 앱에 <strong>"내 가게 위치 조정"</strong> 지도 핀 기능 추가. 초기 파일럿 매장만 수동 검수.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 · Open Questions ═══ -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">13</div>
+    <h2 class="sec-title">오픈 퀘스천</h2>
+  </div>
+  <p class="sec-lede">스펙 확정 전 PM·디자이너·엔지니어가 함께 답해야 할 질문들.</p>
+
+  <div class="scenario open">
+    <div class="scenario-icon">?</div>
+    <div>
+      <div class="scenario-label">Q1 · Product</div>
+      <div class="scenario-title">Always 권한 요청 타이밍 — 온보딩 vs. 첫 쿠폰 저장 후?</div>
+      <div class="scenario-detail">온보딩 중이면 허용률 높지만 거부 시 영구 반려 가능성. 저장 후면 맥락이 명확하지만 허용률 낮을 수 있음.</div>
+    </div>
+    <div>
+      <div class="scenario-label">결정 기준</div>
+      <div class="scenario-detail">초기엔 B안(맥락 중시). 4주 후 허용률 데이터 보고 A/B로 재검증.</div>
+    </div>
+  </div>
+
+  <div class="scenario open">
+    <div class="scenario-icon">?</div>
+    <div>
+      <div class="scenario-label">Q2 · Design</div>
+      <div class="scenario-title">Live Activity에 CTA 버튼을 둘 것인가?</div>
+      <div class="scenario-detail">"QR 바로 열기" 버튼을 두면 전환율은 오르지만 실수 탭 가능성. 탭 전체를 앱 딥링크로 두는 게 안전.</div>
+    </div>
+    <div>
+      <div class="scenario-label">결정 기준</div>
+      <div class="scenario-detail">MVP는 탭 전체만. GA 후 실수 탭율 &lt;3% 확인되면 버튼 추가 실험.</div>
+    </div>
+  </div>
+
+  <div class="scenario open">
+    <div class="scenario-icon">?</div>
+    <div>
+      <div class="scenario-label">Q3 · Business</div>
+      <div class="scenario-title">매장 측에서 "자동 발견 대상" 토글을 돈 받고 팔 것인가?</div>
+      <div class="scenario-detail">Meituan 사례 학습 — 노출 보장 프리미엄이 수익 모델. 다만 초기엔 전 매장 기본 ON으로 사용자 가치 검증이 먼저.</div>
+    </div>
+    <div>
+      <div class="scenario-label">결정 기준</div>
+      <div class="scenario-detail">Phase 1은 전 매장 ON. Phase 2부터 "프리미엄 반경 1km" 유료 옵션 검토.</div>
+    </div>
+  </div>
+
+  <div class="scenario open">
+    <div class="scenario-icon">?</div>
+    <div>
+      <div class="scenario-label">Q4 · Technical</div>
+      <div class="scenario-title">iOS 16.1 미만 사용자 (약 10%) 어떻게 할 것인가?</div>
+      <div class="scenario-detail">Live Activity 미지원. 푸시 알림으로 다운그레이드 or 기능 미제공.</div>
+    </div>
+    <div>
+      <div class="scenario-label">결정 기준</div>
+      <div class="scenario-detail">로컬 푸시로 다운그레이드 (동일 엔드포인트 재사용). Widget은 iOS 14+라 대부분 커버.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer nav -->
+<div class="doc-foot">
+  <div>Phase 1 · Spec 01 of 03 · v0.1 · 2025.11</div>
+  <div style="display:flex;gap:12px">
+    <a href="index.html">← 인덱스</a>
+    <a href="spec-02-stamp.html">Spec 02 → 방문 스탬프</a>
+  </div>
+</div>
+
+</div>
+
+<script>
+  (async () => {
+    // Wait for fonts
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (e) {}
+    }
+    // Safety delay for layout settle
+    await new Promise(r => setTimeout(r, 500));
+    window.print();
+  })();
+</script>
+
+</body>
+</html>

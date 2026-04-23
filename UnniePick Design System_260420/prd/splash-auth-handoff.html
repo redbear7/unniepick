@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>언니픽 · 스플래시 + 회원가입 Claude Code 핸드오프</title>
+<link rel="stylesheet" href="spec-sheet.css">
+<style>
+  /* Splash + Auth handoff — focused implementation doc */
+  .hv-hero { background: var(--ink); color: #fff; padding: 80px 72px 90px; margin: 0 -80px 72px; position: relative; overflow: hidden; }
+  .hv-hero::before { content: ''; position: absolute; top: -260px; right: -180px; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(255,111,15,0.26), transparent 55%); }
+  .hv-top { display: flex; justify-content: space-between; margin-bottom: 56px; position: relative; z-index: 1; }
+  .hv-brand { font: 900 26px/1 'Wanted Sans'; color: var(--orange); letter-spacing: -0.6px; }
+  .hv-crumb { font: 600 13px/1.6 'Wanted Sans'; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; text-align: right; text-transform: uppercase; }
+  .hv-eye { font: 700 13px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 2.6px; text-transform: uppercase; position: relative; z-index: 1; margin-bottom: 24px; }
+  .hv-title { font: 900 84px/0.95 'Wanted Sans'; color: #fff; letter-spacing: -3px; position: relative; z-index: 1; max-width: 1050px; margin-bottom: 28px; }
+  .hv-title em { font-style: normal; color: var(--orange); }
+  .hv-sub { font: 500 22px/1.45 'Wanted Sans'; color: rgba(255,255,255,0.72); max-width: 860px; letter-spacing: -0.3px; position: relative; z-index: 1; }
+
+  /* Flow diagram */
+  .flow-stack { margin-top: 36px; display: grid; gap: 14px; }
+  .flow-row { display: grid; grid-template-columns: 80px 1fr 220px; gap: 24px; padding: 24px 28px; background: #fff; border: 1px solid var(--line); border-radius: 16px; align-items: center; }
+  .flow-order { font: 900 42px/1 'Wanted Sans'; color: var(--orange); letter-spacing: -1.2px; }
+  .flow-name { font: 800 18px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 6px; }
+  .flow-desc { font: 500 13.5px/1.55 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .flow-desc code { background: var(--code-bg); color: var(--code-fg); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .flow-comp { font: 700 12px/1.45 'Wanted Sans'; color: var(--fg3); text-align: right; letter-spacing: 0.1px; }
+  .flow-comp b { color: var(--orange-600); font-weight: 800; display: block; margin-bottom: 3px; }
+
+  /* Decision grid */
+  .dec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+  .dec-card { padding: 24px 26px; background: #fff; border: 1px solid var(--line); border-radius: 14px; }
+  .dec-eye { font: 800 11px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 1.3px; text-transform: uppercase; margin-bottom: 8px; }
+  .dec-t { font: 900 18px/1.3 'Wanted Sans'; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 8px; }
+  .dec-d { font: 500 13.5px/1.55 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .dec-d code { background: var(--code-bg); color: var(--code-fg); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+
+  /* Component spec */
+  .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
+  .comp-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; }
+  .comp-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .comp-name { font: 900 16px/1 'Wanted Sans'; color: var(--ink); letter-spacing: -0.3px; }
+  .comp-path { font: 600 11px/1 'JetBrains Mono', monospace; color: var(--fg3); letter-spacing: 0; }
+  .comp-desc { font: 500 13px/1.55 'Wanted Sans'; color: var(--fg2); margin-bottom: 12px; letter-spacing: -0.1px; }
+  .comp-props { font: 500 12px/1.7 'JetBrains Mono', monospace; color: var(--fg2); background: var(--bg-warm); padding: 10px 14px; border-radius: 8px; letter-spacing: 0; }
+  .comp-props b { color: var(--orange-600); font-weight: 700; }
+
+  /* Checklist */
+  .check-list { background: #0F1114; color: #fff; padding: 36px 40px; border-radius: 20px; margin-top: 24px; }
+  .check-row { display: grid; grid-template-columns: 28px 1fr 100px; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); align-items: center; }
+  .check-row:last-child { border-bottom: none; }
+  .check-box { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 5px; }
+  .check-text { font: 600 14px/1.4 'Wanted Sans'; color: #fff; letter-spacing: -0.1px; }
+  .check-text b { color: var(--orange); font-weight: 800; }
+  .check-text code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #fff; }
+  .check-est { font: 700 11px/1 'Wanted Sans'; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; text-align: right; text-transform: uppercase; }
+
+  /* Data table */
+  .data-table { margin-top: 24px; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .data-row { display: grid; grid-template-columns: 180px 1fr 200px; gap: 20px; padding: 16px 22px; border-bottom: 1px solid var(--line-soft); align-items: center; }
+  .data-row:last-child { border-bottom: none; }
+  .data-row.head { background: var(--bg-warm); font: 800 11px/1 'Wanted Sans'; color: var(--fg3); letter-spacing: 1.2px; text-transform: uppercase; padding: 12px 22px; }
+  .data-sec { font: 800 14px/1.2 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; }
+  .data-src { font: 500 13px/1.5 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .data-src code { background: var(--code-bg); color: var(--code-fg); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0; }
+  .data-note { font: 700 11px/1.3 'Wanted Sans'; color: var(--orange-600); letter-spacing: 0.1px; }
+
+  /* Edge cases */
+  .edge-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .edge { padding: 22px 24px; background: #fff; border: 1px solid var(--line); border-radius: 12px; border-left: 4px solid var(--orange); }
+  .edge-t { font: 800 14px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; margin-bottom: 8px; }
+  .edge-d { font: 500 12.5px/1.55 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+
+  /* Files list */
+  .files-box { background: var(--code-bg); color: var(--code-fg); border-radius: 14px; padding: 28px 32px; margin-top: 24px; font: 500 14px/1.85 'JetBrains Mono', monospace; letter-spacing: 0; }
+  .files-box .dir { color: var(--code-key); font-weight: 700; }
+  .files-box .new { color: var(--code-str); }
+  .files-box .cmt { color: var(--code-mute); font-style: italic; }
+
+  /* Reference */
+  .ref-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 24px; }
+  .ref { display: block; padding: 22px 24px; background: #fff; border: 1px solid var(--line); border-radius: 14px; text-decoration: none; color: inherit; transition: all 0.2s; }
+  .ref:hover { border-color: var(--ink); transform: translateY(-2px); }
+  .ref-k { font: 800 11px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 1.3px; text-transform: uppercase; margin-bottom: 10px; }
+  .ref-t { font: 800 15px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; margin-bottom: 4px; }
+  .ref-d { font: 500 12.5px/1.5 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+
+  /* Validation table */
+  .val-table { margin-top: 24px; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .val-row { display: grid; grid-template-columns: 140px 1fr 1fr 180px; gap: 20px; padding: 16px 22px; border-bottom: 1px solid var(--line-soft); align-items: start; }
+  .val-row:last-child { border-bottom: none; }
+  .val-row.head { background: var(--bg-warm); font: 800 11px/1 'Wanted Sans'; color: var(--fg3); letter-spacing: 1.2px; text-transform: uppercase; padding: 12px 22px; align-items: center; }
+  .val-field { font: 800 14px/1.2 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; }
+  .val-rule { font: 500 12.5px/1.55 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .val-rule code { background: var(--code-bg); color: var(--code-fg); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0; }
+  .val-err { font: 600 12px/1.4 'Wanted Sans'; color: var(--orange-600); letter-spacing: -0.1px; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+<!-- HERO -->
+<div class="hv-hero">
+  <div class="hv-top">
+    <div class="hv-brand">언니픽 · Splash + Auth Handoff</div>
+    <div class="hv-crumb">Claude Code 개발 문서 · v0.1<br>Scope · 첫 진입 · 온보딩</div>
+  </div>
+  <div class="hv-eye">Splash · Auth Flow · iOS 구현 핸드오프</div>
+  <h1 class="hv-title">첫 5분, <em>이탈 없는</em><br>진입 설계.</h1>
+  <div class="hv-sub">스플래시 1.8초 → 휴대폰 · SMS · 프로필 · GPS 권한 · 내 주변 팔로우 5곳 + 약관 · 푸시 권한. 6스텝 회원가입 루프. UI Kit <code style="background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:4px;color:#fff;font-family:monospace;font-size:16px">AuthFlow.jsx</code>의 basic variant를 그대로 프로덕션에 이식한다.</div>
+</div>
+
+<!-- 01 · Why this shape -->
+<section class="block" style="padding-top:0">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <h2 class="sec-title">왜 이<br>형태인가</h2>
+  </div>
+  <p class="sec-lede">스플래시 6종 · 회원가입 basic/enhanced 2종 중 Phase 1 런칭용 결정. 근거는 이탈률 · 구현 비용 · 법적 요구사항.</p>
+
+  <div class="grid-3" style="margin-top:28px">
+    <div class="card">
+      <div class="eyebrow">결정 01 — 스플래시</div>
+      <h4 class="h4" style="margin-top:6px">V1 Centered 채택</h4>
+      <p class="body" style="font-size:14px;margin-top:10px">화이트 배경 + 오렌지 워드마크 + 하단 태그라인 + v1.0.0 + 1800ms. 6종 중 가장 표준적. 캐릭터/심볼 variant는 브랜딩 확정 전 보류.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">결정 02 — 회원가입 톤</div>
+      <h4 class="h4" style="margin-top:6px">Basic variant 채택</h4>
+      <p class="body" style="font-size:14px;margin-top:10px">Enhanced의 🐻 HelperMsg는 친근하지만 scope 크리프 리스크. Phase 1은 깔끔한 iOS 표준으로 런칭, Phase 2에서 A/B.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">결정 03 — 6스텝 구조</div>
+      <h4 class="h4" style="margin-top:6px">SMS + 프로필 + GPS + 팔로우 + 푸시</h4>
+      <p class="body" style="font-size:14px;margin-top:10px">휴대폰 인증 = 법적 본인 확인, 팔로우 5곳 = Day-1 리텐션 seed. GPS·푸시는 맥락적으로 요청 (GPS 직전 = 팔로우 화면 직전, 푸시 = 가입 완료 후). 둘 다 풀스크린 설명.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 02 · Flow -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <h2 class="sec-title">6스텝<br>플로우</h2>
+  </div>
+  <p class="sec-lede">앱 최초 실행 → 홈 진입까지의 경로. 각 스텝의 목적 · 이탈 지점 · 다음 단계 연결. GPS·푸시 권한은 iOS 맥락 요청 패턴을 따라 사용 직전에 노출.</p>
+
+  <div class="flow-stack">
+
+    <div class="flow-row">
+      <div class="flow-order">0</div>
+      <div>
+        <div class="flow-name">스플래시 · 1.8초</div>
+        <div class="flow-desc">화이트 배경 + 오렌지 "언니픽" 워드마크 + "창원의 모든 핫플레이스" 태그라인. <code>enter(450ms) → hold → exit(300ms)</code>. 세션 토큰 검증 + 폰트/토큰 로드 동시 수행. 재방문자는 곧바로 홈으로, 신규는 Step 1로.</div>
+      </div>
+      <div class="flow-comp"><b>SplashCentered</b>Splash.jsx:87</div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-order">1</div>
+      <div>
+        <div class="flow-name">휴대폰 번호</div>
+        <div class="flow-desc">010- 프리픽스 고정 · 뒤 8자리만 입력 · 자동 하이픈. "인증번호 받기" 탭 시 Supabase OTP 발송. 재발송 3분 쿨다운.</div>
+      </div>
+      <div class="flow-comp"><b>PhoneStep</b>AuthFlow.jsx:101</div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-order">2</div>
+      <div>
+        <div class="flow-name">SMS 6자리 인증</div>
+        <div class="flow-desc">6박스 자동 포커스 · 붙여넣기 지원 · iOS <code>autocomplete="one-time-code"</code>. 6자리 완성 시 350ms 딜레이 후 자동 넘김. 실패 시 shake + 초기화. 3분 카운트다운.</div>
+      </div>
+      <div class="flow-comp"><b>CodeStep</b>AuthFlow.jsx:157</div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-order">3</div>
+      <div>
+        <div class="flow-name">닉네임 + 생일</div>
+        <div class="flow-desc">닉네임 중복 확인(한글 5 · 영문 8 이내, 금칙어 필터). 생일은 월·일 iOS 휠피커, 선택사항 + "입력 안 함" 체크. 생일 기반 쿠폰 캠페인 seed.</div>
+      </div>
+      <div class="flow-comp"><b>ProfileStep</b>AuthFlow.jsx:238</div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-order">4</div>
+      <div>
+        <div class="flow-name">위치 권한 (풀스크린)</div>
+        <div class="flow-desc">GPS가 왜 필요한지 3개 bullet로 설명: 반경 500m 가게 표시 · 긴급 쿠폰 · 자동 매장 감지. CTA <code>"위치 권한 허용하기"</code> → iOS 네이티브 다이얼로그. <b>거부 시 재요청 강제 — 진행 불가.</b> 설정 앱 이동 안내 배너 표시.</div>
+      </div>
+      <div class="flow-comp"><b>LocationPermissionStep</b>AuthFlow.jsx:585</div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-order">5</div>
+      <div>
+        <div class="flow-name">내 주변 팔로우 5곳 + 약관</div>
+        <div class="flow-desc">반경 500m 가게 10개 표시 · 최소 5개 선택 강제. 진행 바 실시간 업데이트. 완료 탭 시 약관 바텀시트 → 필수 2종(이용약관·개인정보) 동의 → Step 6으로.</div>
+      </div>
+      <div class="flow-comp"><b>NearbyStoresStep</b>AuthFlow.jsx:662</div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-order">6</div>
+      <div>
+        <div class="flow-name">푸시 알림 권한 (풀스크린)</div>
+        <div class="flow-desc">가치 제안 3개: 새 쿠폰 알림 · 만료 임박 알림 · 긴급 딜 알림. CTA <code>"알림 받기"</code> → iOS 네이티브 다이얼로그. <b>거부해도 홈 진입 허용</b> (<code>"나중에 설정할게요"</code> 링크 노출).</div>
+      </div>
+      <div class="flow-comp"><b>PushPermissionStep</b>AuthFlow.jsx:738</div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-order">→</div>
+      <div>
+        <div class="flow-name">홈 V1 진입</div>
+        <div class="flow-desc">팔로우한 5곳이 Home V1의 "팔로우 피드" 섹션 seed. GPS 위치가 "긴급 쿠폰" · "내 주변" 섹션 쿼리에 사용. 푸시 토큰은 APNs 등록 완료 시 <code>user_push_tokens</code> 테이블에 저장.</div>
+      </div>
+      <div class="flow-comp"><b>HomeV1Standard</b>→ Home V1 핸드오프</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- 03 · Key decisions -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <h2 class="sec-title">세부<br>결정사항</h2>
+  </div>
+  <p class="sec-lede">UI Kit 프로토타입을 프로덕션으로 옮길 때 명확히 해야 할 정책. 개발자와 PM이 미리 합의.</p>
+
+  <div class="dec-grid">
+    <div class="dec-card">
+      <div class="dec-eye">스플래시 지속시간</div>
+      <div class="dec-t">고정 1800ms</div>
+      <div class="dec-d">세션 검증이 빠르게 끝나도 최소 1800ms 유지 (브랜드 각인). 2초 이상 걸리면 끝나는 시점까지 hold 연장. 5초 초과 시 <code>hold</code> 상태에서 "다시 시도" 표시.</div>
+    </div>
+    <div class="dec-card">
+      <div class="dec-eye">SMS 제공자</div>
+      <div class="dec-t">Supabase Auth + NHN 톡플러스</div>
+      <div class="dec-d">Supabase Phone Auth 기본 사용, SMS 게이트웨이는 NHN 톡플러스 SMS (KR 요구사항). 데모에서는 <b>아무 6자리</b> 통과하지만 프로덕션은 실제 OTP 검증.</div>
+    </div>
+    <div class="dec-card">
+      <div class="dec-eye">닉네임 정책</div>
+      <div class="dec-t">한글 5자 = 영문 8자 (가중치 1.6)</div>
+      <div class="dec-d">한글이 포함되면 한글 문자수 기준 <code>/5</code>, 순수 영문/숫자는 <code>/8</code> 표시. 금칙어: <code>admin</code>, 욕설, "언니"/"사장" 등 서비스 용어 · 실제 상호명.</div>
+    </div>
+    <div class="dec-card">
+      <div class="dec-eye">팔로우 최소 5곳</div>
+      <div class="dec-t">하드 강제 · 스킵 불가</div>
+      <div class="dec-d">Day-1 리텐션의 관건. 4곳 이하일 때 CTA 비활성. 반경 500m 내 가게 &lt; 10일 경우 반경 자동 확장 (1km → 2km). "건너뛰기" 링크는 <b>의도적으로 미구현</b>.</div>
+    </div>
+    <div class="dec-card">
+      <div class="dec-eye">약관 필수 2종</div>
+      <div class="dec-t">이용약관 · 개인정보 (법적)</div>
+      <div class="dec-d">마케팅 동의는 선택. 필수 중 하나라도 미체크면 "동의하고 시작하기" 비활성. 약관 원문은 <code>/terms/tos</code>, <code>/terms/privacy</code> 정적 페이지. 동의 타임스탬프 <code>user_consents</code> 테이블 기록.</div>
+    </div>
+    <div class="dec-card">
+      <div class="dec-eye">GPS 권한</div>
+      <div class="dec-t">풀스크린 pre-prompt · 거부 시 진행 불가</div>
+      <div class="dec-d">Step 4에서 설명 스크린 후 iOS <code>CLLocationManager.requestWhenInUseAuthorization()</code> 호출. 거부 시 다시 요청 CTA + 설정 앱 딥링크 안내. 권한 없이는 반경 탐색 · 자동 매장 감지 불가 = 서비스 코어가치 차단.</div>
+    </div>
+    <div class="dec-card">
+      <div class="dec-eye">푸시 알림 권한</div>
+      <div class="dec-t">풀스크린 pre-prompt · 거부해도 진행</div>
+      <div class="dec-d">Step 6에서 가치 설명 후 <code>Notification.requestPermission()</code>. 거부 · 나중에 → 홈 진입 허용. APNs 토큰 발급 성공 시 <code>user_push_tokens</code>에 등록. MY 탭 설정에서 언제든 다시 활성화 가능.</div>
+    </div>
+    <div class="dec-card">
+      <div class="dec-eye">뒤로가기 정책</div>
+      <div class="dec-t">Step 1에서는 앱 종료</div>
+      <div class="dec-d">Step 2-6에서 뒤로가기 시 이전 스텝. Step 1에서 뒤로가기 시 iOS 표준: 앱 홈화면으로. Step 2에서 번호 수정 시 입력된 6자리 OTP 폐기. Step 4/6(권한) 뒤로가기 = 이전 스텝으로 (권한 거부가 아닔).</div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 · Validation rules -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <h2 class="sec-title">입력 검증<br>규칙</h2>
+  </div>
+  <p class="sec-lede">각 필드의 검증 · 에러 메시지 · 활성화 조건. 프로덕션 이식 시 반드시 일치.</p>
+
+  <div class="val-table">
+    <div class="val-row head">
+      <div>필드</div>
+      <div>검증 규칙</div>
+      <div>에러 메시지</div>
+      <div>CTA 활성 조건</div>
+    </div>
+    <div class="val-row">
+      <div class="val-field">휴대폰 번호</div>
+      <div class="val-rule">숫자만 · 뒤 8자리 입력 강제 · <code>/^\d{8}$/</code>. 010 프리픽스는 UI 고정.</div>
+      <div class="val-err">(없음 — 입력 중 inline 표시 없음)</div>
+      <div class="val-rule">뒤 8자리 전부 입력</div>
+    </div>
+    <div class="val-row">
+      <div class="val-field">SMS 코드</div>
+      <div class="val-rule">6자리 숫자 · <code>/^\d{6}$/</code>. 완성 시 자동 검증.</div>
+      <div class="val-err">"인증번호가 올바르지 않아요" + shake + 입력 초기화</div>
+      <div class="val-rule">자동 진행 (버튼 없음)</div>
+    </div>
+    <div class="val-row">
+      <div class="val-field">닉네임</div>
+      <div class="val-rule">길이 한글 5 · 영문 8 (가중치 1.6). 금칙어 5종. 중복 확인 필수.</div>
+      <div class="val-err">"✕ 한글 5자 · 영문 8자를 넘었어요" / "✕ 이미 사용 중인 닉네임이에요"</div>
+      <div class="val-rule"><code>checking === 'ok'</code> + 2자 이상 + overLimit 아님</div>
+    </div>
+    <div class="val-row">
+      <div class="val-field">생일</div>
+      <div class="val-rule">선택. 월·일만 수집 (연도 없음). "입력 안 함" 체크 시 <code>birth_skip = true</code>.</div>
+      <div class="val-err">(없음 — 선택 입력)</div>
+      <div class="val-rule">항상 활성 (닉네임 검증만 통과하면)</div>
+    </div>
+    <div class="val-row">
+      <div class="val-field">팔로우 가게</div>
+      <div class="val-rule">최소 5개 토글. 상한 없음. 순서는 거리순 고정.</div>
+      <div class="val-err">"N곳 더 선택해주세요" (버튼 라벨)</div>
+      <div class="val-rule">followed.length &gt;= 5</div>
+    </div>
+    <div class="val-row">
+      <div class="val-field">약관 동의</div>
+      <div class="val-rule">이용약관 + 개인정보 둘 다 체크. 마케팅은 선택. "전체 동의"는 토글 편의용.</div>
+      <div class="val-err">(없음 — 버튼 비활성으로 표현)</div>
+      <div class="val-rule">tos && privacy</div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 · Components -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <h2 class="sec-title">컴포넌트<br>명세</h2>
+  </div>
+  <p class="sec-lede"><code>Splash.jsx</code> + <code>AuthFlow.jsx</code> 라인 직접 매핑. Basic variant 기준으로만 포팅.</p>
+
+  <div class="comp-grid">
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">Splash</div><div class="comp-path">Splash.jsx:195</div></div>
+      <div class="comp-desc">variant 디스패처. Phase 1은 <code>centered</code>만 사용. V2-V6는 프로덕션 미이식.</div>
+      <div class="comp-props">props: { <b>variant</b>='centered', <b>onDone</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">useSplashPhase</div><div class="comp-path">Splash.jsx:14</div></div>
+      <div class="comp-desc">모션 훅. enter(0-450ms) → hold → exit(-300ms) → onDone. 홀드 구간에서 세션 검증 async 결과 대기.</div>
+      <div class="comp-props">(duration=1800, onDone) → phase: 'enter' | 'hold' | 'exit'</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">AuthFlow</div><div class="comp-path">AuthFlow.jsx:780</div></div>
+      <div class="comp-desc">회원가입 orchestrator. step state 관리 · 뒤로가기 라우팅 · 6단계 마운트.</div>
+      <div class="comp-props">props: { <b>onDone</b>, <b>onClose</b>, <b>variant</b>='basic', <b>initialStep</b>=1 }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">AuthHeader + DotIndicator</div><div class="comp-path">AuthFlow.jsx:47</div></div>
+      <div class="comp-desc">모든 스텝 공용 상단. 뒤로가기 + 6개 도트 (현재 스텝 늘어나는 애니메이션).</div>
+      <div class="comp-props">props: { step, total=6, onBack, canBack }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">PhoneStep</div><div class="comp-path">AuthFlow.jsx:101</div></div>
+      <div class="comp-desc">010 prefix 고정 + 뒤 8자리 input. 입력 중 밑줄 오렌지 활성화.</div>
+      <div class="comp-props">props: { <b>phone</b>, <b>setPhone</b>, <b>onNext</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">CodeStep</div><div class="comp-path">AuthFlow.jsx:157</div></div>
+      <div class="comp-desc">6박스 + 숨김 input · <code>autocomplete="one-time-code"</code> · 3분 카운트다운 · shake on error.</div>
+      <div class="comp-props">props: { <b>phone</b>, <b>onNext</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">ProfileStep + BirthdayPicker</div><div class="comp-path">AuthFlow.jsx:238</div></div>
+      <div class="comp-desc">닉네임 + 중복확인 + 생일 휠피커 바텀시트. iOS 표준 UIPickerView 룩앤필.</div>
+      <div class="comp-props">props: { <b>profile</b>, <b>setProfile</b>, <b>onNext</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">LocationPermissionStep</div><div class="comp-path">AuthFlow.jsx:585</div></div>
+      <div class="comp-desc">풀스크린 권한 요청. 아이콘 + 3개 불렛 bullet (반경 500m / 긴급 쿠폰 / 자동 매장 감지). 거부 시 설정 앱 안내 배너.</div>
+      <div class="comp-props">props: { <b>onNext</b>, <b>variant</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">NearbyStoresStep</div><div class="comp-path">AuthFlow.jsx:662</div></div>
+      <div class="comp-desc">10개 가게 리스트 + 진행 바 + 하단 CTA. 완료 시 <code>TermsSheet</code> 오버레이.</div>
+      <div class="comp-props">props: { <b>followed</b>, <b>setFollowed</b>, <b>onNext</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">PushPermissionStep</div><div class="comp-path">AuthFlow.jsx:738</div></div>
+      <div class="comp-desc">풀스크린 알림 가치 제안 3개 (새 쿠폰 / 만료 / 긴급 딜). 주영에 "나중에 설정" 스킵 링크. <code>onDone</code>으로 홈 진입.</div>
+      <div class="comp-props">props: { <b>onDone</b>, <b>variant</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">TermsSheet + TermRow</div><div class="comp-path">AuthFlow.jsx:620</div></div>
+      <div class="comp-desc">바텀시트 · 전체동의 + 3종 라디오. 필수 2종 체크 시 CTA 활성. 슬라이드업 260ms 애니메이션.</div>
+      <div class="comp-props">props: { <b>onClose</b>, <b>onAgree</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">primaryButton · helper</div><div class="comp-path">AuthFlow.jsx:26</div></div>
+      <div class="comp-desc">모든 스텝 공용 메인 CTA 스타일. 활성 = 오렌지 + 그림자, 비활성 = 회색. 전역 버튼 컴포넌트로 승격 대상.</div>
+      <div class="comp-props">(enabled: boolean) → CSS style object</div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 · Data -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">06</div>
+    <h2 class="sec-title">API · 데이터<br>소스</h2>
+  </div>
+  <p class="sec-lede">각 스텝이 호출할 Supabase 엔드포인트 · 테이블 컬럼 · 검증 서버 로직.</p>
+
+  <div class="data-table">
+    <div class="data-row head">
+      <div>단계</div>
+      <div>호출 · 쿼리</div>
+      <div>Phase 1 Note</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">세션 검증 (Splash)</div>
+      <div class="data-src"><code>supabase.auth.getSession()</code> — refresh token 유효 → 홈, 없음 → Step 1. 병렬로 feature flags fetch.</div>
+      <div class="data-note">최대 1600ms 허용</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">OTP 발송</div>
+      <div class="data-src"><code>POST /auth/otp</code> — <code>supabase.auth.signInWithOtp({ phone })</code>. NHN 톡플러스 게이트웨이. Rate: 3분 내 1회.</div>
+      <div class="data-note">+82 자동 prepend</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">OTP 검증</div>
+      <div class="data-src"><code>POST /auth/verify</code> — <code>supabase.auth.verifyOtp({ phone, token, type: 'sms' })</code>. 성공 시 <code>user</code> row 자동 생성.</div>
+      <div class="data-note">실패 5회 → 계정 잠금 30분</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">닉네임 중복 확인</div>
+      <div class="data-src"><code>GET /rpc/check_nickname?name=...</code> — case-insensitive · 금칙어 테이블 JOIN. 서버에서도 재검증 (클라 조작 방지).</div>
+      <div class="data-note">debounce 400ms</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">프로필 저장</div>
+      <div class="data-src"><code>UPDATE users SET nickname, birth_month, birth_day, birth_skip WHERE id = auth.uid()</code>. RLS: 본인만 수정.</div>
+      <div class="data-note">정규화 · 공백 trim</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">주변 가게 10개</div>
+      <div class="data-src"><code>GET /stores/nearby?lat&lng&radius=500&limit=10</code> — PostGIS <code>ST_Distance</code>. 3곳 미만이면 반경 자동 확장 1km.</div>
+      <div class="data-note">GPS 거부 시 창원 중심 fallback</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">팔로우 커밋</div>
+      <div class="data-src"><code>INSERT INTO follows (user_id, store_id) SELECT ...</code> (batch). 약관 동의와 트랜잭션.</div>
+      <div class="data-note">실패 시 Step 4 재진입</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">약관 동의</div>
+      <div class="data-src"><code>INSERT INTO user_consents (user_id, tos_v, privacy_v, marketing, agreed_at)</code>. 약관 버전 해시 포함.</div>
+      <div class="data-note">버전 업데이트 시 재동의</div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 · Files -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">07</div>
+    <h2 class="sec-title">이식 대상<br>파일</h2>
+  </div>
+  <p class="sec-lede">UI Kit에서 프로덕션 레포로 옮길 파일과 신규 생성 파일.</p>
+
+  <div class="files-box">
+<span class="cmt"># 재사용 — UI Kit에서 이식 (basic variant만)</span><br>
+<span class="dir">src/screens/Splash/</span><br>
+  └── SplashScreen.tsx          <span class="cmt"># ← Splash.jsx:87 SplashCentered 포팅</span><br>
+<br>
+<span class="dir">src/screens/Auth/</span><br>
+  ├── AuthFlow.tsx              <span class="cmt"># ← AuthFlow.jsx orchestrator 포팅 (6스텝)</span><br>
+  ├── PhoneStep.tsx             <span class="cmt"># ← AuthFlow.jsx:101</span><br>
+  ├── CodeStep.tsx              <span class="cmt"># ← AuthFlow.jsx:157</span><br>
+  ├── ProfileStep.tsx           <span class="cmt"># ← AuthFlow.jsx:238 + BirthdayPicker</span><br>
+  ├── LocationPermissionStep.tsx <span class="cmt"># ← AuthFlow.jsx:585 — 신규 (GPS 풀스크린)</span><br>
+  ├── NearbyStoresStep.tsx      <span class="cmt"># ← AuthFlow.jsx:662</span><br>
+  ├── PushPermissionStep.tsx    <span class="cmt"># ← AuthFlow.jsx:738 — 신규 (푸시 풀스크린)</span><br>
+  └── TermsSheet.tsx            <span class="cmt"># ← AuthFlow.jsx:693</span><br>
+  <span class="cmt"># HelperMsg.tsx                ← Phase 2 (enhanced variant 런칭 시)</span><br>
+<br>
+<span class="cmt"># 신규 — API 훅 + 서비스</span><br>
+<span class="dir">src/hooks/</span><br>
+  ├── <span class="new">useOtp.ts</span>                <span class="cmt"># 발송 · 검증 · 3분 카운트다운</span><br>
+  ├── <span class="new">useNicknameCheck.ts</span>      <span class="cmt"># 중복 확인 + 금칙어 + debounce</span><br>
+  ├── <span class="new">useLocationPermission.ts</span> <span class="cmt"># CLLocationManager 요청 + 설정 딥링크</span><br>
+  ├── <span class="new">usePushPermission.ts</span>     <span class="cmt"># Notification.requestPermission + APNs 토큰</span><br>
+  └── <span class="new">useNearbyStores.ts</span>       <span class="cmt"># (Home V1과 공유)</span><br>
+<br>
+<span class="dir">src/services/</span><br>
+  └── <span class="new">auth.ts</span>                  <span class="cmt"># signInWithOtp · verifyOtp · profile save</span><br>
+<br>
+<span class="dir">src/types/</span><br>
+  ├── <span class="new">auth.ts</span>                  <span class="cmt"># SessionState, AuthStep 타입</span><br>
+  └── <span class="new">user.ts</span>                  <span class="cmt"># Profile, Consent 타입</span><br>
+<br>
+<span class="cmt"># 공용 — 전역 승격</span><br>
+<span class="dir">src/components/ui/</span><br>
+  ├── <span class="new">PrimaryButton.tsx</span>        <span class="cmt"># ← primaryButton() 함수 → 컴포넌트화</span><br>
+  └── <span class="new">DotIndicator.tsx</span>         <span class="cmt"># 다른 온보딩에서도 재사용</span><br>
+<br>
+<span class="cmt"># 라우팅 진입점</span><br>
+<span class="dir">App.tsx</span>                      <span class="cmt"># Splash → Auth → Home V1 스택 구성</span>
+  </div>
+</section>
+
+<!-- 08 · Edge cases -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">08</div>
+    <h2 class="sec-title">엣지<br>케이스</h2>
+  </div>
+  <p class="sec-lede">런칭 전 반드시 처리해야 할 현장 시나리오.</p>
+
+  <div class="edge-grid">
+    <div class="edge">
+      <div class="edge-t">SMS 수신 실패</div>
+      <div class="edge-d">3분 쿨다운 후 "다시 받기" 활성. 3회 연속 실패 시 "고객센터 문의" 링크 노출 (카카오채널).</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">OTP 5회 오류</div>
+      <div class="edge-d">해당 번호 30분 잠금. 에러 다이얼로그 + Step 1으로 복귀. 서버 <code>auth_attempts</code> 기록.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">앱 백그라운드 복귀</div>
+      <div class="edge-d">Step 2-4 진행 중 백그라운드 → foreground 시 state 보존. 30분 이상 방치 시 Step 1부터 재시작.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">GPS 권한 거부 · Step 4</div>
+      <div class="edge-d">진행 불가 — "다시 요청" CTA + 설정 앱 딥링크 배너. 설정에서 허용 후 앱 복귀 시 자동 재체크.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">푸시 권한 거부 · Step 6</div>
+      <div class="edge-d">거부해도 홈 진입 허용. <code>user_push_tokens</code>에 null 기록. MY > 설정에서 언제든 다시 활성화 가능. 만료 임박 쿠폰 알림 명시적 CTA 노출.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">반경 내 가게 &lt; 10</div>
+      <div class="edge-d">500m → 1km → 2km 순서로 반경 확장. 창원 전체에서도 10개 미만이면 있는 만큼 표시 + 최소 선택 기준 조정 (ceil(n/2)).</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">닉네임 서버 검증 실패</div>
+      <div class="edge-d">클라에서 통과한 닉네임이 서버 금칙어 업데이트로 거부될 수 있음. 프로필 저장 시점에 재검증 → Step 3 에러 복귀.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">약관 버전 업데이트</div>
+      <div class="edge-d">앱 최초 실행이 아니어도 약관 해시가 바뀌면 홈 진입 전 약관 시트 재노출. 필수 2종만 재확인.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">네트워크 단절</div>
+      <div class="edge-d">OTP 발송 · 검증 · 프로필 저장 각 호출 실패 시 retry CTA. Step 4 팔로우 커밋은 idempotent (user_id + store_id unique).</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">약관 동의 없이 닫기</div>
+      <div class="edge-d">바텀시트 외부 탭 · 뒤로가기 시 동의 상태 초기화. Step 4 본문은 유지. 다시 완료 탭 시 빈 체크박스로 시트 재노출.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 · Checklist -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">09</div>
+    <h2 class="sec-title">Claude Code<br>체크리스트</h2>
+  </div>
+  <p class="sec-lede">이 항목이 모두 체크되면 Splash + Auth 구현 완료. 각 항목은 독립 커밋 단위.</p>
+
+  <div class="check-list">
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>01</b> &nbsp;<code>SplashCentered</code> 포팅 + 세션 검증 병렬화 + <code>onDone</code> 라우팅</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>02</b> &nbsp;<code>AuthHeader</code> + <code>DotIndicator</code> + <code>primaryButton</code> 공용 컴포넌트 승격</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>03</b> &nbsp;<code>PhoneStep</code> + <code>useOtp</code> 훅 + Supabase signInWithOtp 연결</div>
+      <div class="check-est">1일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>04</b> &nbsp;<code>CodeStep</code> + iOS SMS autofill + 3분 카운트다운 + shake 에러</div>
+      <div class="check-est">1일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>05</b> &nbsp;<code>ProfileStep</code> + 금칙어 RPC + 한/영 길이 가중치 + <code>BirthdayPicker</code> 휠</div>
+      <div class="check-est">1.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>06</b> &nbsp;<code>LocationPermissionStep</code> + <code>useLocationPermission</code> 훅 + 설정 앱 딥링크 + 재체크 로직</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>07</b> &nbsp;<code>NearbyStoresStep</code> + PostGIS 반경 확장 fallback + 진행 바 애니메이션</div>
+      <div class="check-est">1일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>08</b> &nbsp;<code>TermsSheet</code> + 약관 원문 정적 페이지 2종 + 동의 테이블 기록</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>09</b> &nbsp;<code>PushPermissionStep</code> + <code>usePushPermission</code> + APNs 토큰 발급 + <code>user_push_tokens</code> 등록</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>10</b> &nbsp;엣지 케이스 10종 처리 (Section 08 — GPS · 푸시 거부 포함)</div>
+      <div class="check-est">1일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>11</b> &nbsp;Amplitude 이벤트 — <code>auth_step_view</code>, <code>auth_step_complete</code>, <code>permission_granted</code>, <code>permission_denied</code>, <code>signup_complete</code>, <code>signup_dropoff</code></div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>12</b> &nbsp;실제 디바이스 · SMS 수신 · GPS/푸시 권한 다이얼로그 · 백그라운드 복귀 테스트</div>
+      <div class="check-est">0.5일</div>
+    </div>
+  </div>
+  <div class="caption" style="margin-top:14px;text-align:right">합계 ≈ <b style="color:var(--orange-600)">9일</b> · 1인 iOS 엔지니어 기준. Launch Handoff W0-W1에 배치 (Home V1보다 먼저).</div>
+</section>
+
+<!-- 10 · References -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">10</div>
+    <h2 class="sec-title">참조<br>자료</h2>
+  </div>
+  <p class="sec-lede">Claude Code가 구현 중 참조할 1차 소스. 모두 프로젝트 내부.</p>
+
+  <div class="ref-grid">
+    <a href="../ui_kits/ios_app/index.html" class="ref">
+      <div class="ref-k">🎨 Live UI Kit</div>
+      <div class="ref-t">언니픽 iOS UI Kit</div>
+      <div class="ref-d">상단 탭에서 Splash / Auth 선택 시 실제 렌더링. 인터랙션·애니메이션의 ground truth.</div>
+    </a>
+    <a href="../ui_kits/ios_app/Splash.jsx" class="ref">
+      <div class="ref-k">📦 Source</div>
+      <div class="ref-t">Splash.jsx</div>
+      <div class="ref-d">SplashCentered (L87) + useSplashPhase 훅 (L14). Basic variant만 이식.</div>
+    </a>
+    <a href="../ui_kits/ios_app/AuthFlow.jsx" class="ref">
+      <div class="ref-k">📦 Source</div>
+      <div class="ref-t">AuthFlow.jsx</div>
+      <div class="ref-d">6스텝 orchestrator + 11개 하위 컴포넌트 (GPS/푸시 권한 스텝 포함). 단일 파일.</div>
+    </a>
+    <a href="home-v1-handoff.html" class="ref">
+      <div class="ref-k">🔗 Next</div>
+      <div class="ref-t">Home V1 Handoff</div>
+      <div class="ref-d">Auth 완료 직후 진입할 홈. 팔로우한 5곳이 피드 seed가 됨.</div>
+    </a>
+    <a href="launch-handoff.html" class="ref">
+      <div class="ref-k">🗓 Roadmap</div>
+      <div class="ref-t">Phase 1 Launch Handoff</div>
+      <div class="ref-d">이 문서가 들어갈 W0-W1 슬롯. 전체 7주 일정 속 Splash+Auth 위치.</div>
+    </a>
+    <a href="index.html" class="ref">
+      <div class="ref-k">📇 Index</div>
+      <div class="ref-t">Phase 1 Handoff Index</div>
+      <div class="ref-d">전체 핸드오프 문서 인덱스. 3개 스펙 · Home V1 · Launch 연결.</div>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<div class="doc-foot">
+  <div>언니픽 · Splash + Auth Claude Code Handoff · v0.1 · 2025.11</div>
+  <div style="display:flex;gap:12px">
+    <a href="index.html">Index</a>
+    <a href="home-v1-handoff.html">Home V1</a>
+    <a href="launch-handoff.html">Launch Handoff</a>
+    <a href="../ui_kits/ios_app/index.html">UI Kit</a>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

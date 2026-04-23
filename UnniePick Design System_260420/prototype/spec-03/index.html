@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Spec 03 · 월드컵 딜 소싱 프로토타입</title>
+<meta name="viewport" content="width=1400, user-scalable=no">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<link rel="stylesheet" href="app.css">
+<style>
+  @keyframes confetti-fall {
+    0% { transform: translateY(-20px) rotate(0); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(900px) rotate(720deg); opacity: 0; }
+  }
+  @keyframes slide-up-in { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="Screens.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const SCENES = [
+  { id: 'match',       group: '👛 유저',      label: '월드컵 매치',        hint: '16강 투표',        desc: '상남동 카페 월드컵 16강 첫 경기. 두 카페 중 하나를 탭해서 투표.' },
+  { id: 'result',      group: '👛 유저',      label: 'My Pick 결과',      hint: '"내 픽이 1등"',    desc: '지난주 내가 뽑은 카페가 우승. 축하 쿠폰이 자동 발급되는 순간.' },
+  { id: 'leaderboard', group: '👛 유저',      label: '월드컵 시즌 결과',    hint: 'TOP 8 차트',       desc: '지난주 시즌 결과 차트. My Pick 뱃지가 달린 카페는 강조되어 표시.' },
+  { id: 'owner',       group: '🧑‍💼 사장님',   label: '주간 리포트',        hint: '월요일 아침',      desc: '준호 사장의 대시보드. 1위 + 투표자 인사이트 + 프리미엄 슬롯 무료 이용권.' },
+  { id: 'slot',        group: '🧑‍💼 사장님',   label: '프리미엄 슬롯',      hint: '3가지 상품',       desc: 'Hero 슬롯 / 지도 핀 / 시드 고정 — 월드컵 1위는 자동으로 15,000원 할인.' },
+  { id: 'done',        group: '🧑‍💼 사장님',   label: '결제 완료',          hint: '슬롯 예약',         desc: '결제 완료 화면. 월요일부터 7일간 홈 Hero 슬롯 노출 예약.' },
+  { id: 'push',        group: '🔔 알림',       label: '리포트 Push',        hint: '잠금화면',         desc: '월요일 아침 사장님 폰 잠금화면. "지난주 월드컵 결과가 도착했어요" 알림.' },
+];
+
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "voted": null,
+  "round": 16
+}/*EDITMODE-END*/;
+
+function App() {
+  const [sceneId, setSceneId] = React.useState(() => localStorage.getItem('spec03_scene') || 'match');
+  const [tweaksOn, setTweaksOn] = React.useState(true);
+  const [tweaks, setTweaks] = React.useState(TWEAKS);
+
+  React.useEffect(() => { localStorage.setItem('spec03_scene', sceneId); }, [sceneId]);
+
+  React.useEffect(() => {
+    const h = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setTweaksOn(true);
+      else if (e.data?.type === '__deactivate_edit_mode') setTweaksOn(false);
+    };
+    window.addEventListener('message', h);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', h);
+  }, []);
+
+  const setTweak = (k, v) => {
+    const next = { ...tweaks, [k]: v };
+    setTweaks(next);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [k]: v } }, '*');
+  };
+
+  const scene = SCENES.find(s => s.id === sceneId);
+  const groups = React.useMemo(() => {
+    const map = {};
+    SCENES.forEach(s => { (map[s.group] = map[s.group] || []).push(s); });
+    return map;
+  }, []);
+
+  const scenarios = [
+    { label: '🗳 투표하고 다음 매치로',       action: () => { setSceneId('match'); setTweak('voted', null); } },
+    { label: '🏆 내 픽이 1등 → 쿠폰 발급',     action: () => setSceneId('result') },
+    { label: '📊 월드컵 시즌 순위 차트',       action: () => setSceneId('leaderboard') },
+    { label: '📬 월요일 아침 주간 리포트',     action: () => setSceneId('owner') },
+    { label: '💰 사장님 프리미엄 슬롯 구매',   action: () => setSceneId('slot') },
+    { label: '🔔 Push 알림 → 앱 진입',         action: () => { setSceneId('push'); setTimeout(() => setSceneId('owner'), 2500); } },
+  ];
+
+  const renderStage = () => {
+    switch (scene.id) {
+      case 'match':
+        return <IOSDevice width={402} height={874} dark={true}>
+          <WorldcupMatchScreen round={tweaks.round} voted={tweaks.voted}
+            onVote={(id) => { setTweak('voted', id); setTimeout(() => setTweak('voted', null), 1200); }}/>
+        </IOSDevice>;
+      case 'result':
+        return <IOSDevice width={402} height={874}>
+          <MyPickResultScreen onContinue={() => setSceneId('leaderboard')}/>
+        </IOSDevice>;
+      case 'leaderboard':
+        return <IOSDevice width={402} height={874}>
+          <WorldcupLeaderboardScreen onBack={() => setSceneId('match')}/>
+        </IOSDevice>;
+      case 'owner':
+        return <IOSDevice width={402} height={874}>
+          <OwnerWeeklyReportScreen onOpenSlot={() => setSceneId('slot')}/>
+        </IOSDevice>;
+      case 'slot':
+        return <IOSDevice width={402} height={874}>
+          <PremiumSlotScreen onBack={() => setSceneId('owner')}
+            onPurchase={() => setSceneId('done')}/>
+        </IOSDevice>;
+      case 'done':
+        return <IOSDevice width={402} height={874}>
+          <PurchaseDoneScreen onBack={() => setSceneId('owner')}/>
+        </IOSDevice>;
+      case 'push':
+        return <IOSDevice width={402} height={874}>
+          <ReportPushScreen/>
+        </IOSDevice>;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className={`ws ${tweaksOn ? '' : 'tweaks-off'}`}>
+      <aside className="ws-sidebar">
+        <div className="sb-header">
+          <div className="sb-brand">🏆 언니픽 · Spec 03</div>
+          <div className="sb-sub">월드컵 딜 소싱</div>
+        </div>
+
+        <div className="sb-note">
+          기존 매장 월드컵 + 주간 리포트 + 프리미엄 슬롯 루프. <b>투표가 실제 광고 노출로 전환</b>되는 자율 수익 엔진.
+        </div>
+
+        {Object.entries(groups).map(([g, items]) => (
+          <React.Fragment key={g}>
+            <div className="sb-section">{g}</div>
+            {items.map(s => (
+              <button key={s.id}
+                className={'sb-item ' + (s.id === sceneId ? 'active' : '')}
+                onClick={() => setSceneId(s.id)}>
+                <span className="sb-dot"/>
+                <span className="sb-label">{s.label}</span>
+                <span className="sb-hint">{s.hint}</span>
+              </button>
+            ))}
+          </React.Fragment>
+        ))}
+
+        <div className="sim-title">시나리오</div>
+        {scenarios.map((sc, i) => (
+          <button key={i} className="sim-btn" onClick={sc.action}>{sc.label}</button>
+        ))}
+        <div style={{ height: 30 }}/>
+      </aside>
+
+      <main className="ws-stage">
+        <div className="screen-label">
+          <span className="ix">{SCENES.findIndex(s => s.id === sceneId) + 1}/{SCENES.length}</span>
+          {scene.label}
+        </div>
+        <div style={{ padding: '80px 40px 40px' }}>{renderStage()}</div>
+      </main>
+
+      {tweaksOn && (
+        <aside className="ws-sidebar right">
+          <div className="tw-header">
+            <div className="tw-title">Tweaks</div>
+            <div className="tw-sub">투표 상태·라운드·슬롯 선택</div>
+          </div>
+
+          <div className="tw-group">
+            <div className="tw-group-title">이 장면</div>
+            <div style={{ font: '500 12px/1.55 var(--font-sans)', color: 'rgba(255,255,255,0.7)' }}>
+              {scene.desc}
+            </div>
+          </div>
+
+          {sceneId === 'match' && (
+            <div className="tw-group">
+              <div className="tw-group-title">라운드</div>
+              <div className="tw-seg">
+                {[16, 8, 4, 2].map(r => (
+                  <button key={r} onClick={() => setTweak('round', r)}
+                    className={'tw-seg-btn ' + (tweaks.round === r ? 'on' : '')}>
+                    {r === 2 ? '결승' : r + '강'}
+                  </button>
+                ))}
+              </div>
+              <div className="tw-desc" style={{ marginTop: 8 }}>
+                진행 게이지 · 라운드 표시에 반영됩니다.
+              </div>
+            </div>
+          )}
+
+          <div className="tw-group">
+            <div className="tw-group-title">플로우 요약</div>
+            <ol style={{ margin: 0, padding: '0 0 0 18px', font: '500 12px/1.65 var(--font-sans)', color: 'rgba(255,255,255,0.75)' }}>
+              <li>유저가 월드컵 투표 → 매주 결산</li>
+              <li>1위 매장에 <b>무료 크레딧 15,000원</b></li>
+              <li>사장님이 슬롯 구매 → 홈 Hero 노출</li>
+              <li>노출 → 신규 투표자 → 다음 주 시즌</li>
+            </ol>
+          </div>
+
+          <div className="tw-group">
+            <div className="tw-group-title">KPI 가설</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {[
+                { k: '유료 전환율', v: '+15%p' },
+                { k: '광고 매출',   v: '+30%' },
+                { k: '월드컵 참여', v: '2.1×' },
+                { k: '사장 DAU',    v: '+42%' },
+              ].map(m => (
+                <div key={m.k} style={{
+                  padding: 10, background: 'rgba(255,255,255,0.04)',
+                  borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  <div style={{ font: '600 10px/1 var(--font-sans)', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3, marginBottom: 4 }}>{m.k}</div>
+                  <div style={{ font: '900 16px/1 var(--font-sans)', color: 'var(--orange-500)', letterSpacing: '-0.3px' }}>{m.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ height: 30 }}/>
+        </aside>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { recordVisitAndAutoIssue } from './visitService';
 
 // ─── 쿠폰 종류 ────────────────────────────────────────────────
 export type CouponKind = 'regular' | 'timesale' | 'service' | 'experience';
@@ -127,6 +128,50 @@ export async function fetchMyCoupons(userId: string): Promise<UserCouponRow[]> {
   return (data ?? []) as UserCouponRow[];
 }
 
+// ── A. 쿠폰 수령 자격 검사 ────────────────────────────────────
+// target_segment에 따라 신규·재방문 조건을 검사합니다.
+export async function checkCouponEligibility(
+  userId:   string,
+  couponId: string,
+): Promise<{ eligible: boolean; reason?: string }> {
+  const { data: coupon } = await supabase
+    .from('coupons')
+    .select('target_segment, min_visit_count, store_id')
+    .eq('id', couponId)
+    .single();
+
+  if (!coupon) return { eligible: false, reason: '쿠폰을 찾을 수 없어요' };
+
+  const seg = coupon.target_segment ?? 'all';
+
+  if (seg === 'all') return { eligible: true };
+
+  // 방문 횟수 조회
+  const { data: visitCount } = await supabase.rpc('get_store_visit_count', {
+    p_user_id:  userId,
+    p_store_id: coupon.store_id,
+  });
+  const count = (visitCount as number) ?? 0;
+
+  if (seg === 'new') {
+    // 신규 전용: 방문 기록이 없어야 함
+    if (count > 0) {
+      return { eligible: false, reason: '첫 방문 고객 전용 쿠폰이에요' };
+    }
+  } else if (seg === 'returning') {
+    // 재방문 전용: min_visit_count 이상이어야 함
+    const required = coupon.min_visit_count ?? 2;
+    if (count < required) {
+      return {
+        eligible: false,
+        reason: `${required}회 이상 방문 고객 전용 쿠폰이에요 (현재 ${count}회)`,
+      };
+    }
+  }
+
+  return { eligible: true };
+}
+
 // 쿠폰 받기
 export async function claimCoupon(userId: string, couponId: string): Promise<UserCouponRow> {
   // 수량 체크
@@ -140,6 +185,12 @@ export async function claimCoupon(userId: string, couponId: string): Promise<Use
   // total_quantity가 null이면 무제한 — 수량 체크 생략
   if (coupon.total_quantity !== null && coupon.issued_count >= coupon.total_quantity) {
     throw new Error('쿠폰이 모두 소진됐어요');
+  }
+
+  // A. 대상 고객 자격 검사
+  const eligibility = await checkCouponEligibility(userId, couponId);
+  if (!eligibility.eligible) {
+    throw new Error(eligibility.reason ?? '수령 조건을 충족하지 않아요');
   }
 
   const { data, error } = await supabase
@@ -178,7 +229,7 @@ export async function useCoupon(qrToken: string): Promise<{ success: boolean; me
 
   if (updateError) throw updateError;
 
-  // 스탬프 + UNNI 자동 적립 (best-effort)
+  // 스탬프 + UNNI 자동 적립 + B·D 방문 기록 & 쿠폰 자동 발급 (best-effort)
   if (coupon.store_id && userCoupon.user_id) {
     try {
       await supabase.rpc('try_add_stamp', {
@@ -194,6 +245,8 @@ export async function useCoupon(qrToken: string): Promise<{ success: boolean; me
         p_store_id:   coupon.store_id,
       });
     } catch { /* UNNI 적립 실패는 무시 */ }
+    // B. 방문 기록 + D. 자동 발급 트리거
+    recordVisitAndAutoIssue(userCoupon.user_id, coupon.store_id, 'coupon_used').catch(() => {});
   }
 
   const discountText = coupon.discount_type === 'percent'

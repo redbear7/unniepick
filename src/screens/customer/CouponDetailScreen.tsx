@@ -93,7 +93,7 @@ export default function CouponDetailScreen() {
         userCoupon.id, coupon.title, storeName, coupon.expires_at,
       ).catch(() => {});
       Alert.alert('쿠폰 발급 완료!', '내 쿠폰함에 저장됐어요 🎉\n만료 하루 전에 알림을 드릴게요!', [
-        { text: '확인', onPress: () => navigation.navigate('MyCouponQR', { userCoupon }) },
+        { text: '확인', onPress: () => navigation.navigate('MyCouponQR', { userCouponId: userCoupon.id }) },
       ]);
     } catch (e: any) {
       Alert.alert('오류', e.message ?? '쿠폰 발급에 실패했어요');

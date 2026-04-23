@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { recordVisitAndAutoIssue } from './visitService';
 
 // ── 스탬프 자동 적립 결과 ─────────────────────────────────────────
 export interface StampResult {
@@ -10,6 +11,7 @@ export interface StampResult {
 }
 
 // 12시간 쿨다운 체크 후 스탬프 적립 (try_add_stamp RPC)
+// B·D: 스탬프 성공 시 방문 기록 + 신규·재방문 쿠폰 자동 발급
 export async function tryAddStamp(
   userId: string,
   storeId: string,
@@ -21,7 +23,13 @@ export async function tryAddStamp(
     p_source:   source,
   });
   if (error) throw error;
-  return data as StampResult;
+
+  const result = data as StampResult;
+  // 스탬프 성공(쿨다운 아님)인 경우에만 방문 기록 + 쿠폰 자동 발급
+  if (result.success) {
+    recordVisitAndAutoIssue(userId, storeId, 'stamp').catch(() => {});
+  }
+  return result;
 }
 
 export interface StampCardRow {

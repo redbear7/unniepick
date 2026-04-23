@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>언니픽 · Phase 1 개발 핸드오프</title>
+<link rel="stylesheet" href="spec-sheet.css">
+<style>
+  /* Index page — cover + 3 spec cards */
+  .index-hero {
+    background: var(--ink);
+    color: #fff;
+    padding: 100px 80px 120px;
+    margin: 0 -80px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .index-hero::before {
+    content: '';
+    position: absolute;
+    top: -400px;
+    right: -300px;
+    width: 1000px;
+    height: 1000px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,111,15,0.3), transparent 55%);
+  }
+  .index-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -300px;
+    left: -200px;
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,111,15,0.15), transparent 60%);
+  }
+  .index-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 100px;
+    position: relative;
+    z-index: 1;
+  }
+  .index-brand { font: 900 32px/1 'Wanted Sans'; color: var(--orange); letter-spacing: -0.8px; }
+  .index-meta { font: 600 13px/1.6 'Wanted Sans'; color: rgba(255,255,255,0.45); letter-spacing: 0.6px; text-align: right; text-transform: uppercase; }
+  .index-eyebrow {
+    font: 700 20px/1 'Wanted Sans';
+    color: var(--orange);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 32px;
+  }
+  .index-title {
+    font: 900 120px/0.9 'Wanted Sans';
+    color: #fff;
+    letter-spacing: -5px;
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin-bottom: 36px;
+  }
+  .index-title em { font-style: normal; color: var(--orange); }
+  .index-sub {
+    font: 500 28px/1.45 'Wanted Sans';
+    color: rgba(255,255,255,0.7);
+    max-width: 960px;
+    letter-spacing: -0.4px;
+    position: relative;
+    z-index: 1;
+  }
+  .index-stats {
+    display: flex;
+    gap: 48px;
+    margin-top: 64px;
+    padding-top: 36px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    position: relative;
+    z-index: 1;
+  }
+  .index-stat-item { flex: 1; }
+  .index-stat-k { font: 700 12px/1 'Wanted Sans'; color: rgba(255,255,255,0.45); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+  .index-stat-v { font: 900 44px/1 'Wanted Sans'; color: #fff; letter-spacing: -1.5px; }
+  .index-stat-v em { font-style: normal; color: var(--orange); }
+  .index-stat-t { font: 500 14px/1.4 'Wanted Sans'; color: rgba(255,255,255,0.55); margin-top: 8px; letter-spacing: -0.1px; }
+
+  /* Spec cards */
+  .spec-cards { display: flex; flex-direction: column; gap: 24px; margin-top: 80px; }
+  .spec-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .spec-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 48px;
+    display: grid;
+    grid-template-columns: 180px 1fr 300px;
+    gap: 48px;
+    align-items: center;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .spec-card:hover {
+    border-color: var(--ink);
+    transform: translateY(-2px);
+    box-shadow: 0 24px 48px rgba(13,14,15,0.08);
+  }
+  .spec-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 6px; height: 100%;
+    background: var(--orange);
+    transition: width 0.3s ease;
+  }
+  .spec-card:hover::before { width: 12px; }
+  .spec-num-huge {
+    font: 900 150px/0.85 'Wanted Sans';
+    color: var(--orange);
+    letter-spacing: -6px;
+    text-align: left;
+  }
+  .spec-body-mid { display: flex; flex-direction: column; gap: 12px; }
+  .spec-eyebrow { font: 700 13px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 2px; text-transform: uppercase; }
+  .spec-name {
+    font: 900 38px/1.1 'Wanted Sans';
+    color: var(--ink);
+    letter-spacing: -1px;
+  }
+  .spec-desc {
+    font: 500 17px/1.5 'Wanted Sans';
+    color: var(--fg2);
+    letter-spacing: -0.2px;
+    margin-top: 4px;
+    max-width: 520px;
+  }
+  .spec-derives { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .spec-ice { display: flex; flex-direction: column; gap: 14px; padding-left: 32px; border-left: 1px solid var(--line); }
+  .ice-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .ice-label { font: 700 11px/1 'Wanted Sans'; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg3); }
+  .ice-val {
+    font: 800 13px/1 'Wanted Sans';
+    padding: 6px 12px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+  }
+  .ice-high { background: var(--orange-50); color: var(--orange-600); }
+  .ice-med { background: #FFF3D6; color: #9A6A00; }
+  .spec-cta {
+    font: 800 15px/1 'Wanted Sans';
+    color: var(--ink);
+    letter-spacing: -0.2px;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .spec-cta::after {
+    content: '→';
+    display: inline-block;
+    transition: transform 0.2s;
+  }
+  .spec-card:hover .spec-cta::after { transform: translateX(6px); }
+
+  /* Cross-spec section */
+  .cross-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .cross-box {
+    padding: 24px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+  }
+  .cross-pair {
+    font: 800 12px/1 'Wanted Sans';
+    color: var(--orange);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .cross-title { font: 800 17px/1.3 'Wanted Sans'; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.2px; }
+  .cross-detail { font: 500 13px/1.55 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+
+  /* Phase bar */
+  .phase-bar {
+    display: grid;
+    grid-template-columns: 1fr 2fr 2fr;
+    gap: 0;
+    margin-top: 32px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .phase-col {
+    padding: 28px 32px;
+    border-right: 1px solid var(--line);
+    position: relative;
+  }
+  .phase-col:last-child { border-right: none; }
+  .phase-col.now { background: var(--orange-50); border-color: var(--orange-100); }
+  .phase-label {
+    font: 900 12px/1 'Wanted Sans';
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--fg3);
+    margin-bottom: 14px;
+  }
+  .phase-col.now .phase-label { color: var(--orange); }
+  .phase-when { font: 700 16px/1.3 'Wanted Sans'; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 14px; }
+  .phase-list { font: 500 14px/1.7 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .phase-list strong { color: var(--ink); font-weight: 700; }
+
+  /* Links back to prd */
+  .related {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 32px 40px;
+    background: var(--bg-warm);
+    border-radius: 20px;
+    margin-top: 40px;
+  }
+  .related-left { display: flex; flex-direction: column; gap: 6px; }
+  .related-eye { font: 700 12px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 1.5px; text-transform: uppercase; }
+  .related-name { font: 800 22px/1.2 'Wanted Sans'; color: var(--ink); letter-spacing: -0.3px; }
+  .related-cta {
+    font: 800 15px/1 'Wanted Sans';
+    color: #fff;
+    background: var(--ink);
+    padding: 16px 28px;
+    border-radius: 999px;
+    text-decoration: none;
+    letter-spacing: -0.2px;
+  }
+  .related-cta:hover { background: var(--orange); }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+<!-- HERO -->
+<div class="index-hero">
+  <div class="index-top">
+    <div class="index-brand">언니픽</div>
+    <div class="index-meta">Phase 1 Handoff Index<br>v0.1 · 2025.11</div>
+  </div>
+  <div class="index-eyebrow">Phase 1 · Development Handoff</div>
+  <h1 class="index-title">해외 벤치마킹에서<br>개발 스펙까지.</h1>
+  <div class="index-sub">글로벌 쿠폰앱 5종의 검증된 루프를 언니픽의 동네·여성·오프라인 컨텍스트로 이식하는 Phase 1 실행 문서. 3개 스펙 · 6주 · 개발 준비 완료.</div>
+  <div class="index-stats">
+    <div class="index-stat-item">
+      <div class="index-stat-k">Specs</div>
+      <div class="index-stat-v">3<span style="color:rgba(255,255,255,0.3);font-size:22px;margin-left:6px">/ 6</span></div>
+      <div class="index-stat-t">Phase 1 우선순위 · ICE 상위 3건</div>
+    </div>
+    <div class="index-stat-item">
+      <div class="index-stat-k">Timeline</div>
+      <div class="index-stat-v"><em>S1</em> → <em>S5</em></div>
+      <div class="index-stat-t">총 약 14주 · 부분 병렬</div>
+    </div>
+    <div class="index-stat-item">
+      <div class="index-stat-k">Owners</div>
+      <div class="index-stat-v">4<span style="font-size:22px;opacity:0.6;margin-left:4px">팀</span></div>
+      <div class="index-stat-t">PM · iOS · Backend · 사장님앱</div>
+    </div>
+    <div class="index-stat-item">
+      <div class="index-stat-k">Status</div>
+      <div class="index-stat-v" style="font-size:28px;line-height:1.3">준비 완료</div>
+      <div class="index-stat-t">개발 킥오프 대기</div>
+    </div>
+  </div>
+</div>
+
+<!-- 3 SPEC CARDS -->
+<section class="block" style="padding-top:80px">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <h2 class="sec-title">Phase 1 스펙<br>3종</h2>
+  </div>
+  <p class="sec-lede">ICE 스코어 + 언니픽 현재 기술 자산을 기준으로 우선순위를 매겼다. 각 스펙은 독립 배포 가능하지만, 데이터·인프라를 서로 재사용하도록 설계.</p>
+
+  <div class="spec-cards">
+
+    <a href="splash-auth-handoff.html" class="spec-card-link" style="margin-bottom:8px">
+      <div class="spec-card" style="background:#fff;border-color:var(--orange);border-width:2px">
+        <div class="spec-num-huge" style="color:var(--orange)">S0</div>
+        <div class="spec-body-mid">
+          <div class="spec-eyebrow" style="color:var(--orange-600)">Splash + Auth Handoff · Claude Code 개발 문서</div>
+          <div class="spec-name">첫 5분, 이탈 없는 진입</div>
+          <div class="spec-desc">스플래시 1.8초 → 휴대폰 · SMS · 프로필 · 팔로우 5곳 + 약관. 4스텝 플로우 · 9개 컴포넌트 · 검증 규칙 · 엣지 9종 · 10단계 체크리스트.</div>
+          <div class="spec-derives">
+            <span class="derive-chip">4스텝</span>
+            <span class="derive-chip">컴포넌트 9종</span>
+            <span class="derive-chip">약 8일</span>
+          </div>
+          <div style="display:flex;gap:24px;margin-top:12px;align-items:center">
+            <div class="spec-cta">Splash + Auth 핸드오프 열기</div>
+          </div>
+        </div>
+        <div class="spec-ice">
+          <div class="ice-row"><span class="ice-label">Scope</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">첫 진입 + 온보딩</span></div>
+          <div class="ice-row"><span class="ice-label">Effort</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">약 8일</span></div>
+          <div class="ice-row"><span class="ice-label">Slot</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">Launch W0-W1</span></div>
+          <div class="ice-row"><span class="ice-label">Owner</span><span style="font:800 13px/1 'Wanted Sans';color:var(--orange-600)">iOS · BE</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a href="home-v1-handoff.html" class="spec-card-link" style="margin-bottom:8px">
+      <div class="spec-card" style="background:#fff;border-color:var(--orange);border-width:2px">
+        <div class="spec-num-huge" style="color:var(--orange)">V1</div>
+        <div class="spec-body-mid">
+          <div class="spec-eyebrow" style="color:var(--orange-600)">Home V1 Handoff · Claude Code 개발 문서</div>
+          <div class="spec-name">홈 화면은 V1 표준으로 간다</div>
+          <div class="spec-desc">위치바 → 긴급 쿠폰 → 내 주변 → 팔로우 피드. 4개 섹션 수직 허브. 섹션 해부 · 컴포넌트 8종 명세 · 데이터 소스 · 엣지 케이스 · 9단계 체크리스트. 월드컵 배너는 Phase 2로.</div>
+          <div class="spec-derives">
+            <span class="derive-chip">4개 섹션</span>
+            <span class="derive-chip">컴포넌트 8종</span>
+            <span class="derive-chip">약 6일</span>
+          </div>
+          <div style="display:flex;gap:24px;margin-top:12px;align-items:center">
+            <div class="spec-cta">Home V1 핸드오프 열기</div>
+          </div>
+        </div>
+        <div class="spec-ice">
+          <div class="ice-row"><span class="ice-label">Scope</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">홈 V1 only</span></div>
+          <div class="ice-row"><span class="ice-label">Effort</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">약 6일</span></div>
+          <div class="ice-row"><span class="ice-label">Slot</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">Launch W1</span></div>
+          <div class="ice-row"><span class="ice-label">Owner</span><span style="font:800 13px/1 'Wanted Sans';color:var(--orange-600)">iOS</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a href="my-screen-handoff.html" class="spec-card-link" style="margin-bottom:8px">
+      <div class="spec-card" style="background:#fff;border-color:var(--orange);border-width:2px">
+        <div class="spec-num-huge" style="color:var(--orange)">MY</div>
+        <div class="spec-body-mid">
+          <div class="spec-eyebrow" style="color:var(--orange-600)">MY Screen Handoff · Claude Code 개발 문서</div>
+          <div class="spec-name">프로필 · 레벨 · 활동/혜택/계정</div>
+          <div class="spec-desc">사용자 MY 탭 4블록 (프로필 헤더 · 긴급 쿠폰 · 메뉴 3그룹 · 계정 액션). 메뉴 12개 전체 명세 · Supabase RPC 3개 · 엣지 7종 · 타이포 RN 치환 규칙.</div>
+          <div class="spec-derives">
+            <span class="derive-chip">4블록</span>
+            <span class="derive-chip">메뉴 12종</span>
+            <span class="derive-chip">약 4.5일</span>
+          </div>
+          <div style="display:flex;gap:24px;margin-top:12px;align-items:center">
+            <div class="spec-cta">MY 탭 핸드오프 열기</div>
+          </div>
+        </div>
+        <div class="spec-ice">
+          <div class="ice-row"><span class="ice-label">Scope</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">사용자 MY 탭</span></div>
+          <div class="ice-row"><span class="ice-label">Effort</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">약 4.5일</span></div>
+          <div class="ice-row"><span class="ice-label">Slot</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">Launch W2</span></div>
+          <div class="ice-row"><span class="ice-label">Owner</span><span style="font:800 13px/1 'Wanted Sans';color:var(--orange-600)">iOS · BE</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a href="launch-handoff.html" class="spec-card-link" style="margin-bottom:8px">
+      <div class="spec-card" style="background:var(--ink);color:#fff;border-color:var(--ink)">
+        <div class="spec-num-huge" style="color:var(--orange);opacity:0.9">→</div>
+        <div class="spec-body-mid">
+          <div class="spec-eyebrow" style="color:var(--orange)">Launch Handoff · Phase 1 실행 문서</div>
+          <div class="spec-name" style="color:#fff">Spec 01 + 02를 7주 안에 런칭한다</div>
+          <div class="spec-desc" style="color:rgba(255,255,255,0.72)">W0 킥오프부터 W7 App Store 제출까지 주차별 태스크 · 런칭 게이트 7개 · 리스크 · KPI. Claude Code가 바로 개발을 시작할 수 있는 실행 문서.</div>
+          <div class="spec-derives">
+            <span class="derive-chip" style="background:rgba(255,111,15,0.18);color:var(--orange)">사용자 앱 iOS only</span>
+            <span class="derive-chip" style="background:rgba(255,111,15,0.18);color:var(--orange)">7주 · 4롤</span>
+            <span class="derive-chip" style="background:rgba(255,111,15,0.18);color:var(--orange)">Spec 03 · 사장님앱 = 다음 단계</span>
+          </div>
+          <div style="display:flex;gap:24px;margin-top:12px;align-items:center">
+            <div class="spec-cta" style="color:var(--orange)">핸드오프 문서 열기</div>
+          </div>
+        </div>
+        <div class="spec-ice" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1)">
+          <div class="ice-row"><span class="ice-label" style="color:rgba(255,255,255,0.5)">Scope</span><span style="font:800 13px/1 'Wanted Sans';color:#fff">Spec 01+02</span></div>
+          <div class="ice-row"><span class="ice-label" style="color:rgba(255,255,255,0.5)">Timeline</span><span style="font:800 13px/1 'Wanted Sans';color:#fff">7주</span></div>
+          <div class="ice-row"><span class="ice-label" style="color:rgba(255,255,255,0.5)">Gates</span><span style="font:800 13px/1 'Wanted Sans';color:#fff">G1 – G7</span></div>
+          <div class="ice-row"><span class="ice-label" style="color:rgba(255,255,255,0.5)">Status</span><span style="font:800 13px/1 'Wanted Sans';color:var(--orange)">개발 준비</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a href="spec-01-wallet-discovery.html" class="spec-card-link">
+      <div class="spec-card">
+        <div class="spec-num-huge">01</div>
+        <div class="spec-body-mid">
+          <div class="spec-eyebrow">Idea 01 · Wallet Auto-Discovery</div>
+          <div class="spec-name">지갑 속 쿠폰이 스스로 말을 건다</div>
+          <div class="spec-desc">매장 반경 100m 진입 시, 저장된 쿠폰을 iOS Live Activity·Widget으로 능동 리마인드. Honey의 자동 발견 로직을 오프라인으로 이식.</div>
+          <div class="spec-derives">
+            <span class="derive-chip">← Honey 자동 발견</span>
+            <span class="derive-chip">iOS 16+ Live Activity</span>
+            <span class="derive-chip">S1–S3 · 6주</span>
+          </div>
+          <div style="display:flex;gap:24px;margin-top:12px;align-items:center">
+            <div class="spec-cta">스펙 시트 열기</div>
+            <a href="../prototype/spec-01/index.html" onclick="event.stopPropagation()" style="font:800 13px/1 'Wanted Sans';color:var(--orange);letter-spacing:-0.1px;text-decoration:none;padding:8px 14px;background:var(--orange-50);border-radius:999px">🎨 프로토타입 →</a>
+          </div>
+        </div>
+        <div class="spec-ice">
+          <div class="ice-row"><span class="ice-label">Impact</span><span class="ice-val ice-high">High</span></div>
+          <div class="ice-row"><span class="ice-label">Confidence</span><span class="ice-val ice-high">High</span></div>
+          <div class="ice-row"><span class="ice-label">Ease</span><span class="ice-val ice-med">Medium</span></div>
+          <div class="ice-row"><span class="ice-label">Owner</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">iOS · BE</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a href="spec-02-stamp.html" class="spec-card-link">
+      <div class="spec-card">
+        <div class="spec-num-huge">02</div>
+        <div class="spec-body-mid">
+          <div class="spec-eyebrow">Idea 02 · Visit Stamps × Regular Tier</div>
+          <div class="spec-name">한 번의 스캔이 단골을 만든다</div>
+          <div class="spec-desc">QR 1회 스캔 = 스탬프 1개. 10개 모으면 매장별 단골 등급 · 시크릿 쿠폰·히든 메뉴·우선 예약이 해금. Fetch 수집 루프 × Meituan 관계 기반 등급.</div>
+          <div class="spec-derives">
+            <span class="derive-chip">← Fetch 수집 UX</span>
+            <span class="derive-chip">← Meituan 등급</span>
+            <span class="derive-chip">S2–S4 · 6주</span>
+          </div>
+          <div style="display:flex;gap:24px;margin-top:12px;align-items:center">
+            <div class="spec-cta">스펙 시트 열기</div>
+            <a href="../prototype/spec-02/index.html" onclick="event.stopPropagation()" style="font:800 13px/1 'Wanted Sans';color:var(--orange);letter-spacing:-0.1px;text-decoration:none;padding:8px 14px;background:var(--orange-50);border-radius:999px">🎨 프로토타입 →</a>
+          </div>
+        </div>
+        <div class="spec-ice">
+          <div class="ice-row"><span class="ice-label">Impact</span><span class="ice-val ice-high">High</span></div>
+          <div class="ice-row"><span class="ice-label">Confidence</span><span class="ice-val ice-high">High</span></div>
+          <div class="ice-row"><span class="ice-label">Ease</span><span class="ice-val ice-high">High</span></div>
+          <div class="ice-row"><span class="ice-label">Owner</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">iOS · BE · 사장님앱</span></div>
+        </div>
+      </div>
+    </a>
+
+    <a href="spec-03-worldcup.html" class="spec-card-link">
+      <div class="spec-card">
+        <div class="spec-num-huge">03</div>
+        <div class="spec-body-mid">
+          <div class="spec-eyebrow">Idea 03 · Worldcup-Powered Deal Sourcing</div>
+          <div class="spec-name">이미 있는 월드컵을 매장이 쫓는다</div>
+          <div class="spec-desc">매장 월드컵 결과를 사장님 주간 리포트로 배달 → 상위 매장은 프리미엄 슬롯·무료 크레딧. Yelp Ads의 $150/월 진입 장벽을 뒤집는 자율 수익 루프.</div>
+          <div class="spec-derives">
+            <span class="derive-chip">← Yelp Ads 반성</span>
+            <span class="derive-chip">← 기존 월드컵 자산</span>
+            <span class="derive-chip">S3–S5 · 5주</span>
+          </div>
+          <div style="display:flex;gap:24px;margin-top:12px;align-items:center">
+            <div class="spec-cta">스펙 시트 열기</div>
+            <a href="../prototype/spec-03/index.html" onclick="event.stopPropagation()" style="font:800 13px/1 'Wanted Sans';color:var(--orange);letter-spacing:-0.1px;text-decoration:none;padding:8px 14px;background:var(--orange-50);border-radius:999px">🎨 프로토타입 →</a>
+          </div>
+        </div>
+        <div class="spec-ice">
+          <div class="ice-row"><span class="ice-label">Impact</span><span class="ice-val ice-med">Medium</span></div>
+          <div class="ice-row"><span class="ice-label">Confidence</span><span class="ice-val ice-high">High</span></div>
+          <div class="ice-row"><span class="ice-label">Ease</span><span class="ice-val ice-high">High</span></div>
+          <div class="ice-row"><span class="ice-label">Owner</span><span style="font:800 13px/1 'Wanted Sans';color:var(--ink)">PM · BE · Biz Ops</span></div>
+        </div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- Cross-spec refs -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <h2 class="sec-title">스펙 간<br>연결 구조</h2>
+  </div>
+  <p class="sec-lede">세 스펙은 독립 배포되지만, 공통 인프라(GPS·지갑·Live Activity)를 공유한다. 먼저 배포된 스펙의 데이터가 뒷 스펙의 품질을 끌어올리는 누적 구조.</p>
+
+  <div class="cross-grid">
+    <div class="cross-box">
+      <div class="cross-pair">Spec 01 → Spec 02</div>
+      <div class="cross-title">쿠폰 사용 = 스탬프 자동 적립</div>
+      <div class="cross-detail">Idea 01의 '사용완료' 이벤트가 Idea 02의 스탬프 적립 트리거. 사용자는 한 번의 결제로 두 루프에 진입.</div>
+    </div>
+    <div class="cross-box">
+      <div class="cross-pair">Spec 01 → Spec 03</div>
+      <div class="cross-title">우승 매장 노출 우선순위 +1</div>
+      <div class="cross-detail">Idea 03 월드컵 우승 매장은 Idea 01 Live Activity 타깃팅에서 우선순위 가중치. 유료 슬롯 가치 증명.</div>
+    </div>
+    <div class="cross-box">
+      <div class="cross-pair">Spec 02 → Spec 03</div>
+      <div class="cross-title">단골 시크릿 쿠폰 → 투표 보상</div>
+      <div class="cross-detail">Idea 02 단골 해금 시크릿 쿠폰을 Idea 03의 '내 픽이 1등' 보상으로도 옵션 활용. 매장 자율 선택.</div>
+    </div>
+    <div class="cross-box">
+      <div class="cross-pair">공통 인프라 · GPS</div>
+      <div class="cross-title">매장 좌표 DB · PostGIS</div>
+      <div class="cross-detail">Idea 01에서 구축한 매장 좌표 인프라를 Idea 02·03 모두 재사용. 사장님 '내 가게 위치 조정' 기능도 공통.</div>
+    </div>
+    <div class="cross-box">
+      <div class="cross-pair">공통 인프라 · Live Activity</div>
+      <div class="cross-title">ActivityKit · APNs liveness</div>
+      <div class="cross-detail">Idea 01의 Live Activity 인프라에 Idea 02 단골 배지·Idea 03 우승 알림 등 state를 얹는 구조.</div>
+    </div>
+    <div class="cross-box">
+      <div class="cross-pair">공통 인프라 · 지갑</div>
+      <div class="cross-title">coupons 테이블 재사용</div>
+      <div class="cross-detail">세 스펙 모두 기존 coupons 테이블을 확장 (is_secret 컬럼 추가 등). 지갑 렌더링 파이프라인 단일.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Phase timeline -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <h2 class="sec-title">Phase<br>타임라인</h2>
+  </div>
+  <p class="sec-lede">Phase 1 Q4 집중 실행. Phase 2·3는 Phase 1 성과 데이터를 기반으로 6개월 뒤 재평가.</p>
+
+  <div class="phase-bar">
+    <div class="phase-col now">
+      <div class="phase-label">Now · Phase 1</div>
+      <div class="phase-when">0 – 3개월</div>
+      <div class="phase-list">
+        <strong>01</strong> 지갑 자동 발견<br>
+        <strong>02</strong> 방문 스탬프<br>
+        <strong>03</strong> 월드컵 딜 소싱
+      </div>
+    </div>
+    <div class="phase-col">
+      <div class="phase-label">Phase 2 · Candidates</div>
+      <div class="phase-when">3 – 6개월</div>
+      <div class="phase-list">
+        <strong>04</strong> 언니 추천 카운트다운 딜 — Groupon 한정성 메커니즘<br>
+        <strong>05</strong> 영수증 OCR 숨은 쿠폰 언락 — Fetch 확장<br>
+        <strong>—</strong> 사장님 Pro 대시보드 구독 모델 실험
+      </div>
+    </div>
+    <div class="phase-col">
+      <div class="phase-label">Phase 3 · Long-term</div>
+      <div class="phase-when">6개월 +</div>
+      <div class="phase-list">
+        <strong>06</strong> 로컬 단골 스토리 — 24h 단골 소셜 레이어<br>
+        <strong>—</strong> 카테고리 스폰서십 · 지역 확장<br>
+        <strong>—</strong> 글로벌 진출 모델 설계
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Related docs -->
+<section class="block" style="padding-bottom:40px">
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <h2 class="sec-title">관련 문서</h2>
+  </div>
+
+  <div class="related">
+    <div class="related-left">
+      <div class="related-eye">Upstream · 벤치마킹 리서치</div>
+      <div class="related-name">해외 쿠폰앱 벤치마킹 PRD · 20 슬라이드</div>
+      <div class="caption" style="margin-top:6px">Groupon · Honey · Yelp Deals · Meituan · Fetch 5종 교차 분석 → 이 핸드오프의 출발점</div>
+    </div>
+    <a href="overseas-prd.html" class="related-cta">PRD 열기 →</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<div class="doc-foot">
+  <div>언니픽 · Phase 1 Handoff Index · v0.1 · 2025.11</div>
+  <div style="display:flex;gap:12px">
+    <a href="splash-auth-handoff.html">Splash + Auth</a>
+    <a href="home-v1-handoff.html">Home V1</a>
+    <a href="my-screen-handoff.html">MY</a>
+    <a href="launch-handoff.html">Launch Handoff</a>
+    <a href="spec-01-wallet-discovery.html">Spec 01</a>
+    <a href="spec-02-stamp.html">Spec 02</a>
+    <a href="spec-03-worldcup.html">Spec 03</a>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

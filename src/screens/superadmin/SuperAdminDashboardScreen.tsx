@@ -8,9 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { superAdminLogout } from '../../lib/auth';
+import { supabase } from '../../lib/supabase';
 import {
   sendSuperAdminPush, fetchPushHistory,
-  fetchPushStats, registerPushToken, PushHistoryRow,
+  fetchPushStats, registerPushToken,
+  sendTestPushToSelf, PushHistoryRow,
 } from '../../lib/services/pushService';
 import {
   fetchAllApplications, fetchApplicationStats,
@@ -70,7 +72,7 @@ const SA = {
   owner: '#FFD93D',
 };
 
-type MainTab = 'apply' | 'district' | 'push' | 'notice' | 'popup' | 'coupon' | 'members' | 'hotplace' | 'banner' | 'music' | 'settings';
+type MainTab = 'apply' | 'district' | 'push' | 'notice' | 'popup' | 'coupon' | 'members' | 'hotplace' | 'banner' | 'music' | 'settings' | 'price';
 type ApplyFilter = 'pending' | 'approved' | 'rejected';
 type PushFilter = 'all' | 'superadmin' | 'owner';
 
@@ -79,13 +81,15 @@ export default function SuperAdminDashboardScreen() {
   const [mainTab, setMainTab] = useState<MainTab>('apply');
 
   // ── Push 상태
-  const [pushStats, setPushStats]   = useState({ totalSent: 0, totalRead: 0, superAdminCount: 0, ownerCount: 0 });
+  const [pushStats, setPushStats]   = useState({ totalSent: 0, totalRead: 0, superAdminCount: 0, ownerCount: 0, optInCount: 0 });
   const [pushHistory, setPushHistory] = useState<PushHistoryRow[]>([]);
   const [pushFilter, setPushFilter] = useState<PushFilter>('all');
   const [pushModal, setPushModal]   = useState(false);
   const [pushTitle, setPushTitle]   = useState('');
   const [pushBody, setPushBody]     = useState('');
   const [sending, setSending]       = useState(false);
+  const [testSending, setTestSending] = useState(false);
+  const [myToken,   setMyToken]     = useState<string | null>(null);
 
   // ── Notice 상태
   const [notices, setNotices]               = useState<AnnouncementRow[]>([]);
@@ -187,6 +191,11 @@ export default function SuperAdminDashboardScreen() {
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // ── 가격 제보 상태
+  const [priceReports,         setPriceReports]         = useState<any[]>([]);
+  const [priceReportFilter,    setPriceReportFilter]    = useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [priceReportProcessing, setPriceReportProcessing] = useState<Record<string, boolean>>({});
+
   // ── District 상태
   const [districts, setDistricts]       = useState<DistrictRow[]>([]);
   const [districtStats, setDistrictStats] = useState<Record<string, number>>({});
@@ -203,12 +212,15 @@ export default function SuperAdminDashboardScreen() {
   useEffect(() => {
     loadAll();
     loadMusicTracks();
+    loadPriceReports();
     getSuperAdminLoginTime().then(t => setLoginTime(t));
     // 시샵 기기 푸시 토큰 등록 (회원가입·가게신청 알림 수신용)
     import('../../lib/services/authService').then(({ getSession }) =>
       getSession().then(session => {
         if (session?.user.id) {
-          registerPushToken(session.user.id).catch(() => {});
+          registerPushToken(session.user.id)
+            .then(t => { if (t) setMyToken(t); })
+            .catch(() => {});
         }
       })
     );
@@ -255,9 +267,36 @@ export default function SuperAdminDashboardScreen() {
     finally { setLoading(false); }
   };
 
+  const loadPriceReports = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('price_reports')
+        .select('id, store_id, user_id, menu_name, price, note, status, created_at, stores(name, emoji)')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      setPriceReports(data ?? []);
+    } catch { /* 조용히 실패 */ }
+  }, []);
+
+  const handlePriceReportAction = async (id: string, action: 'approved' | 'rejected') => {
+    setPriceReportProcessing(p => ({ ...p, [id]: true }));
+    try {
+      const { error } = await supabase
+        .from('price_reports')
+        .update({ status: action, reviewed_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      await loadPriceReports();
+    } catch (e: any) {
+      Alert.alert('오류', e?.message ?? '처리 실패');
+    } finally {
+      setPriceReportProcessing(p => ({ ...p, [id]: false }));
+    }
+  };
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadAll();
+    await Promise.allSettled([loadAll(), loadPriceReports()]);
     setRefreshing(false);
   }, []);
 
@@ -457,6 +496,24 @@ export default function SuperAdminDashboardScreen() {
       Alert.alert('📣 발송 완료!', `전체 ${sentCount}명에게 발송됐어요`);
     } catch { Alert.alert('발송 실패'); }
     finally { setSending(false); }
+  };
+
+  // ── 내 기기로 테스트 발송
+  const handleTestPush = async () => {
+    import('../../lib/services/authService').then(({ getSession }) =>
+      getSession().then(async (session) => {
+        if (!session?.user.id) { Alert.alert('로그인이 필요해요'); return; }
+        setTestSending(true);
+        try {
+          const result = await sendTestPushToSelf(session.user.id);
+          if (result.token) setMyToken(result.token);
+          Alert.alert(
+            result.ok ? '✅ 테스트 발송 성공' : '❌ 테스트 발송 실패',
+            result.message + (result.token ? `\n\n기기 코드: ${result.token.slice(0, 30)}…` : ''),
+          );
+        } finally { setTestSending(false); }
+      })
+    );
   };
 
   // ── 승인 / 반려 모달 열기
@@ -737,6 +794,7 @@ export default function SuperAdminDashboardScreen() {
           { key: 'hotplace', label: `🗺 핫플(${hotplaces.length})` },
           { key: 'banner',   label: `📢 배너(${banners.length})` },
           { key: 'music',    label: `🎵 뮤직(${musicTracks.length})` },
+          { key: 'price',    label: `💰 제보${priceReports.filter(r => r.status === 'pending').length > 0 ? `(${priceReports.filter(r => r.status === 'pending').length})` : ''}` },
           { key: 'settings', label: '⚙️ 설정' },
         ] as { key: MainTab; label: string }[]).map(t => (
           <TouchableOpacity
@@ -914,10 +972,10 @@ export default function SuperAdminDashboardScreen() {
         {mainTab === 'push' && (
           <>
             <View style={s.statsRow}>
-              <StatCard icon="📣" label="전체발송" value={pushStats.totalSent}       color={SA.accent} />
-              <StatCard icon="👁"  label="확인"     value={pushStats.totalRead}       color={SA.success} />
-              <StatCard icon="🛡️" label="관리자"   value={pushStats.superAdminCount} color={SA.warn} />
-              <StatCard icon="🍖" label="사장님"   value={pushStats.ownerCount}      color={SA.owner} />
+              <StatCard icon="📱" label="수신자"   value={pushStats.optInCount}       color={SA.success} />
+              <StatCard icon="📣" label="전체발송" value={pushStats.totalSent}        color={SA.accent} />
+              <StatCard icon="👁"  label="확인"     value={pushStats.totalRead}        color={SA.muted} />
+              <StatCard icon="📊" label="읽음률"   value={pushStats.totalSent > 0 ? Math.round(pushStats.totalRead / pushStats.totalSent * 100) : 0} color={SA.warn} />
             </View>
 
             {/* 읽음률 */}
@@ -934,6 +992,33 @@ export default function SuperAdminDashboardScreen() {
               <Text style={s.rateSub}>{pushStats.totalRead} / {pushStats.totalSent} 건</Text>
             </View>
 
+            {/* 내 기기 토큰 상태 */}
+            <View style={[s.tokenBox, { backgroundColor: SA.card, borderColor: myToken ? SA.success : SA.warn }]}>
+              <View style={s.tokenRow}>
+                <Text style={s.tokenLabel}>📱 내 기기 코드</Text>
+                <View style={[s.tokenDot, { backgroundColor: myToken ? SA.success : SA.warn }]} />
+              </View>
+              {myToken ? (
+                <Text style={s.tokenValue} numberOfLines={1}>{myToken}</Text>
+              ) : (
+                <Text style={s.tokenMissing}>코드 없음 — 알림 권한을 확인하세요</Text>
+              )}
+            </View>
+
+            {/* 테스트 발송 */}
+            <TouchableOpacity
+              style={[s.sendBtn, { backgroundColor: SA.successLight, borderWidth: 1.5, borderColor: SA.success }]}
+              onPress={handleTestPush}
+              activeOpacity={0.85}
+              disabled={testSending}
+            >
+              <Text style={[s.sendBtnText, { color: SA.success }]}>
+                {testSending ? '⏳ 발송 중...' : '🧪 내 기기로 테스트 발송'}
+              </Text>
+              <Text style={[s.sendBtnSub, { color: SA.success + 'AA' }]}>내 폰에만 테스트 알림 발송</Text>
+            </TouchableOpacity>
+
+            {/* 전체 발송 */}
             <TouchableOpacity style={s.sendBtn} onPress={() => setPushModal(true)} activeOpacity={0.85}>
               <Text style={s.sendBtnText}>📣 전체 사용자 푸시 발송</Text>
               <Text style={s.sendBtnSub}>앱 전체 사용자에게 즉시 발송</Text>
@@ -994,7 +1079,7 @@ export default function SuperAdminDashboardScreen() {
               <Text style={s.cardTitle}>📢 새 공지 등록</Text>
 
               {/* 제목 */}
-              <Text style={{ color: SA.muted, fontSize: 12, fontWeight: '600' }}>제목 (배너·게시판 목록에 표시)</Text>
+              <Text style={{ color: SA.muted, fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' }}>제목 (배너·게시판 목록에 표시)</Text>
               <TextInput
                 style={s.input}
                 value={newNoticeTitle}
@@ -1008,7 +1093,7 @@ export default function SuperAdminDashboardScreen() {
               </Text>
 
               {/* 내용 */}
-              <Text style={{ color: SA.muted, fontSize: 12, fontWeight: '600' }}>내용 (클릭 시 펼쳐지는 본문)</Text>
+              <Text style={{ color: SA.muted, fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' }}>내용 (클릭 시 펼쳐지는 본문)</Text>
               <TextInput
                 style={[s.input, { minHeight: 64, textAlignVertical: 'top' }]}
                 value={newNotice}
@@ -1060,7 +1145,7 @@ export default function SuperAdminDashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
                     <Text style={{ fontSize: 18 }}>{n.is_active ? '📢' : '🔇'}</Text>
                     <View style={{ flex: 1, opacity: n.is_active ? 1 : 0.4 }}>
-                      <Text style={[s.cardText, { fontWeight: '700' }]}>
+                      <Text style={[s.cardText, { fontFamily: 'WantedSans-Bold', fontWeight: '700' }]}>
                         {n.title?.trim() || '(제목 없음)'}
                       </Text>
                       {!!n.content?.trim() && (
@@ -1091,7 +1176,7 @@ export default function SuperAdminDashboardScreen() {
                         setNotices(list);
                       }}
                     >
-                      <Text style={{ color: n.is_active ? SA.warn : SA.success, fontSize: 12, fontWeight: '700' }}>
+                      <Text style={{ color: n.is_active ? SA.warn : SA.success, fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>
                         {n.is_active ? '⏸ 비활성' : '▶ 활성화'}
                       </Text>
                     </TouchableOpacity>
@@ -1109,7 +1194,7 @@ export default function SuperAdminDashboardScreen() {
                         ])
                       }
                     >
-                      <Text style={{ color: SA.accent, fontSize: 12, fontWeight: '700' }}>🗑 삭제</Text>
+                      <Text style={{ color: SA.accent, fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>🗑 삭제</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1124,7 +1209,7 @@ export default function SuperAdminDashboardScreen() {
             {/* 새 팝업 입력 */}
             <View style={[s.card, { gap: 10 }]}>
               <Text style={s.cardTitle}>🪟 홈 팝업 공지 등록</Text>
-              <Text style={{ color: SA.muted, fontSize: 12, fontWeight: '600' }}>제목 *</Text>
+              <Text style={{ color: SA.muted, fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' }}>제목 *</Text>
               <TextInput
                 style={s.input}
                 value={newPopupTitle}
@@ -1136,7 +1221,7 @@ export default function SuperAdminDashboardScreen() {
               <Text style={{ color: SA.muted, fontSize: 11, textAlign: 'right' }}>
                 {newPopupTitle.length}/40자
               </Text>
-              <Text style={{ color: SA.muted, fontSize: 12, fontWeight: '600' }}>내용</Text>
+              <Text style={{ color: SA.muted, fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' }}>내용</Text>
               <TextInput
                 style={[s.input, { minHeight: 80, textAlignVertical: 'top' }]}
                 value={newPopupContent}
@@ -1187,7 +1272,7 @@ export default function SuperAdminDashboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
                     <Text style={{ fontSize: 18 }}>{p.is_active ? '🪟' : '🔇'}</Text>
                     <View style={{ flex: 1, opacity: p.is_active ? 1 : 0.4 }}>
-                      <Text style={[s.cardText, { fontWeight: '700' }]}>{p.title}</Text>
+                      <Text style={[s.cardText, { fontFamily: 'WantedSans-Bold', fontWeight: '700' }]}>{p.title}</Text>
                       {!!p.content && (
                         <Text style={[s.cardText, { fontSize: 12, color: SA.muted, marginTop: 2 }]} numberOfLines={2}>
                           {p.content}
@@ -1209,7 +1294,7 @@ export default function SuperAdminDashboardScreen() {
                         setPopups(await fetchAllPopupNotices());
                       }}
                     >
-                      <Text style={{ color: p.is_active ? SA.warn : SA.success, fontSize: 12, fontWeight: '700' }}>
+                      <Text style={{ color: p.is_active ? SA.warn : SA.success, fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>
                         {p.is_active ? '⏸ 비활성' : '▶ 활성화'}
                       </Text>
                     </TouchableOpacity>
@@ -1225,7 +1310,7 @@ export default function SuperAdminDashboardScreen() {
                         ])
                       }
                     >
-                      <Text style={{ color: SA.accent, fontSize: 12, fontWeight: '700' }}>🗑 삭제</Text>
+                      <Text style={{ color: SA.accent, fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>🗑 삭제</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1474,7 +1559,7 @@ export default function SuperAdminDashboardScreen() {
                         onPress={() => handleSelectResult(r)}
                         activeOpacity={0.75}
                       >
-                        <Text style={{ color: SA.text, fontWeight: '700', fontSize: 14 }}>{r.name}</Text>
+                        <Text style={{ color: SA.text, fontFamily: 'WantedSans-Bold', fontWeight: '700', fontSize: 14 }}>{r.name}</Text>
                         <Text style={{ color: SA.warn, fontSize: 12, marginTop: 2 }}>{r.category}</Text>
                         <Text style={{ color: SA.muted, fontSize: 12 }}>{r.address}</Text>
                         {r.phone ? <Text style={{ color: SA.muted, fontSize: 12 }}>📞 {r.phone}</Text> : null}
@@ -1518,7 +1603,7 @@ export default function SuperAdminDashboardScreen() {
                 {/* place_id 확인 */}
                 <View style={{ backgroundColor: SA.border + '44', borderRadius: 8, padding: 8 }}>
                   <Text style={{ color: SA.muted, fontSize: 10 }}>네이버 Place ID (자동 추출)</Text>
-                  <Text style={{ color: SA.warn, fontSize: 13, fontWeight: '700' }}>{hpForm.place_id}</Text>
+                  <Text style={{ color: SA.warn, fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>{hpForm.place_id}</Text>
                 </View>
 
                 {(
@@ -1852,9 +1937,133 @@ export default function SuperAdminDashboardScreen() {
           </>
         )}
 
+        {/* ────────── 💰 가격 제보 탭 ────────── */}
+        {mainTab === 'price' && (
+          <>
+            {/* 필터 */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              {(['pending', 'approved', 'rejected'] as const).map(f => (
+                <TouchableOpacity
+                  key={f}
+                  style={[s.mainTab, priceReportFilter === f && s.mainTabActive, { flex: 1 }]}
+                  onPress={() => setPriceReportFilter(f)}
+                >
+                  <Text style={[s.mainTabText, priceReportFilter === f && s.mainTabTextActive]}>
+                    {f === 'pending' ? '⏳ 검토 대기' : f === 'approved' ? '✅ 승인됨' : '❌ 반려됨'}
+                    {f === 'pending' && priceReports.filter(r => r.status === 'pending').length > 0
+                      ? ` (${priceReports.filter(r => r.status === 'pending').length})`
+                      : ''}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {priceReports.filter(r => r.status === priceReportFilter).length === 0 ? (
+              <View style={[s.sectionBox, { alignItems: 'center', padding: 32 }]}>
+                <Text style={[s.sectionDesc, { fontSize: 14 }]}>제보 내역이 없어요</Text>
+              </View>
+            ) : (
+              priceReports
+                .filter(r => r.status === priceReportFilter)
+                .map((r: any) => {
+                  const store = Array.isArray(r.stores) ? r.stores[0] : r.stores;
+                  const processing = priceReportProcessing[r.id];
+                  return (
+                    <View key={r.id} style={[s.sectionBox, { gap: 10 }]}>
+                      {/* 가게 + 제보 정보 */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={{ fontSize: 22 }}>{store?.emoji ?? '🏪'}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[s.sectionLabel, { marginBottom: 0 }]}>
+                            {store?.name ?? '알 수 없는 가게'}
+                          </Text>
+                          <Text style={[s.sectionDesc, { fontSize: 11 }]}>
+                            {new Date(r.created_at).toLocaleString('ko-KR')}
+                          </Text>
+                        </View>
+                        <View style={{
+                          backgroundColor: r.status === 'pending' ? SA.warn + '33'
+                            : r.status === 'approved' ? SA.success + '33' : SA.accent + '33',
+                          borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,
+                        }}>
+                          <Text style={{
+                            fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700',
+                            color: r.status === 'pending' ? SA.warn
+                              : r.status === 'approved' ? SA.success : SA.accent,
+                          }}>
+                            {r.status === 'pending' ? '검토중' : r.status === 'approved' ? '승인' : '반려'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* 메뉴/가격 */}
+                      <View style={{
+                        flexDirection: 'row', justifyContent: 'space-between',
+                        backgroundColor: SA.bg, borderRadius: 8, padding: 12,
+                      }}>
+                        <View>
+                          <Text style={[s.sectionDesc, { fontSize: 11 }]}>메뉴</Text>
+                          <Text style={[s.sectionLabel, { fontSize: 15, marginBottom: 0 }]}>
+                            {r.menu_name}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={[s.sectionDesc, { fontSize: 11 }]}>가격</Text>
+                          <Text style={{ fontSize: 20, fontFamily: 'WantedSans-Black', fontWeight: '900', color: SA.accent }}>
+                            {Number(r.price).toLocaleString()}원
+                          </Text>
+                        </View>
+                      </View>
+
+                      {r.note ? (
+                        <Text style={[s.sectionDesc, { fontSize: 12 }]}>💬 {r.note}</Text>
+                      ) : null}
+
+                      {/* 액션 버튼 (pending만) */}
+                      {r.status === 'pending' && (
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity
+                            style={[s.actionBtn, { flex: 1, backgroundColor: SA.success + '22', borderColor: SA.success }]}
+                            onPress={() => handlePriceReportAction(r.id, 'approved')}
+                            disabled={processing}
+                          >
+                            {processing
+                              ? <ActivityIndicator size="small" color={SA.success} />
+                              : <Text style={{ fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.success }}>✅ 승인</Text>
+                            }
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[s.actionBtn, { flex: 1, backgroundColor: SA.accent + '22', borderColor: SA.accent }]}
+                            onPress={() => handlePriceReportAction(r.id, 'rejected')}
+                            disabled={processing}
+                          >
+                            {processing
+                              ? <ActivityIndicator size="small" color={SA.accent} />
+                              : <Text style={{ fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.accent }}>❌ 반려</Text>
+                            }
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+            )}
+          </>
+        )}
+
         {/* ────────── 설정 탭 ────────── */}
         {mainTab === 'settings' && (
           <>
+            {/* ── 포인트 설정 바로가기 ── */}
+            <TouchableOpacity
+              style={[s.sendBtn, { backgroundColor: '#1A2A1A', borderColor: '#2ECC7155' }]}
+              onPress={() => navigation.navigate('SuperAdminPointSettings')}
+              activeOpacity={0.85}
+            >
+              <Text style={s.sendBtnText}>🎁 포인트 지급 조건 관리</Text>
+              <Text style={s.sendBtnSub}>영수증 후기 포인트 금액·횟수·유효시간 설정 및 지급 내역 확인</Text>
+            </TouchableOpacity>
+
             {/* ── 게시물 작성 시간 설정 ── */}
             <View style={[s.histCard, { backgroundColor: SA.card, borderColor: SA.border }]}>
               <Text style={[s.sectionTitle, { color: SA.warn, marginBottom: 4 }]}>
@@ -1922,10 +2131,10 @@ export default function SuperAdminDashboardScreen() {
             {/* 안내 박스 */}
             <View style={[s.histCard, { backgroundColor: SA.card, borderColor: SA.border, opacity: 0.8 }]}>
               <Text style={{ color: SA.muted, fontSize: 12, lineHeight: 20 }}>
-                💡 <Text style={{ color: SA.text, fontWeight: '700' }}>적용 방법</Text>{'\n'}
+                💡 <Text style={{ color: SA.text, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>적용 방법</Text>{'\n'}
                 저장 즉시 모든 사장님의 게시물 작성에 적용됩니다.{'\n'}
                 기존에 작성된 게시물에는 영향 없음.{'\n\n'}
-                💡 <Text style={{ color: SA.text, fontWeight: '700' }}>운영 예시</Text>{'\n'}
+                💡 <Text style={{ color: SA.text, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>운영 예시</Text>{'\n'}
                 · 오전 8시 ~ 오후 8시 (기본){'\n'}
                 · 24시간 쿨다운: 하루 1개 게시물만 가능
               </Text>
@@ -1971,7 +2180,7 @@ export default function SuperAdminDashboardScreen() {
                   <View key={req.id} style={[s.histCard, { backgroundColor: '#1A1A2E', borderColor: SA.border, marginBottom: 8 }]}>
                     {/* 가게명 + 시각 */}
                     <View style={s.histTop}>
-                      <Text style={{ color: SA.warn, fontWeight: '700', fontSize: 13 }}>
+                      <Text style={{ color: SA.warn, fontFamily: 'WantedSans-Bold', fontWeight: '700', fontSize: 13 }}>
                         🏪 {req.store?.name ?? '알 수 없는 가게'}
                       </Text>
                       <Text style={{ color: SA.muted, fontSize: 11 }}>
@@ -1987,7 +2196,7 @@ export default function SuperAdminDashboardScreen() {
 
                     {/* 삭제 사유 */}
                     <View style={{ backgroundColor: SA.accentLight, borderRadius: 6, padding: 8, marginBottom: 4 }}>
-                      <Text style={{ color: SA.accent, fontSize: 11, fontWeight: '700', marginBottom: 2 }}>
+                      <Text style={{ color: SA.accent, fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700', marginBottom: 2 }}>
                         삭제 사유
                       </Text>
                       <Text style={{ color: SA.text, fontSize: 12, lineHeight: 18 }}>{req.reason}</Text>
@@ -1996,7 +2205,7 @@ export default function SuperAdminDashboardScreen() {
                     {/* 활성 쿠폰 경고 */}
                     {req.has_active_coupon && (
                       <View style={{ backgroundColor: SA.warnLight, borderRadius: 6, padding: 6, marginBottom: 4 }}>
-                        <Text style={{ color: SA.warn, fontSize: 11, fontWeight: '700' }}>
+                        <Text style={{ color: SA.warn, fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>
                           ⚠️ 요청 당시 발급 중인 쿠폰이 있었어요
                         </Text>
                       </View>
@@ -2062,7 +2271,7 @@ export default function SuperAdminDashboardScreen() {
                   ) : postEditLogs.slice(0, 30).map(log => (
                     <View key={log.id} style={[s.histCard, { backgroundColor: '#1A1A2E', borderColor: SA.border }]}>
                       <View style={s.histTop}>
-                        <Text style={{ color: SA.warn, fontWeight: '700', fontSize: 12 }}>
+                        <Text style={{ color: SA.warn, fontFamily: 'WantedSans-Bold', fontWeight: '700', fontSize: 12 }}>
                           🏪 {log.store?.name ?? '알 수 없음'}
                         </Text>
                         <Text style={{ color: SA.muted, fontSize: 11 }}>
@@ -2343,10 +2552,10 @@ export default function SuperAdminDashboardScreen() {
               <Text style={s.inputLabel}>음악 파일 (MP3) *</Text>
               {mAudioUrl ? (
                 <View style={{ backgroundColor: SA.successLight, borderRadius: RADIUS.md, padding: 10, gap: 6 }}>
-                  <Text style={{ color: SA.success, fontSize: 12, fontWeight: '700' }}>✅ 업로드 완료</Text>
+                  <Text style={{ color: SA.success, fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700' }}>✅ 업로드 완료</Text>
                   <Text style={{ color: SA.muted, fontSize: 10 }} numberOfLines={1}>{mAudioUrl}</Text>
                   <TouchableOpacity onPress={handlePickAudioFile} disabled={mUploading}>
-                    <Text style={{ color: SA.warn, fontSize: 12, fontWeight: '600' }}>🔄 파일 교체</Text>
+                    <Text style={{ color: SA.warn, fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' }}>🔄 파일 교체</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -2532,7 +2741,10 @@ export default function SuperAdminDashboardScreen() {
             <View style={s.modalHandle} />
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={s.modalTitle}>📣 전체 사용자 푸시 발송</Text>
-              <Text style={[s.modalDesc, { marginBottom: 10 }]}>앱 전체 사용자에게 즉시 발송됩니다</Text>
+              <Text style={[s.modalDesc, { marginBottom: 4 }]}>앱 전체 사용자에게 즉시 발송됩니다</Text>
+              <Text style={[s.modalDesc, { marginBottom: 10, color: SA.success, fontWeight: '700' }]}>
+                📱 현재 opt-in 수신자 {pushStats.optInCount}명
+              </Text>
               <View style={[s.inputGroup, { marginBottom: 10 }]}>
                 <Text style={s.inputLabel}>제목 *</Text>
                 <TextInput style={s.input} value={pushTitle} onChangeText={setPushTitle}
@@ -2603,7 +2815,7 @@ function HistStat({ label, value, color }: { label: string; value: number | stri
 const scS = StyleSheet.create({
   card: { flex: 1, borderRadius: RADIUS.md, padding: 10, alignItems: 'center', gap: 2, borderWidth: 1 },
   icon: { fontSize: 18 },
-  value: { fontSize: 20, fontWeight: '800' },
+  value: { fontSize: 20, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   label: { fontSize: 10, color: SA.muted, textAlign: 'center' },
 });
 
@@ -2615,7 +2827,7 @@ const iiS = StyleSheet.create({
 
 const hsS = StyleSheet.create({
   wrap: { alignItems: 'center', gap: 2 },
-  num: { fontSize: 16, fontWeight: '800' },
+  num: { fontSize: 16, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   label: { fontSize: 10, color: SA.muted },
 });
 
@@ -2625,7 +2837,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
     padding: 20, paddingBottom: 8,
   },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: SA.text },
+  headerTitle: { fontSize: 20, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
   headerSub: { fontSize: 12, color: SA.muted, marginTop: 2 },
   logoutText: { fontSize: 13, color: SA.muted, marginTop: 4 },
   mainTabRow: {
@@ -2636,7 +2848,7 @@ const s = StyleSheet.create({
     backgroundColor: SA.card, borderWidth: 1, borderColor: SA.border,
   },
   mainTabActive: { backgroundColor: SA.accent, borderColor: SA.accent },
-  mainTabText: { fontSize: 13, fontWeight: '700', color: SA.muted },
+  mainTabText: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.muted },
   mainTabTextActive: { color: COLORS.white },
   container: { padding: 20, gap: 14 },
   statsRow: { flexDirection: 'row', gap: 8 },
@@ -2646,7 +2858,7 @@ const s = StyleSheet.create({
     backgroundColor: SA.card, borderWidth: 1, borderColor: SA.border,
   },
   filterBtnActivePush: { backgroundColor: SA.accentLight, borderColor: SA.accent },
-  filterBtnText: { fontSize: 12, fontWeight: '600', color: SA.muted },
+  filterBtnText: { fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: SA.muted },
   filterBtnTextActive: { color: COLORS.white },
   emptyBox: { alignItems: 'center', padding: 40 },
   emptyText: { color: SA.muted, fontSize: 14 },
@@ -2654,11 +2866,11 @@ const s = StyleSheet.create({
   sectionBox: {
     borderRadius: RADIUS.lg, padding: 16, borderWidth: 1, gap: 6,
   },
-  sectionLabel: { fontSize: 14, fontWeight: '800', marginBottom: 4 },
+  sectionLabel: { fontSize: 14, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', marginBottom: 4 },
   sectionDesc:  { lineHeight: 18 },
   badge:     { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1 },
   badgeRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
+  badgeText: { fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   // 신청 카드
   appCard: {
     backgroundColor: SA.card, borderRadius: RADIUS.lg, padding: 16,
@@ -2666,9 +2878,9 @@ const s = StyleSheet.create({
   },
   appCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  statusText: { fontSize: 11, fontWeight: '800' },
+  statusText: { fontSize: 11, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   appDate: { fontSize: 11, color: SA.muted },
-  appStoreName: { fontSize: 17, fontWeight: '800', color: SA.text },
+  appStoreName: { fontSize: 17, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
   appCategory: { fontSize: 12, color: SA.muted },
   appInfoRow: { gap: 2, borderTopWidth: 1, borderTopColor: SA.border, paddingTop: 8 },
   appBtnRow: { flexDirection: 'row', gap: 10 },
@@ -2676,11 +2888,11 @@ const s = StyleSheet.create({
     flex: 1, paddingVertical: 10, borderRadius: RADIUS.md,
     alignItems: 'center', borderWidth: 1.5,
   },
-  appBtnText: { fontSize: 13, fontWeight: '800' },
+  appBtnText: { fontSize: 13, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   // 읽음률 카드
   rateCard: { borderRadius: RADIUS.lg, padding: 16, gap: 6, borderWidth: 1 },
   rateLabel: { fontSize: 13, color: SA.muted },
-  rateValue: { fontSize: 32, fontWeight: '800', color: SA.accent },
+  rateValue: { fontSize: 32, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.accent },
   rateBg: { height: 8, backgroundColor: '#0F3460', borderRadius: 4, overflow: 'hidden' },
   rateFill: { height: 8, backgroundColor: SA.accent, borderRadius: 4 },
   rateSub: { fontSize: 12, color: SA.muted },
@@ -2688,15 +2900,25 @@ const s = StyleSheet.create({
     backgroundColor: SA.accent, borderRadius: RADIUS.lg,
     padding: 18, alignItems: 'center', gap: 4,
   },
-  sendBtnText: { color: COLORS.white, fontSize: 17, fontWeight: '800' },
+  sendBtnText: { color: COLORS.white, fontSize: 17, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   sendBtnSub: { color: COLORS.white, fontSize: 12, opacity: 0.85 },
+  // 토큰 박스
+  tokenBox: {
+    borderRadius: RADIUS.md, borderWidth: 1.5,
+    padding: 12, gap: 6,
+  },
+  tokenRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tokenLabel: { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.muted, flex: 1 },
+  tokenDot: { width: 8, height: 8, borderRadius: 4 },
+  tokenValue: { fontSize: 11, color: SA.success, fontFamily: 'monospace' },
+  tokenMissing: { fontSize: 12, color: SA.warn },
   // 히스토리 카드
   histCard: { borderRadius: RADIUS.lg, padding: 16, gap: 10, borderWidth: 1 },
   histTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   senderBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  senderText: { fontSize: 11, fontWeight: '700' },
+  senderText: { fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   histDate: { fontSize: 11, color: SA.muted },
-  histTitle: { fontSize: 15, fontWeight: '700', color: SA.text },
+  histTitle: { fontSize: 15, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.text },
   histBody: { fontSize: 13, color: SA.muted, lineHeight: 18 },
   histStats: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   histRateBg: { flex: 1, height: 6, backgroundColor: '#0F3460', borderRadius: 3, overflow: 'hidden' },
@@ -2708,11 +2930,11 @@ const s = StyleSheet.create({
     padding: 24, gap: 14, paddingBottom: 44, maxHeight: '90%',
   },
   modalHandle: { width: 40, height: 4, backgroundColor: SA.border, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: SA.text },
-  modalStoreName: { fontSize: 15, fontWeight: '600', color: SA.accent },
+  modalTitle: { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
+  modalStoreName: { fontSize: 15, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: SA.accent },
   modalDesc: { fontSize: 13, color: SA.muted },
   inputGroup: { gap: 4 },
-  inputLabel: { fontSize: 13, fontWeight: '700', color: '#ccc' },
+  inputLabel: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#ccc' },
   input: {
     borderWidth: 1.5, borderColor: SA.border, borderRadius: RADIUS.md,
     padding: 12, fontSize: 14, color: SA.text, backgroundColor: '#0F3460',
@@ -2720,19 +2942,19 @@ const s = StyleSheet.create({
   inputMulti: { minHeight: 80, textAlignVertical: 'top' },
   charCount: { fontSize: 11, color: SA.muted, textAlign: 'right' },
   previewBox: { gap: 6 },
-  previewLabel: { fontSize: 12, fontWeight: '700', color: SA.muted },
+  previewLabel: { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.muted },
   previewCard: {
     backgroundColor: '#0F3460', borderRadius: RADIUS.md, padding: 12, gap: 4,
     borderLeftWidth: 3, borderLeftColor: SA.accent,
   },
-  previewTitle: { fontSize: 13, fontWeight: '800', color: SA.text },
+  previewTitle: { fontSize: 13, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
   previewBody: { fontSize: 12, color: SA.muted, lineHeight: 18 },
   modalBtns: { flexDirection: 'row', gap: 10, marginTop: 4 },
   cancelBtn: { flex: 1, backgroundColor: '#0F3460', borderRadius: RADIUS.md, padding: 14, alignItems: 'center' },
-  cancelText: { fontSize: 15, fontWeight: '600', color: SA.muted },
+  cancelText: { fontSize: 15, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: SA.muted },
   confirmBtn: { flex: 2, borderRadius: RADIUS.md, padding: 14, alignItems: 'center' },
-  confirmText: { fontSize: 15, fontWeight: '800', color: COLORS.white },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: SA.muted, marginTop: 4 },
+  confirmText: { fontSize: 15, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: COLORS.white },
+  sectionTitle: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: SA.muted, marginTop: 4 },
   cardText: { fontSize: 14, color: SA.text, lineHeight: 20 },
   actionBtn: {
     borderRadius: RADIUS.sm, paddingHorizontal: 12, paddingVertical: 8,
@@ -2744,14 +2966,14 @@ const s = StyleSheet.create({
     alignItems: 'center', marginBottom: 10,
     borderWidth: 1, borderColor: '#4CAF50',
   },
-  geoBtnText: { fontSize: 13, fontWeight: '700', color: '#4CAF50' },
+  geoBtnText: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#4CAF50' },
   // 상권 카드
   distCard: { borderRadius: RADIUS.lg, padding: 16, gap: 8, borderWidth: 1 },
   distHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   distBadge: { backgroundColor: '#4CAF5022', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  distBadgeText: { fontSize: 11, fontWeight: '700', color: '#4CAF50' },
+  distBadgeText: { fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#4CAF50' },
   distStoreCnt: { fontSize: 12, color: SA.muted },
-  distName: { fontSize: 18, fontWeight: '800', color: SA.text },
+  distName: { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
   distDesc: { fontSize: 13, color: SA.muted },
   distCoord: { fontSize: 11, color: SA.border },
   // 상권 선택 칩
@@ -2760,7 +2982,7 @@ const s = StyleSheet.create({
     backgroundColor: SA.card, borderWidth: 1.5, borderColor: SA.border,
   },
   distChipActive: { backgroundColor: '#4CAF5033', borderColor: '#4CAF50' },
-  distChipText: { fontSize: 13, fontWeight: '600', color: SA.muted },
+  distChipText: { fontSize: 13, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: SA.muted },
   distChipTextActive: { color: '#4CAF50' },
 
   // ── 헤더 추가 스타일 ──
@@ -2769,19 +2991,19 @@ const s = StyleSheet.create({
     backgroundColor: '#5B67CA', borderRadius: RADIUS.sm,
     paddingHorizontal: 12, paddingVertical: 7,
   },
-  homeBtnText: { fontSize: 12, fontWeight: '800', color: '#fff' },
+  homeBtnText: { fontSize: 12, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff' },
   loginBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8,
     backgroundColor: '#4CAF5022', borderRadius: 999,
     paddingHorizontal: 9, paddingVertical: 4, alignSelf: 'flex-start',
   },
   loginDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4CAF50' },
-  loginBadgeText: { fontSize: 10, fontWeight: '700', color: '#4CAF50' },
+  loginBadgeText: { fontSize: 10, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: '#4CAF50' },
   couponCreateBtn: {
     backgroundColor: '#E94560', borderRadius: RADIUS.md,
     padding: 16, alignItems: 'center', marginBottom: 12,
   },
-  couponCreateBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  couponCreateBtnText: { color: '#fff', fontSize: 15, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
 
   // 회원 필터 (filterRow/filterBtn은 위에 정의됨, 여기서는 Active 버전만)
   filterBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
@@ -2791,19 +3013,19 @@ const s = StyleSheet.create({
     backgroundColor: SA.card, borderRadius: RADIUS.lg,
     padding: 16, borderWidth: 1, borderColor: SA.border,
   },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: SA.text },
+  cardTitle: { fontSize: 15, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: SA.text },
 });
 
 // ── 배너 카드 전용 스타일 ─────────────────────────────────────────────
 const bn = StyleSheet.create({
   preview:     { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10, borderRadius: 8 },
   previewEmoji:{ fontSize: 26 },
-  previewTitle:{ fontSize: 14, fontWeight: '800' },
+  previewTitle:{ fontSize: 14, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   previewSub:  { fontSize: 11, marginTop: 2 },
   previewCta:  { borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
-  previewCtaText: { fontSize: 11, fontWeight: '700' },
+  previewCtaText: { fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   actions:     { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
   actionBtn:   { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, minWidth: 70 },
-  actionText:  { fontSize: 12, fontWeight: '700' },
+  actionText:  { fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   colorDot:    { width: 32, height: 32, borderRadius: 16 },
 });

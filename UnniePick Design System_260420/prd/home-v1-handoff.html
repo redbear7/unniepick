@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>언니픽 · 홈 V1 Claude Code 핸드오프</title>
+<link rel="stylesheet" href="spec-sheet.css">
+<style>
+  /* Home V1 handoff — focused implementation doc */
+  .hv-hero { background: var(--ink); color: #fff; padding: 80px 72px 90px; margin: 0 -80px 72px; position: relative; overflow: hidden; }
+  .hv-hero::before { content: ''; position: absolute; top: -260px; right: -180px; width: 800px; height: 800px; border-radius: 50%; background: radial-gradient(circle, rgba(255,111,15,0.26), transparent 55%); }
+  .hv-top { display: flex; justify-content: space-between; margin-bottom: 56px; position: relative; z-index: 1; }
+  .hv-brand { font: 900 26px/1 'Wanted Sans'; color: var(--orange); letter-spacing: -0.6px; }
+  .hv-crumb { font: 600 13px/1.6 'Wanted Sans'; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; text-align: right; text-transform: uppercase; }
+  .hv-eye { font: 700 13px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 2.6px; text-transform: uppercase; position: relative; z-index: 1; margin-bottom: 24px; }
+  .hv-title { font: 900 84px/0.95 'Wanted Sans'; color: #fff; letter-spacing: -3px; position: relative; z-index: 1; max-width: 1050px; margin-bottom: 28px; }
+  .hv-title em { font-style: normal; color: var(--orange); }
+  .hv-sub { font: 500 22px/1.45 'Wanted Sans'; color: rgba(255,255,255,0.72); max-width: 860px; letter-spacing: -0.3px; position: relative; z-index: 1; }
+
+  /* Section anatomy */
+  .sec-stack { margin-top: 36px; display: grid; gap: 14px; }
+  .sec-row { display: grid; grid-template-columns: 80px 1fr 200px; gap: 24px; padding: 24px 28px; background: #fff; border: 1px solid var(--line); border-radius: 16px; align-items: center; }
+  .sec-order { font: 900 42px/1 'Wanted Sans'; color: var(--orange); letter-spacing: -1.2px; }
+  .sec-name { font: 800 18px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 6px; }
+  .sec-desc { font: 500 13.5px/1.55 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .sec-desc code { background: var(--code-bg); color: var(--code-fg); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .sec-comp { font: 700 12px/1.45 'Wanted Sans'; color: var(--fg3); text-align: right; letter-spacing: 0.1px; }
+  .sec-comp b { color: var(--orange-600); font-weight: 800; display: block; margin-bottom: 3px; }
+
+  /* Component spec */
+  .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
+  .comp-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; }
+  .comp-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .comp-name { font: 900 16px/1 'Wanted Sans'; color: var(--ink); letter-spacing: -0.3px; }
+  .comp-path { font: 600 11px/1 'JetBrains Mono', monospace; color: var(--fg3); letter-spacing: 0; }
+  .comp-desc { font: 500 13px/1.55 'Wanted Sans'; color: var(--fg2); margin-bottom: 12px; letter-spacing: -0.1px; }
+  .comp-props { font: 500 12px/1.7 'JetBrains Mono', monospace; color: var(--fg2); background: var(--bg-warm); padding: 10px 14px; border-radius: 8px; letter-spacing: 0; }
+  .comp-props b { color: var(--orange-600); font-weight: 700; }
+
+  /* Checklist */
+  .check-list { background: #0F1114; color: #fff; padding: 36px 40px; border-radius: 20px; margin-top: 24px; }
+  .check-row { display: grid; grid-template-columns: 28px 1fr 100px; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); align-items: center; }
+  .check-row:last-child { border-bottom: none; }
+  .check-box { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 5px; }
+  .check-text { font: 600 14px/1.4 'Wanted Sans'; color: #fff; letter-spacing: -0.1px; }
+  .check-text b { color: var(--orange); font-weight: 800; }
+  .check-est { font: 700 11px/1 'Wanted Sans'; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; text-align: right; text-transform: uppercase; }
+
+  /* Data source table */
+  .data-table { margin-top: 24px; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .data-row { display: grid; grid-template-columns: 180px 1fr 180px; gap: 20px; padding: 16px 22px; border-bottom: 1px solid var(--line-soft); align-items: center; }
+  .data-row:last-child { border-bottom: none; }
+  .data-row.head { background: var(--bg-warm); font: 800 11px/1 'Wanted Sans'; color: var(--fg3); letter-spacing: 1.2px; text-transform: uppercase; padding: 12px 22px; }
+  .data-sec { font: 800 14px/1.2 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; }
+  .data-src { font: 500 13px/1.5 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+  .data-src code { background: var(--code-bg); color: var(--code-fg); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0; }
+  .data-note { font: 700 11px/1.3 'Wanted Sans'; color: var(--orange-600); letter-spacing: 0.1px; }
+
+  /* Edge cases */
+  .edge-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .edge { padding: 22px 24px; background: #fff; border: 1px solid var(--line); border-radius: 12px; border-left: 4px solid var(--orange); }
+  .edge-t { font: 800 14px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; margin-bottom: 8px; }
+  .edge-d { font: 500 12.5px/1.55 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+
+  /* Files list */
+  .files-box { background: var(--code-bg); color: var(--code-fg); border-radius: 14px; padding: 28px 32px; margin-top: 24px; font: 500 14px/1.85 'JetBrains Mono', monospace; letter-spacing: 0; }
+  .files-box .dir { color: var(--code-key); font-weight: 700; }
+  .files-box .new { color: var(--code-str); }
+  .files-box .cmt { color: var(--code-mute); font-style: italic; }
+
+  /* Reference */
+  .ref-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 24px; }
+  .ref { display: block; padding: 22px 24px; background: #fff; border: 1px solid var(--line); border-radius: 14px; text-decoration: none; color: inherit; transition: all 0.2s; }
+  .ref:hover { border-color: var(--ink); transform: translateY(-2px); }
+  .ref-k { font: 800 11px/1 'Wanted Sans'; color: var(--orange); letter-spacing: 1.3px; text-transform: uppercase; margin-bottom: 10px; }
+  .ref-t { font: 800 15px/1.25 'Wanted Sans'; color: var(--ink); letter-spacing: -0.2px; margin-bottom: 4px; }
+  .ref-d { font: 500 12.5px/1.5 'Wanted Sans'; color: var(--fg2); letter-spacing: -0.1px; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+<!-- HERO -->
+<div class="hv-hero">
+  <div class="hv-top">
+    <div class="hv-brand">언니픽 · Home V1 Handoff</div>
+    <div class="hv-crumb">Claude Code 개발 문서 · v0.1<br>Scope · 사용자 앱 홈 화면</div>
+  </div>
+  <div class="hv-eye">Home V1 · 표준 허브 · iOS 구현 핸드오프</div>
+  <h1 class="hv-title">홈은 <em>V1 표준</em>으로<br>간다.</h1>
+  <div class="hv-sub">위치바 → 긴급 쿠폰 → 내 주변 → 팔로우 피드. 4개 섹션의 수직 스크롤 허브. 월드컵 배너·V2 발견·V3 소셜은 Phase 2 이후.</div>
+</div>
+
+<!-- 01 · Why V1 -->
+<section class="block" style="padding-top:0">
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <h2 class="sec-title">왜<br>V1인가</h2>
+  </div>
+  <p class="sec-lede">3가지 홈 변형 중 V1을 Phase 1 단독으로 선정. V2·V3는 Phase 2 이후 A/B 테스트 대상으로 보류.</p>
+
+  <div class="grid-3" style="margin-top:28px">
+    <div class="card">
+      <div class="eyebrow">이유 01 — 구현 리스크</div>
+      <h4 class="h4" style="margin-top:6px">가장 적은 신규 컴포넌트</h4>
+      <p class="body" style="font-size:14px;margin-top:10px">V1은 기존 <code>FeedPost</code>·<code>StoreRow</code> 자산을 80% 재사용. V2 히어로·카테고리 그리드·지도 미리보기는 모두 신규. V3 스토리 릴·스탬프 진행도 신규.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">이유 02 — Spec 연결</div>
+      <h4 class="h4" style="margin-top:6px">Spec 01·02 연결점이 명확</h4>
+      <p class="body" style="font-size:14px;margin-top:10px">긴급 쿠폰 스트립 = Spec 01 '지갑 발견'의 진입점. 내 주변 가게 카드 탭 = Spec 02 '스탬프 스캔'의 진입점. V1 화면 구조가 두 루프의 CTA 흐름과 1:1 매칭.</p>
+    </div>
+    <div class="card">
+      <div class="eyebrow">이유 03 — 학습 지표</div>
+      <h4 class="h4" style="margin-top:6px">섹션별 독립 측정 가능</h4>
+      <p class="body" style="font-size:14px;margin-top:10px">5개 섹션이 수직 스택이라 각각의 스크롤 도달률·CTR을 독립 측정. 이후 V2/V3로의 리디자인 근거를 데이터로 확보.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 02 · Anatomy -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <h2 class="sec-title">V1 섹션<br>해부도</h2>
+  </div>
+  <p class="sec-lede">위에서 아래로 5개 섹션 + 상단 고정 위치바. 각 섹션의 목적·데이터 소스·Phase 1 CTA.</p>
+
+  <div class="sec-stack">
+
+    <div class="sec-row">
+      <div class="sec-order">0</div>
+      <div>
+        <div class="sec-name">상단 고정 — 위치바</div>
+        <div class="sec-desc">좌측 "언니픽" 로고 + 📍 현재 동 선택 드롭다운 · 우측 검색 · 알림. 스크롤 시 항상 고정. <code>position: sticky; top: 0</code>.</div>
+      </div>
+      <div class="sec-comp"><b>HomeLocationBar</b>재사용 100%</div>
+    </div>
+
+    <div class="sec-row">
+      <div class="sec-order">1</div>
+      <div>
+        <div class="sec-name">⚡ 지금 받아야 할 쿠폰 · 가로 스트립</div>
+        <div class="sec-desc">D-0 긴급 쿠폰 4-8장을 가로 스크롤. <b>Phase 1 핵심</b> — 저장 시 Spec 01 Live Activity 파이프라인 진입. 카드: 타이틀 · 매장 · 거리 · 잔여 · "쿠폰받기" CTA.</div>
+      </div>
+      <div class="sec-comp"><b>UrgentCouponCard</b>→ Spec 01 진입</div>
+    </div>
+
+    <div class="sec-row">
+      <div class="sec-order">2</div>
+      <div>
+        <div class="sec-name">📍 내 주변 가게 · 가로 스트립</div>
+        <div class="sec-desc">GPS 기준 반경 500m 내 가게 6곳 가로 스크롤. 썸네일 · 이름 · 거리 · 활성 쿠폰 수. 탭하면 매장 상세 → Spec 02 QR 스캐너 CTA.</div>
+      </div>
+      <div class="sec-comp"><b>NearbyStoreCard</b>→ Spec 02 진입</div>
+    </div>
+
+    <div class="sec-row">
+      <div class="sec-order">3</div>
+      <div>
+        <div class="sec-name">👥 팔로우한 가게 소식 · 수직 피드</div>
+        <div class="sec-desc">팔로우 매장이 최근 올린 쿠폰 포스트 3-10개. 기존 <code>FeedPost</code> 100% 재사용. 무한 스크롤은 Phase 1에서 미구현 (다음 페이지로 이동).</div>
+      </div>
+      <div class="sec-comp"><b>FeedPost</b>재사용 100%</div>
+    </div>
+
+    <div class="sec-row" style="opacity:0.55;background:var(--bg-warm);border-style:dashed">
+      <div class="sec-order" style="color:var(--fg4)">—</div>
+      <div>
+        <div class="sec-name" style="color:var(--fg3)"><s>🏆 월드컵 배너</s> · Phase 2로 이동</div>
+        <div class="sec-desc">Spec 03 (월드컵 딜 소싱)과 함께 Phase 2에서 복귀. Phase 1 런칭 시점에는 홈에서 제거.</div>
+      </div>
+      <div class="sec-comp" style="color:var(--fg4)"><b style="color:var(--fg3)">OUT OF SCOPE</b>Phase 2 이후</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- 03 · Components -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <h2 class="sec-title">컴포넌트<br>명세</h2>
+  </div>
+  <p class="sec-lede">각 컴포넌트의 파일 위치 · props · 재사용 여부. <code>HomeScreens.jsx</code> 269-300 라인의 <code>HomeV1Standard</code>를 그대로 이식.</p>
+
+  <div class="comp-grid">
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">HomeV1Standard</div><div class="comp-path">HomeScreens.jsx:268</div></div>
+      <div class="comp-desc">V1 홈 루트 컴포넌트. 위에서 아래로 5개 섹션을 스택. <code>home-scroll</code> 클래스로 세로 스크롤 영역.</div>
+      <div class="comp-props">props: { <b>posts</b>, <b>onSaveCoupon</b>, <b>onFollow</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">HomeLocationBar</div><div class="comp-path">HomeScreens.jsx:11</div></div>
+      <div class="comp-desc">상단 고정 바. 로고 + 위치 드롭다운 + 검색/알림 아이콘. <code>showBrand</code> 플래그로 "언니픽" 로고 on/off.</div>
+      <div class="comp-props">props: { loc, onChange, <b>showBrand</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">UrgentCouponCard</div><div class="comp-path">HomeScreens.jsx:62</div></div>
+      <div class="comp-desc">긴급 쿠폰 카드. D-0는 🔥 배지, 이외 D-N. "쿠폰받기" 탭 시 Spec 01 저장 API 호출 → Live Activity 활성화.</div>
+      <div class="comp-props">props: { <b>c</b>: {id,store,title,daysLeft,remain,distance}, <b>onSave</b> }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">NearbyStoreCard</div><div class="comp-path">HomeScreens.jsx:83</div></div>
+      <div class="comp-desc">내 주변 가게 카드. 카테고리 컬러 그라데이션 + 이모지 + 거리 + 활성 쿠폰 수. 탭 시 매장 상세 네비게이션.</div>
+      <div class="comp-props">props: { <b>s</b>: {id,name,category,distance,activeCoupons,hot} }</div>
+    </div>
+    <div class="comp-card" style="opacity:0.55;border-style:dashed;background:var(--bg-warm)">
+      <div class="comp-h"><div class="comp-name" style="text-decoration:line-through;color:var(--fg3)">HomeFeatureBanner</div><div class="comp-path">Phase 2</div></div>
+      <div class="comp-desc">월드컵 배너용. Phase 1에서는 미이식. Spec 03 착수 시 함께 복귀.</div>
+      <div class="comp-props">props: — <b>deferred</b></div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">SectionHead</div><div class="comp-path">HomeScreens.jsx:47</div></div>
+      <div class="comp-desc">섹션 제목 + 부제 + 우측 액션 버튼. 모든 섹션이 공유. 액션 탭 시 해당 섹션의 전체 리스트 화면으로 이동.</div>
+      <div class="comp-props">props: { title, sub, action, onAction }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">FeedPost</div><div class="comp-path">FeedPost.jsx</div></div>
+      <div class="comp-desc">기존 Twitter식 피드 포스트. 매장 아바타 · 쿠폰 카드 · 저장/팔로우 CTA. <b>수정 없이 재사용</b>.</div>
+      <div class="comp-props">props: { <b>post</b>, onSaveCoupon, onFollow }</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-h"><div class="comp-name">StoreAvatar</div><div class="comp-path">Primitives.jsx</div></div>
+      <div class="comp-desc">매장 아바타 원형. 이름 기반 컬러 해싱 · 이모지 fallback. <code>size</code>는 <code>sm/md/lg</code>.</div>
+      <div class="comp-props">props: { name, emoji, size }</div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 · Data -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <h2 class="sec-title">섹션별<br>데이터 소스</h2>
+  </div>
+  <p class="sec-lede">각 섹션이 조회해야 할 API · DB 테이블 · 정렬 기준. Supabase 기준.</p>
+
+  <div class="data-table">
+    <div class="data-row head">
+      <div>섹션</div>
+      <div>쿼리 · 정렬</div>
+      <div>Phase 1 Note</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">긴급 쿠폰 스트립</div>
+      <div class="data-src"><code>GET /coupons/urgent?lat&lng&radius=500</code> — <code>expires_at ASC</code> 기준. D-3 이하만. <code>remain &gt; 0</code> 필터.</div>
+      <div class="data-note">Seed 데이터 재사용</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">내 주변 가게</div>
+      <div class="data-src"><code>GET /stores/nearby?lat&lng&radius=500</code> — PostGIS <code>ST_Distance</code> 기준. 활성 쿠폰 수 desc 보조 정렬.</div>
+      <div class="data-note">Spec 01 W0 Seed 공유</div>
+    </div>
+    <div class="data-row" style="opacity:0.55;background:var(--bg-warm)">
+      <div class="data-sec" style="text-decoration:line-through">월드컵 배너</div>
+      <div class="data-src">Phase 2 — Spec 03 착수 시 복귀. Phase 1에서는 렌더링하지 않음.</div>
+      <div class="data-note" style="color:var(--fg3)">OUT OF SCOPE</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">팔로우 피드</div>
+      <div class="data-src"><code>GET /feed?user_id</code> — 팔로우한 매장의 <code>coupon_posts</code>, <code>created_at DESC</code>, limit 10.</div>
+      <div class="data-note">커서 페이지네이션</div>
+    </div>
+    <div class="data-row">
+      <div class="data-sec">위치바 현재 동</div>
+      <div class="data-src">iOS <code>CLLocationManager</code> reverse geocode → 동 단위. 수동 변경 시 <code>user_preferences.home_dong</code>.</div>
+      <div class="data-note">창원시 23개 동</div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 · Files -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <h2 class="sec-title">이식 대상<br>파일</h2>
+  </div>
+  <p class="sec-lede">UI Kit에서 프로덕션 레포로 옮길 파일과 신규 생성 파일. 구조는 <code>FeedPost</code> 기존 레포 컨벤션 그대로.</p>
+
+  <div class="files-box">
+<span class="cmt"># 재사용 — UI Kit에서 이식</span><br>
+<span class="dir">src/screens/Home/</span><br>
+  ├── HomeV1Standard.tsx        <span class="cmt"># ← HomeScreens.jsx:268 포팅</span><br>
+  ├── HomeLocationBar.tsx       <span class="cmt"># ← HomeScreens.jsx:11 포팅</span><br>
+  ├── SectionHead.tsx           <span class="cmt"># ← HomeScreens.jsx:47 포팅</span><br>
+  ├── UrgentCouponCard.tsx      <span class="cmt"># ← HomeScreens.jsx:62 포팅</span><br>
+  └── NearbyStoreCard.tsx       <span class="cmt"># ← HomeScreens.jsx:83 포팅</span><br>
+  <span class="cmt"># HomeFeatureBanner.tsx      ← Phase 2 (월드컵과 함께 복귀)</span><br>
+<br>
+<span class="cmt"># 신규 — API 훅 + 타입</span><br>
+<span class="dir">src/hooks/</span><br>
+  ├── <span class="new">useUrgentCoupons.ts</span>       <span class="cmt"># GPS + D-3 필터</span><br>
+  ├── <span class="new">useNearbyStores.ts</span>        <span class="cmt"># PostGIS 반경 쿼리</span><br>
+  └── <span class="new">useFollowedFeed.ts</span>        <span class="cmt"># 커서 페이지네이션</span><br>
+<br>
+<span class="dir">src/types/</span><br>
+  ├── <span class="new">coupon.ts</span>                 <span class="cmt"># Coupon, UrgentCoupon 타입</span><br>
+  └── <span class="new">store.ts</span>                  <span class="cmt"># Store, NearbyStore 타입</span><br>
+<br>
+<span class="cmt"># 기존 — 그대로 재사용</span><br>
+<span class="dir">src/components/</span><br>
+  ├── FeedPost.tsx              <span class="cmt"># 수정 없음</span><br>
+  └── StoreAvatar.tsx           <span class="cmt"># 수정 없음</span><br>
+<br>
+<span class="cmt"># 스타일 — UI Kit CSS 토큰 이식</span><br>
+<span class="dir">src/styles/</span><br>
+  └── home-screens.css          <span class="cmt"># ← ui_kits/ios_app/home-screens.css 그대로</span>
+  </div>
+</section>
+
+<!-- 06 · Edge cases -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">06</div>
+    <h2 class="sec-title">엣지<br>케이스</h2>
+  </div>
+  <p class="sec-lede">실제 현장에서 발생할 빈 상태·에러 상태. Phase 1 런칭 전 반드시 처리.</p>
+
+  <div class="edge-grid">
+    <div class="edge">
+      <div class="edge-t">GPS 권한 거부</div>
+      <div class="edge-d">긴급 쿠폰 · 내 주변 2개 섹션을 "창원 전체" 모드로 fallback. 위치바에 "위치 허용하기" CTA 링크 표시.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">팔로우한 매장 0</div>
+      <div class="edge-d">팔로우 피드 섹션을 "추천 매장 5곳" 온보딩 카드로 대체. 팔로우 CTA 포함.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">긴급 쿠폰 0장</div>
+      <div class="edge-d">섹션 자체를 숨김 (섹션헤더까지 제거). 첫 스크린 실패 인식 방지.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">반경 내 매장 &lt; 3</div>
+      <div class="edge-d">"내 주변" 섹션 제목에 "창원 전체 추천"으로 변경 + 반경 확장 쿼리. 최소 6개 보장.</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">이미지 로드 실패</div>
+      <div class="edge-d">매장 썸네일: 카테고리 기반 그라데이션 + 이모지 fallback (현재 UI Kit 방식 그대로).</div>
+    </div>
+    <div class="edge">
+      <div class="edge-t">스크롤 끝 도달</div>
+      <div class="edge-d">팔로우 피드 10개 이후 "전체 피드 보기" CTA로 fallback. Phase 1은 무한 스크롤 미구현.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 · Checklist -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">07</div>
+    <h2 class="sec-title">Claude Code<br>체크리스트</h2>
+  </div>
+  <p class="sec-lede">이 항목이 모두 체크되면 Home V1 구현 완료. 각 항목은 독립 커밋 단위.</p>
+
+  <div class="check-list">
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>01</b> &nbsp;<code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#fff">home-screens.css</code> 토큰을 프로덕션 스타일 시스템에 이식</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>02</b> &nbsp;<code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#fff">HomeLocationBar</code> + <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#fff">SectionHead</code> 공용 컴포넌트 이식</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>03</b> &nbsp;긴급 쿠폰 카드 · <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#fff">useUrgentCoupons</code> 훅 + Supabase 쿼리</div>
+      <div class="check-est">1일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>04</b> &nbsp;내 주변 가게 카드 · PostGIS 반경 쿼리 · 가로 스크롤 스냅</div>
+      <div class="check-est">1일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>05</b> &nbsp;팔로우 피드 통합 · 기존 <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#fff">FeedPost</code> 재사용</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>06</b> &nbsp;엣지 케이스 6종 처리 (Section 06)</div>
+      <div class="check-est">1일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>07</b> &nbsp;Amplitude 이벤트 발사 — <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#fff">home_section_view</code>, <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#fff">urgent_coupon_tap</code>, <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:#fff">nearby_store_tap</code></div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>08</b> &nbsp;실제 디바이스 스크롤 퍼포먼스 60fps 확인</div>
+      <div class="check-est">0.5일</div>
+    </div>
+    <div class="check-row">
+      <div class="check-box"></div>
+      <div class="check-text"><b>09</b> &nbsp;Spec 01 "쿠폰받기" → Live Activity 활성화 동작 확인</div>
+      <div class="check-est">0.5일</div>
+    </div>
+  </div>
+  <div class="caption" style="margin-top:14px;text-align:right">합계 ≈ <b style="color:var(--orange-600)">6일</b> · 1인 iOS 엔지니어 기준. Launch Handoff W1에 배치.</div>
+</section>
+
+<!-- 08 · References -->
+<section class="block">
+  <div class="sec-head">
+    <div class="sec-num">08</div>
+    <h2 class="sec-title">참조<br>자료</h2>
+  </div>
+  <p class="sec-lede">Claude Code가 구현 중 참조할 1차 소스. 모두 프로젝트 내부.</p>
+
+  <div class="ref-grid">
+    <a href="../ui_kits/ios_app/index.html" class="ref">
+      <div class="ref-k">🎨 Live UI Kit</div>
+      <div class="ref-t">언니픽 iOS UI Kit</div>
+      <div class="ref-d">상단 탭에서 "V1" 선택 시 실제 렌더링되는 화면. 인터랙션·스타일의 ground truth.</div>
+    </a>
+    <a href="../ui_kits/ios_app/HomeScreens.jsx" class="ref">
+      <div class="ref-k">📦 Source</div>
+      <div class="ref-t">HomeScreens.jsx</div>
+      <div class="ref-d">HomeV1Standard 본체 (L268) + 공용 컴포넌트 8종. 그대로 포팅 대상.</div>
+    </a>
+    <a href="../ui_kits/ios_app/home-screens.css" class="ref">
+      <div class="ref-k">🎨 Styles</div>
+      <div class="ref-t">home-screens.css</div>
+      <div class="ref-d">홈 전용 CSS 토큰 · 스크롤 스냅 · 카드 그림자. 그대로 이식.</div>
+    </a>
+    <a href="launch-handoff.html" class="ref">
+      <div class="ref-k">🗓 Roadmap</div>
+      <div class="ref-t">Phase 1 Launch Handoff</div>
+      <div class="ref-d">이 문서가 들어갈 W1 슬롯. 전체 7주 일정 속 Home V1의 위치.</div>
+    </a>
+    <a href="spec-01-wallet-discovery.html" class="ref">
+      <div class="ref-k">📄 Spec</div>
+      <div class="ref-t">Spec 01 · 지갑 자동 발견</div>
+      <div class="ref-d">긴급 쿠폰 "쿠폰받기" 탭 이후의 Live Activity 파이프라인 명세.</div>
+    </a>
+    <a href="spec-02-stamp.html" class="ref">
+      <div class="ref-k">📄 Spec</div>
+      <div class="ref-t">Spec 02 · 스탬프 × 단골</div>
+      <div class="ref-d">내 주변 가게 카드 → 매장 상세 → QR 스캔 진입 루프.</div>
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<div class="doc-foot">
+  <div>언니픽 · Home V1 Claude Code Handoff · v0.1 · 2025.11</div>
+  <div style="display:flex;gap:12px">
+    <a href="index.html">Index</a>
+    <a href="launch-handoff.html">Launch Handoff</a>
+    <a href="../ui_kits/ios_app/index.html">UI Kit</a>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

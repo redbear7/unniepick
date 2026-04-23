@@ -1,196 +1,134 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * LoginScreen — 휴대폰 SMS 인증 전용
+ *
+ * 가입·로그인 모두 PhoneAuthScreen(OTP 플로우)으로 연결.
+ * 비로그인 둘러보기 옵션 유지.
+ */
+
+import React from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, ActivityIndicator, Alert,
+  View, Text, StyleSheet,
+  TouchableOpacity, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import {
-  signInWithGoogle,
-  signInWithKakao,
-  signInWithApple,
-  ensureSocialProfile,
-  isAppleSignInAvailable,
-} from '../../lib/services/socialAuthService';
-
-const A = {
-  bg:      '#F2F2F7',
-  surface: '#FFFFFF',
-  fill:    '#E5E5EA',
-  label:   '#1C1C1E',
-  label2:  '#636366',
-  label3:  '#8E8E93',
-  sep:     '#C6C6C8',
-  blue:    '#007AFF',
-  green:   '#34C759',
-  orange:  '#FF6F0F',
-  red:     '#FF3B30',
-};
+import { PALETTE } from '../../constants/theme';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
-  const [socialLoading, setSocialLoading] = useState<'google' | 'kakao' | 'apple' | null>(null);
-  const [appleAvailable, setAppleAvailable] = useState(false);
-
-  useEffect(() => {
-    isAppleSignInAvailable().then(setAppleAvailable);
-  }, []);
-
-  // ── 소셜 로그인 공통 처리 ────────────────────────────────────────────
-  const handleSocialLogin = async (provider: 'google' | 'kakao' | 'apple') => {
-    setSocialLoading(provider);
-    try {
-      let session;
-      if (provider === 'google')  session = await signInWithGoogle();
-      else if (provider === 'kakao') session = await signInWithKakao();
-      else session = await signInWithApple();
-
-      const result = await ensureSocialProfile(session);
-
-      if (result.isNew) {
-        Alert.alert(
-          '🎉 가입 완료!',
-          `${result.name}님, 환영해요!\n언니픽과 함께 맛있는 혜택을 즐겨보세요.`,
-          [{ text: '시작하기', onPress: () => navigation.replace('CustomerTabs') }],
-        );
-      } else {
-        navigation.replace('CustomerTabs');
-      }
-    } catch (e: any) {
-      if (e.message === 'CANCELLED') return;
-      Alert.alert(
-        '로그인 실패',
-        e.message?.includes('not supported')
-          ? 'Apple 로그인은 iPhone에서만 가능해요.'
-          : (e.message ?? '잠시 후 다시 시도해주세요.'),
-      );
-    } finally {
-      setSocialLoading(null);
-    }
-  };
 
   return (
-    <SafeAreaView style={styles.safe}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={s.safe}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* 로고 */}
+      <View style={s.logoArea}>
+        <Text style={s.logoEmoji}>🐻</Text>
+        <Text style={s.logoTitle}>언니픽</Text>
+        <Text style={s.logoSub}>창원의 모든 핫플레이스</Text>
+      </View>
+
+      {/* 본문 */}
+      <View style={s.body}>
+        <Text style={s.headline}>휴대폰 번호로{'\n'}간편하게 시작해요</Text>
+        <Text style={s.sub}>SMS 인증 한 번으로 가입과 로그인이 동시에!</Text>
+
+        {/* 휴대폰 인증 버튼 */}
+        <TouchableOpacity
+          style={s.phoneBtn}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('PhoneAuth')}
         >
-          {/* 로고 */}
-          <View style={styles.logoArea}>
-            <Text style={styles.logoEmoji}>🐻</Text>
-            <Text style={styles.logoTitle}>언니픽</Text>
-            <Text style={styles.logoSub}>우리 동네 맛집 · 쿠폰 · 혜택 플랫폼</Text>
-          </View>
+          <Text style={s.phoneBtnIcon}>📱</Text>
+          <Text style={s.phoneBtnLabel}>휴대폰으로 시작하기</Text>
+        </TouchableOpacity>
 
-          {/* ── 소셜 로그인 버튼 ── */}
-          <View style={styles.socialGroup}>
-            {/* 카카오 */}
-            <SocialBtn
-              loading={socialLoading === 'kakao'}
-              onPress={() => handleSocialLogin('kakao')}
-              style={styles.kakaoBtn}
-              icon="K"
-              iconStyle={styles.kakaoIcon}
-              label="카카오로 시작하기"
-              labelStyle={styles.kakaoBtnText}
-            />
-
-            {/* 구글 */}
-            <SocialBtn
-              loading={socialLoading === 'google'}
-              onPress={() => handleSocialLogin('google')}
-              style={styles.googleBtn}
-              icon="G"
-              iconStyle={styles.googleIcon}
-              label="구글로 시작하기"
-              labelStyle={styles.googleBtnText}
-            />
-
-            {/* 애플 — iOS 기기만 표시 */}
-            {appleAvailable && (
-              <SocialBtn
-                loading={socialLoading === 'apple'}
-                onPress={() => handleSocialLogin('apple')}
-                style={styles.appleBtn}
-                icon=""
-                iconStyle={styles.appleIcon}
-                label=" Apple로 시작하기"
-                labelStyle={styles.appleBtnText}
-              />
-            )}
-          </View>
-
-          {/* 비로그인 계속 */}
-          <TouchableOpacity
-            style={styles.skipBtn}
-            onPress={() => navigation.replace('CustomerTabs')}
-          >
-            <Text style={styles.skipText}>로그인 없이 둘러보기</Text>
-          </TouchableOpacity>
-        </ScrollView>
+        {/* 비로그인 둘러보기 */}
+        <TouchableOpacity
+          style={s.skipBtn}
+          onPress={() => navigation.replace('CustomerTabs')}
+        >
+          <Text style={s.skipText}>지금은 둘러볼게요</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
-// ── 소셜 버튼 공통 컴포넌트 ─────────────────────────────────────────────
-function SocialBtn({
-  loading, onPress, style, icon, iconStyle, label, labelStyle,
-}: any) {
-  return (
-    <TouchableOpacity
-      style={[styles.socialBtn, style, loading && { opacity: 0.7 }]}
-      onPress={onPress}
-      disabled={!!loading}
-      activeOpacity={0.85}
-    >
-      {loading ? (
-        <ActivityIndicator color={labelStyle?.color ?? '#000'} />
-      ) : (
-        <>
-          <Text style={[styles.socialBtnIcon, iconStyle]}>{icon}</Text>
-          <Text style={[styles.socialBtnLabel, labelStyle]}>{label}</Text>
-        </>
-      )}
-    </TouchableOpacity>
-  );
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: A.bg },
-  container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, gap: 14, justifyContent: 'center' },
-
-  // 로고
-  logoArea: { alignItems: 'center', paddingVertical: 20, gap: 6, marginBottom: 40 },
-  logoEmoji: { fontSize: 72 },
-  logoTitle: { fontSize: 32, fontWeight: '700', color: A.label, letterSpacing: -0.5 },
-  logoSub: { fontSize: 15, color: A.label3 },
-
-  // 소셜 버튼 그룹
-  socialGroup: { gap: 10 },
-  socialBtn: {
-    height: 56, borderRadius: 14,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+const s = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  logoArea: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 24,
+    gap: 6,
+  },
+  logoEmoji: {
+    fontSize: 64,
+  },
+  logoTitle: {
+    fontSize: 30,
+    fontFamily: 'WantedSans-Bold',
+    color: PALETTE.orange500,
+    letterSpacing: -0.5,
+  },
+  logoSub: {
+    fontSize: 14,
+    color: '#9097A0',
+    fontFamily: 'WantedSans-Regular',
+  },
+  body: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 32,
+    alignItems: 'center',
+    gap: 12,
+  },
+  headline: {
+    fontSize: 26,
+    fontFamily: 'WantedSans-Bold',
+    color: '#191F28',
+    textAlign: 'center',
+    lineHeight: 36,
+    marginBottom: 4,
+  },
+  sub: {
+    fontSize: 14,
+    color: '#636E7C',
+    fontFamily: 'WantedSans-Regular',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  phoneBtn: {
+    width: '100%',
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: PALETTE.orange500,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 10,
   },
-  socialBtnIcon: { fontSize: 18, fontWeight: '900' },
-  socialBtnLabel: { fontSize: 17, fontWeight: '600' },
-
-  // 카카오
-  kakaoBtn: { backgroundColor: '#FEE500' },
-  kakaoIcon: { color: '#191600' },
-  kakaoBtnText: { color: '#191600' },
-
-  // 구글
-  googleBtn: { backgroundColor: A.surface, borderWidth: 0.5, borderColor: A.sep },
-  googleIcon: { color: '#4285F4', fontWeight: '900' },
-  googleBtnText: { color: A.label },
-
-  // 애플
-  appleBtn: { backgroundColor: '#000' },
-  appleIcon: { color: '#fff', fontSize: 20 },
-  appleBtnText: { color: '#fff' },
-
-  // 비로그인 스킵
-  skipBtn: { alignItems: 'center', paddingVertical: 12, marginTop: 4 },
-  skipText: { fontSize: 15, color: A.blue },
+  phoneBtnIcon: {
+    fontSize: 22,
+  },
+  phoneBtnLabel: {
+    fontSize: 17,
+    fontFamily: 'WantedSans-Bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  skipBtn: {
+    marginTop: 8,
+    paddingVertical: 12,
+  },
+  skipText: {
+    fontSize: 14,
+    color: '#9097A0',
+    fontFamily: 'WantedSans-Regular',
+    textDecorationLine: 'underline',
+  },
 });

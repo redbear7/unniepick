@@ -1,6 +1,7 @@
-// Step 4: 내 주변 가게 팔로우 (최소 5개) + 약관 동의
-// 위치 권한 → Supabase 가게 조회 → 팔로우 선택 → 약관 바텀시트 → 완료
-import React, { useCallback, useEffect, useState } from 'react';
+// Step 5: 내 주변 가게 팔로우 (최소 5개) + 약관 동의
+// (위치 권한은 Step 4 LocationPermissionStep 에서 이미 획득)
+// 5번째 팔로우 순간 → 토스트 1초 → 약관 바텀시트 자동 오픈 (1회 제한)
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,7 +11,8 @@ import {
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { PALETTE, FONT_FAMILY } from '../../../constants/theme';
+import { PALETTE } from '../../../constants/theme';
+import { T } from '../../../constants/typography';
 import TermsSheet, { TermsState } from '../components/TermsSheet';
 
 export interface NearbyStore {
@@ -27,28 +29,22 @@ interface Props {
   loading?:   boolean;
 }
 
-const MIN_FOLLOW = 5;
+const MIN_FOLLOW = 6;
+const MAX_FOLLOW = 6;
 
 export default function NearbyStoresStep({ loadStores, onDone, loading }: Props) {
-  const [stores,     setStores]     = useState<NearbyStore[]>([]);
-  const [followed,   setFollowed]   = useState<string[]>([]);
-  const [sheetOpen,  setSheetOpen]  = useState(false);
-  const [fetching,   setFetching]   = useState(true);
-  const [locName,    setLocName]    = useState('내 위치');
-  const [locDenied,  setLocDenied]  = useState(false);
+  const [stores,       setStores]       = useState<NearbyStore[]>([]);
+  const [followed,     setFollowed]     = useState<string[]>([]);
+  const [sheetOpen,    setSheetOpen]    = useState(false);
+  const [fetching,     setFetching]     = useState(true);
+  const [locName,      setLocName]      = useState('내 위치');
+  const [toast,        setToast]        = useState(false);
+  const autoTriggered  = useRef(false); // 5번째 순간 1회만 자동 트리거
 
   const fetchStores = useCallback(async () => {
     setFetching(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocDenied(true);
-        // 위치 없이 폴백: 전체 가게 조회 (lat=0,lng=0 → 서버에서 거리 무시)
-        const all = await loadStores(0, 0);
-        setStores(all);
-        return;
-      }
-
+      // 위치 권한은 Step 4에서 이미 획득됨 → 바로 조회
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude: lat, longitude: lng } = loc.coords;
 
@@ -62,7 +58,13 @@ export default function NearbyStoresStep({ loadStores, onDone, loading }: Props)
       const results = await loadStores(lat, lng);
       setStores(results);
     } catch {
-      setStores([]);
+      // 위치 조회 실패 시 폴백: 전체 조회
+      try {
+        const all = await loadStores(0, 0);
+        setStores(all);
+      } catch {
+        setStores([]);
+      }
     } finally {
       setFetching(false);
     }
@@ -71,9 +73,25 @@ export default function NearbyStoresStep({ loadStores, onDone, loading }: Props)
   useEffect(() => { fetchStores(); }, [fetchStores]);
 
   const toggleFollow = (id: string) => {
-    setFollowed(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
-    );
+    setFollowed(prev => {
+      const isSelected = prev.includes(id);
+
+      // 이미 5개 선택 상태에서 새로운 가게 추가 시도 → 차단
+      if (!isSelected && prev.length >= MAX_FOLLOW) return prev;
+
+      const next = isSelected ? prev.filter(x => x !== id) : [...prev, id];
+
+      // 처음으로 5개에 도달한 순간 → 토스트 1초 → 약관 시트 자동 오픈 (1회)
+      if (!autoTriggered.current && prev.length < MIN_FOLLOW && next.length === MIN_FOLLOW) {
+        autoTriggered.current = true;
+        setToast(true);
+        setTimeout(() => {
+          setToast(false);
+          setSheetOpen(true);
+        }, 1000);
+      }
+      return next;
+    });
   };
 
   const hasMin = followed.length >= MIN_FOLLOW;
@@ -119,8 +137,8 @@ export default function NearbyStoresStep({ loadStores, onDone, loading }: Props)
         <Text style={ns.title}>내 주변 가까운 가게를{'\n'}팔로우 해보세요</Text>
         <View style={ns.locRow}>
           <Text style={ns.locPin}>📍</Text>
-          <Text style={ns.locName}>{locDenied ? '위치 권한 없음' : locName}</Text>
-          {!locDenied && <Text style={ns.locSub}> · 가까운 순</Text>}
+          <Text style={ns.locName}>{locName}</Text>
+          <Text style={ns.locSub}> · 가까운 순</Text>
         </View>
 
         {/* 진행 바 */}
@@ -140,7 +158,7 @@ export default function NearbyStoresStep({ loadStores, onDone, loading }: Props)
         </View>
         <Text style={ns.progressHint}>
           {hasMin
-            ? '좋아요! 더 팔로우해도 돼요'
+            ? '완료! 아래 버튼을 눌러 계속하세요 🎉'
             : `언니픽에서 둘러볼 가게를 ${MIN_FOLLOW}곳 선택해주세요`}
         </Text>
       </View>
@@ -155,11 +173,7 @@ export default function NearbyStoresStep({ loadStores, onDone, loading }: Props)
         <View style={ns.emptyBox}>
           <Text style={ns.emptyEmoji}>🏪</Text>
           <Text style={ns.emptyTitle}>주변에 등록된 가게가 없어요</Text>
-          <Text style={ns.emptySub}>
-            {locDenied
-              ? '위치 권한을 허용하면 주변 가게를 볼 수 있어요'
-              : '반경을 넓혀 다시 시도해볼게요'}
-          </Text>
+          <Text style={ns.emptySub}>반경을 넓혀 다시 시도해볼게요</Text>
           <TouchableOpacity style={ns.retryBtn} onPress={fetchStores} activeOpacity={0.8}>
             <Text style={ns.retryBtnText}>다시 시도</Text>
           </TouchableOpacity>
@@ -186,12 +200,19 @@ export default function NearbyStoresStep({ loadStores, onDone, loading }: Props)
             ? <ActivityIndicator color="#FFFFFF" />
             : <Text style={ns.btnText}>
                 {hasMin
-                  ? `팔로우 완료 (${followed.length})`
+                  ? '팔로우 완료'
                   : `${MIN_FOLLOW - followed.length}곳 더 선택해주세요`}
               </Text>
           }
         </TouchableOpacity>
       </View>
+
+      {/* 5곳 완료 토스트 */}
+      {toast && (
+        <View style={ns.toast} pointerEvents="none">
+          <Text style={ns.toastText}>✨  6곳 팔로우 완료!</Text>
+        </View>
+      )}
 
       {/* 약관 바텀시트 */}
       {sheetOpen && (
@@ -212,25 +233,18 @@ const ns = StyleSheet.create({
     borderBottomColor: PALETTE.gray150,
   },
   title: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 24,
-    fontWeight: '900',
+    ...T.title24,
     color: PALETTE.gray900,
-    letterSpacing: -0.8,
     marginBottom: 10,
-    lineHeight: 32,
   },
   locRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   locPin: { fontSize: 14, marginRight: 4 },
   locName: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13,
-    fontWeight: '700',
+    ...T.btnSmall,
     color: PALETTE.orange500,
   },
   locSub: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
+    ...T.caption12,
     color: PALETTE.gray500,
   },
   progressRow: {
@@ -251,26 +265,22 @@ const ns = StyleSheet.create({
   },
   progressFillDone: { backgroundColor: PALETTE.orange500 },
   progressCount: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13,
-    fontWeight: '800',
+    ...T.countSmall,
     color: PALETTE.gray600,
     minWidth: 32,
     textAlign: 'right',
   },
   progressCountDone: { color: PALETTE.orange500 },
   progressHint: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
+    ...T.caption12,
     color: PALETTE.gray500,
-    lineHeight: 18,
   },
 
   loadingBox: {
     flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12,
   },
   loadingText: {
-    fontFamily: FONT_FAMILY, fontSize: 13, color: PALETTE.gray500,
+    ...T.body13, color: PALETTE.gray500,
   },
   emptyBox: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
@@ -278,20 +288,18 @@ const ns = StyleSheet.create({
   },
   emptyEmoji: { fontSize: 48, marginBottom: 4 },
   emptyTitle: {
-    fontFamily: FONT_FAMILY, fontSize: 16, fontWeight: '800',
-    color: PALETTE.gray800, letterSpacing: -0.3,
+    ...T.label14, color: PALETTE.gray800,
   },
   emptySub: {
-    fontFamily: FONT_FAMILY, fontSize: 13, color: PALETTE.gray500,
-    textAlign: 'center', lineHeight: 20,
+    ...T.body13, color: PALETTE.gray500,
+    textAlign: 'center',
   },
   retryBtn: {
     marginTop: 12, paddingVertical: 10, paddingHorizontal: 24,
     backgroundColor: PALETTE.gray100, borderRadius: 999,
   },
   retryBtnText: {
-    fontFamily: FONT_FAMILY, fontSize: 14, fontWeight: '700',
-    color: PALETTE.gray700,
+    ...T.btn14, color: PALETTE.gray700,
   },
   listContent: { padding: 16, gap: 8 },
 
@@ -317,13 +325,11 @@ const ns = StyleSheet.create({
   emoji: { fontSize: 26 },
   info: { flex: 1, minWidth: 0 },
   storeName: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 15, fontWeight: '800',
+    ...T.storeName,
     color: PALETTE.gray900, marginBottom: 3,
   },
   storeMeta: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12, color: PALETTE.gray500,
+    ...T.storeMeta, color: PALETTE.gray500,
   },
   followBtn: {
     paddingVertical: 9, paddingHorizontal: 14,
@@ -338,8 +344,7 @@ const ns = StyleSheet.create({
     borderColor: PALETTE.orange500,
   },
   followBtnText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13, fontWeight: '800',
+    ...T.label13,
     color: PALETTE.gray900,
   },
   followBtnTextActive: { color: '#FFFFFF' },
@@ -367,8 +372,24 @@ const ns = StyleSheet.create({
     shadowOpacity: 0, elevation: 0,
   },
   btnText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 16, fontWeight: '900',
-    color: '#FFFFFF', letterSpacing: -0.3,
+    ...T.btn16,
+    color: '#FFFFFF',
+  },
+
+  // 5곳 완료 토스트
+  toast: {
+    position: 'absolute',
+    alignSelf: 'center',
+    bottom: 120,
+    backgroundColor: 'rgba(20,20,20,0.92)',
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    zIndex: 50,
+  },
+  toastText: {
+    ...T.label13,
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
 });

@@ -8,11 +8,10 @@ const NOTIFICATION_OPT_IN_KEY = 'notification_opt_in';
 // 알림 핸들러 설정
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
     shouldShowBanner: true,
-    shouldShowList: true,
+    shouldShowList:   true,
+    shouldPlaySound:  true,
+    shouldSetBadge:   true,
   }),
 });
 

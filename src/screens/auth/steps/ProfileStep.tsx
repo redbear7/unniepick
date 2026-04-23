@@ -2,6 +2,7 @@
 // 한글 가중치(x1.6): 한글 5자 = 영문 8자, 닉네임 중복 확인 버튼
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,7 +12,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { PALETTE, FONT_FAMILY } from '../../../constants/theme';
+import { PALETTE } from '../../../constants/theme';
+import { T } from '../../../constants/typography';
 import BirthdayPicker from '../components/BirthdayPicker';
 
 export interface ProfileData {
@@ -22,12 +24,13 @@ export interface ProfileData {
 }
 
 interface Props {
-  profile:    ProfileData;
-  setProfile: (p: ProfileData) => void;
-  onCheckNick: (nick: string) => Promise<boolean>; // true = available
-  onNext:     () => void;
-  loading?:   boolean;
-  error?:     string;
+  profile:        ProfileData;
+  setProfile:     (p: ProfileData) => void;
+  onCheckNick:    (nick: string) => Promise<boolean>; // true = available
+  onNext:         () => void;
+  onValidChange?: (valid: boolean) => void;
+  loading?:       boolean;
+  error?:         string;
 }
 
 type CheckState = 'idle' | 'checking' | 'ok' | 'taken';
@@ -42,7 +45,7 @@ function nickWeight(s: string): number {
 }
 
 export default function ProfileStep({
-  profile, setProfile, onCheckNick, onNext, loading, error,
+  profile, setProfile, onCheckNick, onNext, onValidChange, loading, error,
 }: Props) {
   const { nickname, birthMonth, birthDay, birthSkip } = profile;
   const [checking, setChecking] = useState<CheckState>('idle');
@@ -53,6 +56,9 @@ export default function ProfileStep({
   const overLimit  = weight > 8;
   const tooShort   = nickname.trim().length < 2;
   const isValid    = checking === 'ok' && !overLimit && !tooShort;
+
+  // isValid 변경 시 부모에게 알림
+  useEffect(() => { onValidChange?.(isValid); }, [isValid]);
 
   // 닉네임 변경 시 체크 초기화
   useEffect(() => { setChecking('idle'); }, [nickname]);
@@ -167,7 +173,7 @@ export default function ProfileStep({
 
         <TouchableOpacity
           style={[s.birthBtn, birthSkip && s.birthBtnSkipped]}
-          onPress={() => { if (!birthSkip) setPickerOpen(true); }}
+          onPress={() => { if (!birthSkip) { Keyboard.dismiss(); setPickerOpen(true); } }}
           disabled={birthSkip}
           activeOpacity={0.8}
         >
@@ -195,18 +201,6 @@ export default function ProfileStep({
       {error ? <Text style={s.error}>{error}</Text> : null}
     </ScrollView>
 
-    {/* 키보드 위 고정 버튼 */}
-    <View style={s.footer}>
-      <TouchableOpacity
-        style={[s.btn, !isValid && s.btnDisabled]}
-        onPress={onNext}
-        disabled={!isValid || loading}
-        activeOpacity={0.85}
-      >
-        <Text style={s.btnText}>다음</Text>
-      </TouchableOpacity>
-    </View>
-
     {/* 생일 피커 */}
     {pickerOpen && (
       <BirthdayPicker
@@ -224,30 +218,24 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   body: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 12,
   },
   footer: {
     paddingHorizontal: 24,
-    paddingBottom: 32,
-    paddingTop: 8,
+    paddingBottom: 28,
+    paddingTop: 6,
     backgroundColor: '#FFFFFF',
   },
   title: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 26,
-    fontWeight: '900',
+    ...T.title26,
     color: PALETTE.gray900,
-    letterSpacing: -0.8,
-    marginBottom: 10,
-    lineHeight: 34,
+    marginBottom: 6,
   },
   sub: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13,
+    ...T.body13,
     color: PALETTE.gray500,
-    marginBottom: 28,
-    lineHeight: 20,
+    marginBottom: 16,
   },
 
   // 닉네임
@@ -259,9 +247,8 @@ const s = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: PALETTE.gray200,
-    fontFamily: FONT_FAMILY,
-    fontSize: 16,
-    fontWeight: '700',
+    ...T.input16,
+    lineHeight: undefined,   // lineHeight=16 → 한글 클리핑 방지 (RN TextInput)
     color: PALETTE.gray900,
     backgroundColor: '#FFFFFF',
   },
@@ -276,9 +263,7 @@ const s = StyleSheet.create({
   },
   checkBtnDisabled: { backgroundColor: PALETTE.gray200 },
   checkBtnText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13,
-    fontWeight: '800',
+    ...T.label13,
     color: '#FFFFFF',
   },
   checkBtnTextDisabled: { color: PALETTE.gray500 },
@@ -286,47 +271,38 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 14,
     minHeight: 18,
   },
   nickMsg: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
-    fontWeight: '600',
+    ...T.label12,
     color: PALETTE.gray500,
     flex: 1,
   },
   nickMsgOk:  { color: PALETTE.orange500 },
   nickMsgErr: { color: PALETTE.red500 },
   counter: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
-    fontWeight: '700',
+    ...T.label12,
     color: PALETTE.gray400,
     marginLeft: 8,
   },
   counterErr: { color: PALETTE.red500 },
 
   // 생일
-  birthSection: { marginBottom: 24 },
-  birthLabelRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 },
+  birthSection: { marginBottom: 12 },
+  birthLabelRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 3 },
   birthLabel: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 14,
-    fontWeight: '800',
+    ...T.label14,
     color: PALETTE.gray900,
   },
   birthOptional: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
+    ...T.caption12,
     color: PALETTE.gray500,
   },
   birthHint: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
+    ...T.caption12,
     color: PALETTE.gray500,
-    marginBottom: 10,
-    lineHeight: 18,
+    marginBottom: 8,
   },
   birthBtn: {
     flexDirection: 'row',
@@ -345,13 +321,12 @@ const s = StyleSheet.create({
     opacity: 0.6,
   },
   birthBtnText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 16,
+    ...T.input16,
+    lineHeight: undefined,   // 한글 클리핑 방지
     color: PALETTE.gray400,
   },
   birthBtnTextFilled: {
     color: PALETTE.gray900,
-    fontWeight: '700',
   },
   chevron: { color: PALETTE.gray400, fontSize: 16 },
   skipRow: {
@@ -371,19 +346,16 @@ const s = StyleSheet.create({
     backgroundColor: PALETTE.orange500,
     borderColor: PALETTE.orange500,
   },
-  checkboxMark: { fontSize: 11, color: '#FFFFFF', fontWeight: '700' },
+  checkboxMark: { fontSize: 11, color: '#FFFFFF' },
   skipText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 13,
-    fontWeight: '600',
+    ...T.body13,
     color: PALETTE.gray600,
     letterSpacing: -0.2,
   },
-  skipTextActive: { color: PALETTE.orange500, fontWeight: '700' },
+  skipTextActive: { color: PALETTE.orange500 },
 
   error: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 12,
+    ...T.caption12,
     color: PALETTE.red500,
     marginBottom: 12,
   },
@@ -404,10 +376,7 @@ const s = StyleSheet.create({
     elevation: 0,
   },
   btnText: {
-    fontFamily: FONT_FAMILY,
-    fontSize: 16,
-    fontWeight: '900',
+    ...T.btn16,
     color: '#FFFFFF',
-    letterSpacing: -0.3,
   },
 });

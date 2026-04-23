@@ -1,484 +1,374 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
-  Alert, ActivityIndicator, TextInput, Animated, Modal,
+  View, Text, StyleSheet, ActivityIndicator, StatusBar,
+  ScrollView, TouchableOpacity, Alert, Animated, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import QRCode from 'react-native-qrcode-svg';
-import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
-import {
-  cancelCoupon, canCancelCoupon, cancelDeadlineText,
-  useCouponByPin,
-} from '../../lib/services/couponService';
-import { cancelCouponExpiryReminder } from '../../lib/notifications';
-import { getSession } from '../../lib/services/authService';
-import { submitReview } from '../../lib/services/reviewService';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { supabase } from '../../lib/supabase';
+import { getCouponKindConfig, CouponKind } from '../../lib/services/couponService';
+// expo-screen-capture: 네이티브 빌드(EAS) 시 활성화
+// import * as ScreenCapture from 'expo-screen-capture';
 
-type ViewMode = 'qr' | 'pin';
+// ── 테마 ─────────────────────────────────────────────────────────
+const C = {
+  brand:  '#FF6F0F',
+  g900:   '#191F28',
+  g800:   '#333D4B',
+  g700:   '#4E5968',
+  g600:   '#6B7684',
+  g500:   '#8B95A1',
+  g400:   '#A0ABB8',
+  g200:   '#E5E8EB',
+  g150:   '#EAECEF',
+  g100:   '#F2F4F6',
+  green:  '#0AC86E',
+  white:  '#FFFFFF',
+};
 
-// ── 4자리 PIN 입력 박스 ──────────────────────────────────────────────────────
-function PinInput({
-  value,
-  onChange,
-}: { value: string; onChange: (v: string) => void }) {
-  const inputRef = useRef<TextInput>(null);
-
-  return (
-    <TouchableOpacity
-      activeOpacity={1}
-      onPress={() => inputRef.current?.focus()}
-      style={pi.wrap}
-    >
-      {/* 숨겨진 실제 입력창 */}
-      <TextInput
-        ref={inputRef}
-        style={pi.hidden}
-        value={value}
-        onChangeText={v => onChange(v.replace(/\D/g, '').slice(0, 4))}
-        keyboardType="number-pad"
-        maxLength={4}
-        caretHidden
-      />
-
-      {/* 시각적 박스 4개 */}
-      {[0, 1, 2, 3].map(i => {
-        const char    = value[i] ?? '';
-        const focused = value.length === i;
-        return (
-          <View key={i} style={[pi.box, focused && pi.boxFocused, char && pi.boxFilled]}>
-            <Text style={pi.digit}>{char ? '●' : ''}</Text>
-            {focused && <View style={pi.cursor} />}
-          </View>
-        );
-      })}
-    </TouchableOpacity>
-  );
+// ── 헬퍼 ─────────────────────────────────────────────────────────
+function formatCouponNumber(token: string): string {
+  const raw = token.replace(/[^a-zA-Z0-9]/g, '').slice(0, 7).toUpperCase();
+  return `${raw.slice(0, 3)}-${raw.slice(3, 7)}`;
 }
 
-// ── 메인 화면 ────────────────────────────────────────────────────────────────
+function splitCouponNumber(formatted: string): string {
+  return formatted.split('').join(' ');
+}
+
+function formatExpiryKorean(expiresAt: string): string {
+  const d    = new Date(expiresAt);
+  const year = d.getFullYear();
+  const mon  = d.getMonth() + 1;
+  const day  = d.getDate();
+  const hour = d.getHours();
+  const ampm = hour < 12 ? '오전' : '오후';
+  const h12  = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${year}년 ${mon}월 ${day}일 ${ampm} ${h12}시 만료`;
+}
+
+/** 현재 날짜·시간 → "2026년 4월 16일 (수) 오후 3:24:07" */
+function formatNow(d: Date): string {
+  const DAYS   = ['일', '월', '화', '수', '목', '금', '토'];
+  const year   = d.getFullYear();
+  const mon    = d.getMonth() + 1;
+  const day    = d.getDate();
+  const dow    = DAYS[d.getDay()];
+  const hour   = d.getHours();
+  const min    = String(d.getMinutes()).padStart(2, '0');
+  const sec    = String(d.getSeconds()).padStart(2, '0');
+  const ampm   = hour < 12 ? '오전' : '오후';
+  const h12    = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${year}년 ${mon}월 ${day}일 (${dow}) ${ampm} ${h12}:${min}:${sec}`;
+}
+
+// ── 사용 완료 오버레이 ────────────────────────────────────────────
+function UsedOverlay({ visible }: { visible: boolean }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale   = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(scale,   { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 6 }),
+        Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View style={[StyleSheet.absoluteFillObject, ov.wrap, { opacity }]}>
+      <Animated.View style={[ov.box, { transform: [{ scale }] }]}>
+        <Text style={ov.check}>✓</Text>
+        <Text style={ov.title}>사용 완료!</Text>
+        <Text style={ov.sub}>쿠폰이 정상적으로 사용되었습니다</Text>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+const ov = StyleSheet.create({
+  wrap:  { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(10,200,110,0.94)' },
+  box:   { alignItems: 'center', gap: 12 },
+  check: { fontSize: 72, color: C.white, fontWeight: '900' },
+  title: { fontSize: 28, fontWeight: '900', color: C.white },
+  sub:   { fontSize: 14, color: 'rgba(255,255,255,0.85)', textAlign: 'center' },
+});
+
+// ── 메인 화면 ─────────────────────────────────────────────────────
 export default function MyCouponQRScreen() {
-  const navigation   = useNavigation<any>();
-  const route        = useRoute<any>();
-  const { userCoupon } = route.params;
-  const coupon       = userCoupon.coupon;
-  const qrToken      = userCoupon.qr_token ?? `UNNIEPICK_${coupon.id}_${userCoupon.id}`;
+  const route      = useRoute<any>();
+  const navigation = useNavigation<any>();
+  const { userCouponId } = route.params as { userCouponId: string };
 
-  const [viewMode,     setViewMode]     = useState<ViewMode>('qr');
-  const [pin,          setPin]          = useState('');
-  const [submitting,   setSubmitting]   = useState(false);
-  const [cancelling,   setCancelling]   = useState(false);
-  const [pinSuccess,   setPinSuccess]   = useState(false);
-  // 후기 모달
-  const [reviewModal,  setReviewModal]  = useState(false);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment,setReviewComment]= useState('');
-  const [reviewSaving, setReviewSaving] = useState(false);
-  const starAnims = useRef([0,1,2,3,4].map(() => new Animated.Value(1))).current;
+  const [loading,    setLoading]    = useState(true);
+  const [couponData, setCouponData] = useState<any | null>(null);
+  const [error,      setError]      = useState<string | null>(null);
+  const [using,      setUsing]      = useState(false);
+  const [usedDone,   setUsedDone]   = useState(false);
+  const [nowStr,     setNowStr]     = useState(formatNow(new Date()));
 
-  const bounceStar = (i: number) => {
-    Animated.sequence([
-      Animated.timing(starAnims[i], { toValue: 1.5, duration: 100, useNativeDriver: true }),
-      Animated.spring(starAnims[i], { toValue: 1, useNativeDriver: true }),
-    ]).start();
-  };
+  // ── 1초마다 시간 업데이트 ─────────────────────────────────────
+  useEffect(() => {
+    const timer = setInterval(() => setNowStr(formatNow(new Date())), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const handleReviewSubmit = async () => {
-    if (reviewRating === 0) { Alert.alert('별점을 선택해주세요'); return; }
-    setReviewSaving(true);
+  // ── 화면 포커스 시 캡처 방지 ON / 이탈 시 OFF ─────────────────
+  // 캡처 방지: EAS 빌드 시 expo-screen-capture 활성화
+  // useFocusEffect(React.useCallback(() => {
+  //   ScreenCapture.preventScreenCaptureAsync();
+  //   return () => { ScreenCapture.allowScreenCaptureAsync(); };
+  // }, []));
+
+  useEffect(() => { fetchData(); }, [userCouponId]);
+
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      await submitReview(userCoupon.id, reviewRating, reviewComment.trim() || undefined);
-      setReviewModal(false);
-      Alert.alert('감사해요! 🙏', '후기가 등록됐어요', [
-        { text: '확인', onPress: () => navigation.goBack() },
-      ]);
-    } catch (e: any) {
-      Alert.alert('등록 실패', e.message ?? '다시 시도해주세요');
-    } finally {
-      setReviewSaving(false);
-    }
-  };
+      const { data, error: err } = await supabase
+        .from('user_coupons')
+        .select(`*, coupon:coupons(*, store:stores(id, name, category))`)
+        .eq('id', userCouponId)
+        .single();
+      if (err) throw err;
 
-  const isAvailable   = userCoupon.status === 'available';
-  const canCancel     = isAvailable && canCancelCoupon(coupon.expires_at);
-  const deadlineLabel = cancelDeadlineText(coupon.expires_at);
-
-  // ── PIN 제출 ──────────────────────────────────────────────────────────────
-  const handlePinSubmit = async () => {
-    if (pin.length !== 4) {
-      Alert.alert('4자리 비밀번호를 모두 입력해주세요');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const session = await getSession();
-      if (!session) throw new Error('로그인이 필요해요');
-
-      const result = await useCouponByPin(userCoupon.id, session.user.id, pin);
-
-      if (result.success) {
-        setPinSuccess(true);
-        // 후기 모달 띄우기
-        setReviewRating(0);
-        setReviewComment('');
-        setReviewModal(true);
-      } else {
-        setPin('');
-        Alert.alert('사용 불가', result.message);
+      if (data.status === 'used') {
+        Alert.alert('이미 사용된 쿠폰', '이 쿠폰은 이미 사용 완료되었습니다.');
+        navigation.goBack();
+        return;
       }
+      setCouponData(data);
     } catch (e: any) {
-      setPin('');
-      Alert.alert('오류', e.message ?? '처리 중 문제가 생겼어요');
+      setError(e.message ?? '쿠폰 정보를 불러올 수 없어요');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  // ── 쿠폰 취소 ─────────────────────────────────────────────────────────────
-  const handleCancel = () => {
+  // ── 쿠폰 사용 처리 ───────────────────────────────────────────────
+  const handleUse = () => {
+    if (using || usedDone) return;
+
     Alert.alert(
-      '쿠폰 취소',
-      `"${coupon.title}" 쿠폰을 취소할까요?\n\n취소된 쿠폰은 복구되지 않아요.\n노쇼 발생 시 불이익이 적용될 수 있어요.`,
+      '쿠폰 사용',
+      '직원에게 번호를 확인받은 후 탭해주세요.\n사용하시겠습니까?',
       [
-        { text: '유지', style: 'cancel' },
+        { text: '취소', style: 'cancel' },
         {
-          text: '취소하기', style: 'destructive',
+          text: '사용 완료',
+          style: 'destructive',
           onPress: async () => {
-            setCancelling(true);
+            setUsing(true);
             try {
-              const session = await getSession();
-              if (!session) throw new Error('로그인이 필요해요');
-              await cancelCoupon(userCoupon.id, session.user.id);
-              cancelCouponExpiryReminder(userCoupon.id).catch(() => {});
-              Alert.alert('취소 완료', '쿠폰이 취소됐어요', [
-                { text: '확인', onPress: () => navigation.goBack() },
-              ]);
+              const { error: err } = await supabase
+                .from('user_coupons')
+                .update({ status: 'used', used_at: new Date().toISOString() })
+                .eq('id', userCouponId);
+              if (err) throw err;
+
+              setUsedDone(true);
+              setTimeout(() => navigation.goBack(), 1800);
             } catch (e: any) {
-              Alert.alert('오류', e.message ?? '취소에 실패했어요');
+              Alert.alert('오류', e.message ?? '사용 처리에 실패했어요. 다시 시도해주세요.');
             } finally {
-              setCancelling(false);
+              setUsing(false);
             }
           },
         },
-      ],
+      ]
     );
   };
 
+  // ── 로딩 / 에러 ──────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <StatusBar barStyle="light-content" backgroundColor={C.g900} />
+        <ActivityIndicator style={{ flex: 1 }} color={C.brand} size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !couponData) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <StatusBar barStyle="light-content" backgroundColor={C.g900} />
+        <View style={s.errorWrap}>
+          <Text style={s.errorText}>{error ?? '쿠폰을 찾을 수 없어요'}</Text>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={s.backBtnText}>돌아가기</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const coupon    = couponData.coupon;
+  const store     = coupon?.store;
+  const kind      = (coupon?.coupon_kind ?? 'regular') as CouponKind;
+  const kindCfg   = getCouponKindConfig(kind);
+  const qrToken   = couponData.qr_token ?? '';
+  const couponNum = formatCouponNumber(qrToken);
+  const expiryStr = coupon?.expires_at ? formatExpiryKorean(coupon.expires_at) : '';
+
   return (
     <SafeAreaView style={s.safe}>
-      <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-        <Text style={s.backText}>← 뒤로</Text>
+      <StatusBar barStyle="light-content" backgroundColor={C.g900} />
+
+      {/* 뒤로가기 */}
+      <TouchableOpacity style={s.closeBtn} onPress={() => navigation.goBack()}>
+        <Text style={s.closeBtnText}>✕</Text>
       </TouchableOpacity>
 
-      <View style={s.container}>
-        <Text style={s.title}>내 쿠폰</Text>
-        <Text style={s.subtitle}>직원에게 보여주거나 비밀번호로 사용하세요</Text>
+      <ScrollView
+        contentContainerStyle={s.container}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 가게명 */}
+        <Text style={s.storeName}>{store?.name?.toUpperCase() ?? ''}</Text>
 
-        {/* ── 모드 탭 ── */}
-        <View style={s.tabRow}>
-          <TouchableOpacity
-            style={[s.tab, viewMode === 'qr' && s.tabActive]}
-            onPress={() => { setViewMode('qr'); setPin(''); }}
-          >
-            <Text style={[s.tabText, viewMode === 'qr' && s.tabTextActive]}>
-              📷 QR 코드
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.tab, viewMode === 'pin' && s.tabActive]}
-            onPress={() => { setViewMode('pin'); setPin(''); }}
-          >
-            <Text style={[s.tabText, viewMode === 'pin' && s.tabTextActive]}>
-              🔢 비밀번호 입력
-            </Text>
-          </TouchableOpacity>
+        {/* 타이틀 */}
+        <Text style={s.headline}>{'이 화면을\n직원에게 보여주세요'}</Text>
+
+        {/* 현재 날짜·시간 — 2중 사용 방지 */}
+        <View style={s.nowBox}>
+          <Text style={s.nowLabel}>🕐 현재 시각</Text>
+          <Text style={s.nowText}>{nowStr}</Text>
+          <Text style={s.nowHint}>이 시각 이후 중복 사용 불가</Text>
         </View>
 
-        {/* ── QR 모드 ── */}
-        {viewMode === 'qr' && (
-          <View style={[s.card, SHADOW.card]}>
-            <Text style={s.couponTitle}>{coupon.title}</Text>
-            <Text style={s.discount}>
-              {coupon.discount_type === 'percent'
-                ? `${coupon.discount_value}% 할인`
-                : `${coupon.discount_value.toLocaleString()}원 할인`}
-            </Text>
-            <View style={s.qrWrapper}>
-              <QRCode
-                value={qrToken}
-                size={200}
-                color={COLORS.text}
-                backgroundColor={COLORS.white}
-              />
-            </View>
-            <View style={s.expiryRow}>
-              <Text style={s.expiryLabel}>유효기간</Text>
-              <Text style={s.expiryValue}>~{coupon.expires_at}</Text>
-            </View>
+        {/* 쿠폰 박스 — 탭하면 사용 완료 */}
+        <TouchableOpacity
+          style={s.couponBox}
+          onPress={handleUse}
+          activeOpacity={0.92}
+          disabled={using || usedDone}
+        >
+          <Text style={s.kindEmoji}>{kindCfg.emoji}</Text>
+          <Text style={s.couponTitle}>{coupon?.title ?? ''}</Text>
+          {coupon?.description ? (
+            <Text style={s.couponDesc}>{coupon.description}</Text>
+          ) : null}
+
+          <View style={s.numberBox}>
+            <Text style={s.numberText}>{splitCouponNumber(couponNum)}</Text>
           </View>
-        )}
 
-        {/* ── PIN 입력 모드 ── */}
-        {viewMode === 'pin' && (
-          <View style={[s.card, SHADOW.card]}>
-            <Text style={s.couponTitle}>{coupon.title}</Text>
-            <Text style={s.discount}>
-              {coupon.discount_type === 'percent'
-                ? `${coupon.discount_value}% 할인`
-                : `${coupon.discount_value.toLocaleString()}원 할인`}
-            </Text>
+          <Text style={s.numberHint}>직원이 번호를 확인합니다</Text>
 
-            <View style={s.pinSection}>
-              <Text style={s.pinGuide}>
-                💬 직원에게 가게 비밀번호를 물어보고{'\n'}4자리를 입력해주세요
-              </Text>
-
-              <PinInput value={pin} onChange={setPin} />
-
-              <TouchableOpacity
-                style={[s.pinBtn, (pin.length < 4 || submitting) && s.pinBtnDisabled]}
-                onPress={handlePinSubmit}
-                disabled={pin.length < 4 || submitting}
-                activeOpacity={0.85}
-              >
-                {submitting
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text style={s.pinBtnText}>✅ 쿠폰 사용하기</Text>}
-              </TouchableOpacity>
-            </View>
-
-            <View style={s.pinInfoBox}>
-              <Text style={s.pinInfoText}>
-                🔒 비밀번호는 가게마다 달라요{'\n'}
-                직원에게 직접 물어봐야 해요
-              </Text>
-            </View>
+          <View style={s.tapHint}>
+            {using
+              ? <ActivityIndicator size="small" color={C.brand} />
+              : <Text style={s.tapHintText}>탭하면 사용 완료 처리</Text>
+            }
           </View>
-        )}
+        </TouchableOpacity>
 
-        {/* 취소 정책 안내 */}
-        <View style={s.cancelPolicyBox}>
-          <Text style={s.cancelPolicyTitle}>🚫 취소 정책</Text>
-          <Text style={s.cancelPolicyText}>
-            {canCancel ? `• 취소 가능: ${deadlineLabel}` : '• 당일 취소 불가 (취소 기한 초과)'}
+        {/* 만료일 */}
+        <Text style={s.expiryText}>⏰ {expiryStr}</Text>
+
+        {/* 안내 */}
+        <View style={s.infoBox}>
+          <Text style={s.infoText}>
+            {'사용 후 자동으로 처리됩니다\n같은 쿠폰은 1회만 사용 가능합니다\n화면 캡처는 방지됩니다'}
           </Text>
-          <Text style={s.cancelPolicyText}>• 당일 취소 불가 · 노쇼 시 불이익 적용</Text>
         </View>
+      </ScrollView>
 
-        <View style={s.warningBox}>
-          <Text style={s.warningText}>⚠️ 사용 후 QR 및 비밀번호는 자동으로 만료됩니다</Text>
-        </View>
-
-        {/* 취소 버튼 */}
-        {isAvailable && (
-          <TouchableOpacity
-            style={[s.cancelBtn, !canCancel && s.cancelBtnDisabled]}
-            onPress={canCancel ? handleCancel : undefined}
-            disabled={!canCancel || cancelling}
-            activeOpacity={0.8}
-          >
-            {cancelling
-              ? <ActivityIndicator color={canCancel ? '#DC2626' : '#999'} />
-              : <Text style={[s.cancelBtnText, !canCancel && s.cancelBtnTextDisabled]}>
-                  {canCancel ? '쿠폰 취소하기' : '취소 기한 초과'}
-                </Text>}
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* ── 후기 모달 (쿠폰 사용 완료 직후) ── */}
-      <Modal visible={reviewModal} transparent animationType="slide" onRequestClose={() => {
-        setReviewModal(false); navigation.goBack();
-      }}>
-        <View style={rv.overlay}>
-          <TouchableOpacity style={rv.backdrop} activeOpacity={1} onPress={() => {
-            setReviewModal(false); navigation.goBack();
-          }} />
-          <View style={rv.sheet}>
-            <View style={rv.handle} />
-
-            {/* 완료 메시지 */}
-            <Text style={rv.doneIcon}>🎉</Text>
-            <Text style={rv.doneTitle}>쿠폰 사용 완료!</Text>
-            <Text style={rv.storeName}>{coupon.store?.name ?? '가게'}</Text>
-            <Text style={rv.couponName}>{coupon.title}</Text>
-
-            <Text style={rv.prompt}>방문은 어떠셨나요?</Text>
-
-            {/* 별점 */}
-            <View style={rv.stars}>
-              {[1,2,3,4,5].map(i => (
-                <TouchableOpacity key={i} onPress={() => { setReviewRating(i); bounceStar(i - 1); }} activeOpacity={0.75}>
-                  <Animated.Text style={[rv.star, { transform: [{ scale: starAnims[i - 1] }] }]}>
-                    {i <= reviewRating ? '⭐' : '☆'}
-                  </Animated.Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            {reviewRating > 0 && (
-              <Text style={rv.ratingLabel}>
-                {['','별로예요','그저 그래요','괜찮아요','좋아요','최고예요!'][reviewRating]}
-              </Text>
-            )}
-
-            <TextInput
-              style={rv.input}
-              value={reviewComment}
-              onChangeText={setReviewComment}
-              placeholder="후기를 남겨주세요 (선택)"
-              placeholderTextColor="#BBBBBB"
-              multiline
-              maxLength={200}
-            />
-
-            <View style={rv.btnRow}>
-              <TouchableOpacity style={rv.skipBtn} onPress={() => { setReviewModal(false); navigation.goBack(); }}>
-                <Text style={rv.skipText}>나중에</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[rv.submitBtn, (reviewRating === 0 || reviewSaving) && { opacity: 0.5 }]}
-                onPress={handleReviewSubmit}
-                disabled={reviewRating === 0 || reviewSaving}
-              >
-                {reviewSaving
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={rv.submitText}>⭐ 후기 등록</Text>}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* 사용 완료 오버레이 */}
+      <UsedOverlay visible={usedDone} />
     </SafeAreaView>
   );
 }
 
-const rv = StyleSheet.create({
-  overlay:    { flex: 1, justifyContent: 'flex-end' },
-  backdrop:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#00000055' },
-  sheet:      {
-    backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: 28, paddingBottom: 44, alignItems: 'center', gap: 4,
-  },
-  handle:     { width: 36, height: 4, backgroundColor: '#E8E8E8', borderRadius: 2, marginBottom: 8 },
-  doneIcon:   { fontSize: 48, marginBottom: 4 },
-  doneTitle:  { fontSize: 20, fontWeight: '800', color: '#101010' },
-  storeName:  { fontSize: 13, color: '#999', fontWeight: '600' },
-  couponName: { fontSize: 15, fontWeight: '700', color: '#444', marginBottom: 8 },
-  prompt:     { fontSize: 15, color: '#666', marginBottom: 6 },
-  stars:      { flexDirection: 'row', gap: 6, marginBottom: 4 },
-  star:       { fontSize: 40 },
-  ratingLabel:{ fontSize: 14, color: COLORS.primary, fontWeight: '700', marginBottom: 8 },
-  input:      {
-    width: '100%', borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 12,
-    padding: 12, fontSize: 14, color: '#101010', minHeight: 70, textAlignVertical: 'top',
-    marginTop: 4, marginBottom: 4,
-  },
-  btnRow:     { flexDirection: 'row', gap: 10, width: '100%', marginTop: 4 },
-  skipBtn:    { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#F5F5F5', alignItems: 'center' },
-  skipText:   { fontSize: 15, fontWeight: '700', color: '#999' },
-  submitBtn:  { flex: 2, paddingVertical: 14, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: 'center' },
-  submitText: { fontSize: 15, fontWeight: '800', color: '#fff' },
-});
+// ── 스타일 ───────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.g900 },
 
-// ── PIN 입력 스타일 ───────────────────────────────────────────────────────────
-const pi = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row', gap: 12, justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  hidden: {
-    position: 'absolute', width: 1, height: 1, opacity: 0,
-  },
-  box: {
-    width: 56, height: 64, borderRadius: RADIUS.md,
-    backgroundColor: COLORS.background,
-    borderWidth: 2, borderColor: COLORS.border,
+  closeBtn: {
+    position: 'absolute', top: 54, right: 20, zIndex: 10,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center', justifyContent: 'center',
   },
-  boxFocused: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight + '20' },
-  boxFilled:  { borderColor: COLORS.primary },
-  digit:      { fontSize: 28, fontWeight: '900', color: COLORS.text },
-  cursor: {
-    position: 'absolute', bottom: 14, width: 2, height: 24,
-    backgroundColor: COLORS.primary, borderRadius: 1,
-  },
-});
+  closeBtnText: { fontSize: 14, color: C.white, fontWeight: '700' },
 
-// ── 화면 스타일 ───────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  safe:    { flex: 1, backgroundColor: COLORS.background },
-  backBtn: { padding: 20, paddingBottom: 8 },
-  backText:{ fontSize: 16, color: COLORS.primary, fontWeight: '600' },
-  container:{ flex: 1, padding: 20, alignItems: 'center', gap: 14 },
-
-  title:   { fontSize: 24, fontWeight: '800', color: COLORS.text },
-  subtitle:{ fontSize: 13, color: COLORS.textMuted },
-
-  // 탭
-  tabRow: {
-    flexDirection: 'row', backgroundColor: COLORS.background,
-    borderRadius: RADIUS.lg, padding: 4, gap: 4,
-    borderWidth: 1, borderColor: COLORS.border, width: '100%',
-  },
-  tab:     { flex: 1, paddingVertical: 10, borderRadius: RADIUS.md, alignItems: 'center' },
-  tabActive:{ backgroundColor: COLORS.white, ...({ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 } as any) },
-  tabText: { fontSize: 13, fontWeight: '600', color: COLORS.textMuted },
-  tabTextActive:{ fontSize: 13, fontWeight: '800', color: COLORS.primary },
-
-  // 카드
-  card: {
-    backgroundColor: COLORS.white, borderRadius: RADIUS.lg,
-    padding: 24, alignItems: 'center', gap: 12, width: '100%',
-  },
-  couponTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  discount:    { fontSize: 22, fontWeight: '800', color: COLORS.primary },
-  qrWrapper: {
-    padding: 16, backgroundColor: COLORS.white,
-    borderRadius: RADIUS.md, borderWidth: 1, borderColor: COLORS.border,
-  },
-  expiryRow: {
-    flexDirection: 'row', gap: 8,
-    paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border, width: '100%',
+  container: {
+    flexGrow: 1,
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 60,
+    gap: 18,
   },
-  expiryLabel:{ fontSize: 13, color: COLORS.textMuted },
-  expiryValue:{ fontSize: 13, fontWeight: '600', color: COLORS.primary },
 
-  // PIN 섹션
-  pinSection:  { width: '100%', alignItems: 'center', gap: 16 },
-  pinGuide:    { fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
-  pinBtn: {
-    width: '100%', backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md, paddingVertical: 14, alignItems: 'center',
-  },
-  pinBtnDisabled: { backgroundColor: COLORS.textMuted },
-  pinBtnText: { fontSize: 16, fontWeight: '800', color: '#fff' },
-  pinInfoBox: {
-    backgroundColor: '#F0F7FF', borderRadius: RADIUS.md,
-    padding: 12, width: '100%',
-    borderWidth: 1, borderColor: '#BFD7FF',
-  },
-  pinInfoText: { fontSize: 12, color: '#2563EB', lineHeight: 18, textAlign: 'center' },
+  errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 40 },
+  errorText: { fontSize: 15, color: C.g500, textAlign: 'center' },
+  backBtn: { backgroundColor: C.brand, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
+  backBtnText: { fontSize: 14, fontWeight: '700', color: C.white },
 
-  // 하단 박스
-  cancelPolicyBox: {
-    backgroundColor: '#FFF3CD', borderRadius: RADIUS.md,
-    padding: 14, width: '100%', gap: 4,
-    borderLeftWidth: 3, borderLeftColor: '#F59E0B',
+  storeName: {
+    fontSize: 12, fontWeight: '700', color: C.g500,
+    letterSpacing: 1, textAlign: 'center', textTransform: 'uppercase',
   },
-  cancelPolicyTitle:{ fontSize: 13, fontWeight: '800', color: '#92400E', marginBottom: 2 },
-  cancelPolicyText: { fontSize: 12, color: '#92400E', lineHeight: 18 },
-  warningBox: {
-    backgroundColor: COLORS.accent + '33',
-    borderRadius: RADIUS.md, padding: 12, width: '100%',
+  headline: {
+    fontSize: 20, fontWeight: '900', color: C.white,
+    textAlign: 'center', lineHeight: 30,
   },
-  warningText:{ fontSize: 13, color: COLORS.text, fontWeight: '500', textAlign: 'center' },
-  cancelBtn: {
-    width: '100%', borderRadius: RADIUS.md,
-    paddingVertical: 14, alignItems: 'center',
-    borderWidth: 1.5, borderColor: '#DC2626', backgroundColor: '#FFF5F5',
+
+  // 현재 시각 박스
+  nowBox: {
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  cancelBtnDisabled: { borderColor: COLORS.border, backgroundColor: COLORS.background },
-  cancelBtnText:         { fontSize: 15, fontWeight: '700', color: '#DC2626' },
-  cancelBtnTextDisabled: { fontSize: 15, fontWeight: '700', color: COLORS.textMuted },
+  nowLabel: { fontSize: 10, fontWeight: '700', color: C.g500, letterSpacing: 0.5 },
+  nowText: {
+    fontSize: 16, fontWeight: '900', color: C.white,
+    letterSpacing: -0.3, textAlign: 'center',
+  },
+  nowHint: { fontSize: 10, color: C.g500, marginTop: 2 },
+
+  couponBox: {
+    backgroundColor: C.white, borderRadius: 20,
+    paddingVertical: 28, paddingHorizontal: 24,
+    width: '100%', alignItems: 'center', gap: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25, shadowRadius: 20, elevation: 10,
+  },
+  kindEmoji:   { fontSize: 36, marginBottom: 2 },
+  couponTitle: { fontSize: 18, fontWeight: '900', color: C.g900, textAlign: 'center' },
+  couponDesc:  { fontSize: 12, color: C.g600, textAlign: 'center', lineHeight: 18 },
+
+  numberBox: {
+    backgroundColor: C.g100, borderRadius: 10,
+    paddingVertical: 10, paddingHorizontal: 20, marginTop: 4,
+  },
+  numberText: {
+    fontSize: 22, fontWeight: '900', color: C.g900,
+    letterSpacing: 4, textAlign: 'center',
+  },
+  numberHint: { fontSize: 11, color: C.g500, textAlign: 'center', marginTop: 2 },
+
+  tapHint: {
+    marginTop: 8, paddingVertical: 7, paddingHorizontal: 20,
+    backgroundColor: 'rgba(255,111,15,0.08)', borderRadius: 20,
+  },
+  tapHintText: { fontSize: 11, fontWeight: '700', color: C.brand },
+
+  expiryText: { fontSize: 11, color: C.g600, textAlign: 'center' },
+
+  infoBox: {
+    backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12,
+    paddingVertical: 14, paddingHorizontal: 20, width: '100%',
+  },
+  infoText: { fontSize: 12, color: C.g400, textAlign: 'center', lineHeight: 20 },
 });

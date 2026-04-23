@@ -214,7 +214,7 @@ export default function CouponCreateScreen() {
                         <Text style={styles.kindBtnEmoji}>{cfg.emoji}</Text>
                         <Text style={[
                           styles.kindBtnLabel,
-                          isActive && { color: '#fff', fontWeight: '800' },
+                          isActive && { color: '#fff', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
                         ]}>
                           {cfg.label}
                         </Text>
@@ -282,7 +282,7 @@ export default function CouponCreateScreen() {
                     value={experienceMission}
                     onChangeText={setExperienceMission}
                     placeholder={
-                      '예) 방문 후 네이버 지도 영수증 리뷰 + 인스타그램 스토리 태그 필수\n(#언니픽 #가게명)'
+                      '예) 방문 후 A사 영수증 리뷰 + 인스타그램 스토리 태그 필수\n(#언니픽 #가게명)'
                     }
                     placeholderTextColor={COLORS.textMuted}
                     multiline
@@ -445,7 +445,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const fieldStyles = StyleSheet.create({
   container: { gap: 8 },
-  label:     { fontSize: 13, fontWeight: '700', color: COLORS.text },
+  label:     { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: COLORS.text },
 });
 
 const SLOT_SIZE = 140;
@@ -456,8 +456,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 20, paddingBottom: 8,
   },
-  backText: { fontSize: 16, color: COLORS.primary, fontWeight: '600' },
-  title:    { fontSize: 18, fontWeight: '800', color: COLORS.text },
+  backText: { fontSize: 16, color: COLORS.primary, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
+  title:    { fontSize: 18, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: COLORS.text },
   container:{ padding: 20, gap: 16, paddingBottom: 40 },
   card: {
     backgroundColor: COLORS.white, borderRadius: RADIUS.lg, padding: 20, gap: 18,
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   kindBtnEmoji: { fontSize: 20 },
-  kindBtnLabel: { fontSize: 11, fontWeight: '600', color: COLORS.textMuted, textAlign: 'center' },
+  kindBtnLabel: { fontSize: 11, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: COLORS.textMuted, textAlign: 'center' },
 
   // 미리보기
   kindPreview: {
@@ -488,8 +488,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', gap: 2,
   },
   kindPreviewEmoji: { fontSize: 20 },
-  kindPreviewLabel: { fontSize: 9, fontWeight: '800', color: '#fff', textAlign: 'center' },
-  kindPreviewDesc:  { flex: 1, fontSize: 12, lineHeight: 18, fontWeight: '500' },
+  kindPreviewLabel: { fontSize: 9, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', color: '#fff', textAlign: 'center' },
+  kindPreviewDesc:  { flex: 1, fontSize: 12, lineHeight: 18, fontFamily: 'WantedSans-Medium', fontWeight: '500' },
 
   typeRow:         { flexDirection: 'row', gap: 10 },
   typeBtn: {
@@ -497,13 +497,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.background,
   },
   typeBtnActive:     { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  typeBtnText:       { fontSize: 14, fontWeight: '600', color: COLORS.textMuted },
+  typeBtnText:       { fontSize: 14, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', color: COLORS.textMuted },
   typeBtnTextActive: { color: COLORS.white },
 
   createBtn: {
     borderRadius: RADIUS.lg, padding: 18, alignItems: 'center',
   },
-  createBtnText: { color: COLORS.white, fontSize: 17, fontWeight: '800' },
+  createBtnText: { color: COLORS.white, fontSize: 17, fontFamily: 'WantedSans-ExtraBold', fontWeight: '800' },
   charCount:     { fontSize: 11, color: COLORS.textMuted, textAlign: 'right', marginTop: 2 },
 
   // 무제한 토글
@@ -513,13 +513,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   unlimitedBtnActive:     { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  unlimitedBtnText:       { fontSize: 13, fontWeight: '700', color: COLORS.textMuted },
+  unlimitedBtnText:       { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: COLORS.textMuted },
   unlimitedBtnTextActive: { color: '#fff' },
   unlimitedInfo: {
     backgroundColor: '#E8F5E9', borderRadius: RADIUS.md,
     paddingHorizontal: 12, paddingVertical: 8,
   },
-  unlimitedInfoText: { fontSize: 13, color: '#2E7D32', fontWeight: '600' },
+  unlimitedInfoText: { fontSize: 13, color: '#2E7D32', fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
 
   // 사진 슬롯
   photoRow: { flexDirection: 'row', gap: 12 },
@@ -535,9 +535,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8,
     paddingHorizontal: 8, paddingVertical: 3,
   },
-  photoEditBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  photoEditBadgeText: { color: '#fff', fontSize: 11, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   photoAddIcon:  { fontSize: 28, marginBottom: 4 },
-  photoAddLabel: { fontSize: 13, fontWeight: '700', color: COLORS.text },
+  photoAddLabel: { fontSize: 13, fontFamily: 'WantedSans-Bold', fontWeight: '700', color: COLORS.text },
   photoAddSub:   { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
   photoHint:     { fontSize: 11, color: COLORS.textMuted, lineHeight: 16 },
 });

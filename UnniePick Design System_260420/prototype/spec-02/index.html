@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Spec 02 · 스탬프 × 단골 등급 프로토타입</title>
+<meta name="viewport" content="width=1400, user-scalable=no">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="Primitives.jsx"></script>
+<script type="text/babel" src="Screens.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+// hooks already declared in Screens.jsx
+
+const SCENES = [
+  { id: 'wallet',     group: '👛 유저', label: '스탬프 카드 지갑',   hint: '메인 화면',        desc: '매장별 스탬프 카드를 모아볼 수 있는 지갑 화면. 단골 달성 / 진행 중 / 아직 시작 안함을 한눈에.' },
+  { id: 'card-pre',   group: '👛 유저', label: '스캔 직전 카드',     hint: '9/10 상태',        desc: '지윤이 카페 봄날에서 9/10 상태에서 탭한 순간. CTA는 “QR 스캔하기”. 진행 게이지와 다음 보상 미리보기.' },
+  { id: 'scanner',    group: '📸 스캔',  label: 'QR 스캐너',         hint: '카메라 뷰',        desc: '카메라 풀스크린. 가로 스캔 라인 애니메이션. GPS 거리 50m 이내 검증 배지.' },
+  { id: 'stamp-drop', group: '📸 스캔',  label: '도장 찍힘 순간',     hint: '1초 피드백',       desc: '스캔 성공 순간. 큰 도장이 "쾅" 하고 카드에 내려앉는다. Haptic success.' },
+  { id: 'celebrate',  group: '📸 스캔',  label: '단골 달성 축하',     hint: '10/10 풀스크린',   desc: '10번째 도장 = 단골 등급. 브랜드 컬러 풀스크린 + 왕관 + 해금된 시크릿 혜택 리스트.' },
+  { id: 'card-detail',group: '👛 유저', label: '단골 카드 상세',     hint: '해금 혜택 포함',   desc: '단골이 된 매장의 상세 카드. 10개 도장 + 해금된 시크릿 쿠폰 + 매장 전용 메뉴.' },
+  { id: 'liveact',    group: '🔔 알림',  label: 'Live Activity',     hint: '도장 찍은 직후',  desc: '스캔 직후 잠금화면에 뜨는 Live Activity. "9/10 · 단골까지 1번 더" 진행 상태를 보여줌.' },
+  { id: 'owner',      group: '🧑‍💼 사장님', label: '사장님 대시보드',  hint: '단골 관리',        desc: '뽀글이 수제버거 사장 민규의 앱. 오늘의 스캔·단골 목록·실시간 도착 알림.' },
+];
+
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "stamps": 9,
+  "activeStore": "s_cafe",
+  "ownerShowLiveCustomer": true,
+  "scanResultType": "normal"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [sceneId, setSceneId] = useState(() => localStorage.getItem('spec02_scene') || 'wallet');
+  const [tweaksOn, setTweaksOn] = useState(true);
+  const [tweaks, setTweaks] = useState(TWEAKS);
+
+  useEffect(() => { localStorage.setItem('spec02_scene', sceneId); }, [sceneId]);
+
+  useEffect(() => {
+    const h = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setTweaksOn(true);
+      else if (e.data?.type === '__deactivate_edit_mode') setTweaksOn(false);
+    };
+    window.addEventListener('message', h);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', h);
+  }, []);
+
+  const setTweak = (k, v) => {
+    const next = { ...tweaks, [k]: v };
+    setTweaks(next);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [k]: v } }, '*');
+  };
+
+  const scene = SCENES.find(s => s.id === sceneId);
+  const groups = useMemo(() => {
+    const map = {};
+    SCENES.forEach(s => { (map[s.group] = map[s.group] || []).push(s); });
+    return map;
+  }, []);
+
+  const scenarios = [
+    { label: '☕ 카페 봄날 9번째 → 10번째 스캔', action: () => { setTweak('activeStore', 's_cafe'); setTweak('stamps', 9); setSceneId('card-pre'); } },
+    { label: '🎉 이미 단골인 뽀글이 카드 보기', action: () => { setTweak('activeStore', 's_burger'); setSceneId('card-detail'); } },
+    { label: '📸 스캔 → 도장 → 축하 (10/10)', action: () => { setTweak('stamps', 9); setSceneId('scanner'); setTimeout(() => setSceneId('stamp-drop'), 2000); setTimeout(() => setSceneId('celebrate'), 4000); } },
+    { label: '🧑‍💼 사장님 앱 (실시간 단골 도착)', action: () => { setTweak('ownerShowLiveCustomer', true); setSceneId('owner'); } },
+    { label: '🌱 아직 시작 안한 매장 카드', action: () => { setTweak('activeStore', 's_bake'); setSceneId('card-detail'); } },
+  ];
+
+  const renderStage = () => {
+    const activeStore = findStore02(tweaks.activeStore) || STORES_02[0];
+    switch (scene.id) {
+      case 'wallet':
+        return <IOSDevice width={402} height={874}>
+          <StampWalletScreen onOpen={(sid) => { setTweak('activeStore', sid); setSceneId('card-detail'); }}
+            onScan={() => setSceneId('scanner')}/>
+        </IOSDevice>;
+      case 'card-pre':
+        return <IOSDevice width={402} height={874}>
+          <StampCardDetail storeId={tweaks.activeStore} overrideStamps={tweaks.stamps}
+            onBack={() => setSceneId('wallet')}
+            onScan={() => setSceneId('scanner')}/>
+        </IOSDevice>;
+      case 'scanner':
+        return <IOSDevice width={402} height={874} dark={true}>
+          <ScannerScreen store={activeStore}
+            onCancel={() => setSceneId('card-pre')}
+            onSuccess={() => setSceneId('stamp-drop')}/>
+        </IOSDevice>;
+      case 'stamp-drop':
+        return <IOSDevice width={402} height={874}>
+          <StampCelebrationScreen storeId={tweaks.activeStore}
+            currentStamps={tweaks.stamps}
+            onComplete={() => {
+              const newStamps = tweaks.stamps + 1;
+              setTweak('stamps', newStamps);
+              if (newStamps >= 10) setTimeout(() => setSceneId('celebrate'), 1200);
+              else setTimeout(() => setSceneId('card-detail'), 1800);
+            }}/>
+        </IOSDevice>;
+      case 'celebrate':
+        return <IOSDevice width={402} height={874}>
+          <RegularCelebration storeId={tweaks.activeStore}
+            onContinue={() => setSceneId('card-detail')}/>
+        </IOSDevice>;
+      case 'card-detail':
+        return <IOSDevice width={402} height={874}>
+          <StampCardDetail storeId={tweaks.activeStore} overrideStamps={tweaks.stamps}
+            onBack={() => setSceneId('wallet')}
+            onScan={() => setSceneId('scanner')}/>
+        </IOSDevice>;
+      case 'liveact':
+        return <IOSDevice width={402} height={874}>
+          <StampLiveActivity storeId={tweaks.activeStore} stamps={tweaks.stamps}/>
+        </IOSDevice>;
+      case 'owner':
+        return <IOSDevice width={402} height={874}>
+          <OwnerDashboard showLiveCustomer={tweaks.ownerShowLiveCustomer}/>
+        </IOSDevice>;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className={`ws ${tweaksOn ? '' : 'tweaks-off'}`}>
+      {/* LEFT NAV */}
+      <aside className="ws-sidebar">
+        <div className="sb-header">
+          <div className="sb-brand">🎟 언니픽 · Spec 02</div>
+          <div className="sb-sub">스탬프 × 단골 등급</div>
+        </div>
+
+        <div className="sb-note">
+          지윤이가 매장 QR을 찍으면 도장이 모이고, 10개가 되면 그 매장의 <b>단골 등급</b>이 해금돼요. 시크릿 쿠폰·히든 메뉴·전용 혜택.
+        </div>
+
+        {Object.entries(groups).map(([g, items]) => (
+          <React.Fragment key={g}>
+            <div className="sb-section">{g}</div>
+            {items.map(s => (
+              <button key={s.id}
+                className={'sb-item ' + (s.id === sceneId ? 'active' : '')}
+                onClick={() => setSceneId(s.id)}>
+                <span className="sb-dot"/>
+                <span className="sb-label">{s.label}</span>
+                <span className="sb-hint">{s.hint}</span>
+              </button>
+            ))}
+          </React.Fragment>
+        ))}
+
+        <div className="sim-title">시나리오</div>
+        {scenarios.map((sc, i) => (
+          <button key={i} className="sim-btn" onClick={sc.action}>{sc.label}</button>
+        ))}
+        <div style={{ height: 30 }}/>
+      </aside>
+
+      {/* STAGE */}
+      <main className="ws-stage">
+        <div className="screen-label">
+          <span className="ix">{SCENES.findIndex(s => s.id === sceneId) + 1}/{SCENES.length}</span>
+          {scene.label}
+        </div>
+        <div style={{ padding: '80px 40px 40px' }}>{renderStage()}</div>
+      </main>
+
+      {/* RIGHT — TWEAKS */}
+      {tweaksOn && (
+        <aside className="ws-sidebar right">
+          <div className="tw-header">
+            <div className="tw-title">Tweaks</div>
+            <div className="tw-sub">스캔 전/후, 단골 전/후를 자유롭게</div>
+          </div>
+
+          <div className="tw-group">
+            <div className="tw-group-title">이 장면</div>
+            <div style={{ font: '500 12px/1.55 var(--font-sans)', color: 'rgba(255,255,255,0.7)' }}>
+              {scene.desc}
+            </div>
+          </div>
+
+          <div className="tw-group">
+            <div className="tw-group-title">활성 매장</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {STORES_02.map(s => (
+                <button key={s.id} onClick={() => setTweak('activeStore', s.id)} style={{
+                  display: 'flex', gap: 10, alignItems: 'center',
+                  padding: '8px 10px', borderRadius: 8,
+                  background: tweaks.activeStore === s.id ? 'rgba(255,111,15,0.18)' : 'rgba(255,255,255,0.04)',
+                  border: '1px solid ' + (tweaks.activeStore === s.id ? 'rgba(255,111,15,0.5)' : 'transparent'),
+                  color: '#fff', cursor: 'pointer', textAlign: 'left',
+                }}>
+                  <span style={{ fontSize: 16 }}>{s.emoji}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ font: '700 12px/1.2 var(--font-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.name}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="tw-group">
+            <div className="tw-group-title">도장 수 (스캔 전)</div>
+            <div className="tw-row">
+              <span className="tw-label">{tweaks.stamps} / 10</span>
+              <span className="tw-value">
+                {tweaks.stamps >= 10 ? '👑 단골' : tweaks.stamps >= 5 ? '⭐ 자주감' : '🌱 첫방문'}
+              </span>
+            </div>
+            <input type="range" min="0" max="10" step="1" value={tweaks.stamps}
+              onChange={e => setTweak('stamps', parseInt(e.target.value))} className="tw-slider"/>
+            <div className="tw-desc" style={{ marginTop: 8 }}>
+              카드 상세 · Live Activity · 축하 화면에 반영됩니다.
+            </div>
+          </div>
+
+          {sceneId === 'owner' && (
+            <div className="tw-group">
+              <div className="tw-group-title">사장님 앱</div>
+              <div className="tw-row">
+                <div>
+                  <div className="tw-label">실시간 단골 도착 알림</div>
+                  <div className="tw-desc">“소연님이 방금 도착”</div>
+                </div>
+                <button className={'tw-switch ' + (tweaks.ownerShowLiveCustomer ? 'on' : '')}
+                  onClick={() => setTweak('ownerShowLiveCustomer', !tweaks.ownerShowLiveCustomer)}/>
+              </div>
+            </div>
+          )}
+
+          {sceneId === 'scanner' && (
+            <div className="tw-group">
+              <div className="tw-group-title">스캔 결과 타입</div>
+              <div className="tw-seg">
+                {[
+                  { id: 'normal', label: '정상' },
+                  { id: 'cooldown', label: '24h 쿨다운' },
+                  { id: 'outrange', label: 'GPS 50m 밖' },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setTweak('scanResultType', t.id)}
+                    className={'tw-seg-btn ' + (tweaks.scanResultType === t.id ? 'on' : '')}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="tw-desc" style={{ marginTop: 8 }}>
+                스캐너 상단 상태 표시에 반영. (에러 케이스 시각화)
+              </div>
+            </div>
+          )}
+
+          <div style={{ height: 30 }}/>
+        </aside>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMusicPlayer } from '../contexts/MusicPlayerContext';
 import { navigationRef } from '../navigation/navigationRef';
-import { TAB_BAR_HEIGHT } from '../navigation';
+import { TAB_BAR_HEIGHT } from '../constants/layout';
 import { toggleMusicLike } from '../lib/services/curationService';
 import { supabase } from '../lib/supabase';
 

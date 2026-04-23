@@ -633,7 +633,7 @@ export default function OwnerMusicScreen() {
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>❤️ 음악 라이브러리</Text>
             <TouchableOpacity onPress={() => setShowLibrary(false)}>
-              <Text style={{ color: ORG, fontWeight: '700', fontSize: 15 }}>닫기</Text>
+              <Text style={{ color: ORG, fontFamily: 'WantedSans-Bold', fontWeight: '700', fontSize: 15 }}>닫기</Text>
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
@@ -682,14 +682,14 @@ const s = StyleSheet.create({
   // Header
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#1F2937' },
   backBtn:      {},
-  backText:     { color: ORG, fontWeight: '600', fontSize: 14 },
-  headerTitle:  { color: '#F9FAFB', fontWeight: '800', fontSize: 17 },
+  backText:     { color: ORG, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', fontSize: 14 },
+  headerTitle:  { color: '#F9FAFB', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', fontSize: 17 },
   libBtn:       {},
   libBtnText:   { color: '#9CA3AF', fontSize: 13 },
 
   // Card
   card:         { backgroundColor: CARD, borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: '#1F2937' },
-  cardTitle:    { color: '#F9FAFB', fontWeight: '800', fontSize: 14 },
+  cardTitle:    { color: '#F9FAFB', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', fontSize: 14 },
   cardHint:     { color: '#6B7280', fontSize: 12 },
   cardRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
@@ -697,34 +697,34 @@ const s = StyleSheet.create({
   urlRow:       { flexDirection: 'row', gap: 8, alignItems: 'center' },
   urlInput:     { backgroundColor: '#1F2937', color: '#F9FAFB', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13 },
   urlSaveBtn:   { backgroundColor: ORG, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9 },
-  urlSaveTxt:   { color: '#fff', fontWeight: '700', fontSize: 13 },
+  urlSaveTxt:   { color: '#fff', fontFamily: 'WantedSans-Bold', fontWeight: '700', fontSize: 13 },
   urlDisplay:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#1F2937', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   urlText:      { color: '#F9FAFB', fontSize: 13, flex: 1 },
   urlPlaceholder: { color: '#555', fontSize: 13, flex: 1 },
-  urlEdit:      { color: ORG, fontSize: 12, fontWeight: '700' },
+  urlEdit:      { color: ORG, fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
   urlHint:      { color: '#4B5563', fontSize: 11, lineHeight: 16 },
 
   // Presets
   presetRow:    { flexDirection: 'row', gap: 8, paddingRight: 4 },
   presetChip:   { backgroundColor: '#1F2937', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  presetText:   { color: '#D1D5DB', fontSize: 12, fontWeight: '600' },
+  presetText:   { color: '#D1D5DB', fontSize: 12, fontFamily: 'WantedSans-SemiBold', fontWeight: '600' },
 
   // Tags
-  tagGroupLabel: { color: '#6B7280', fontSize: 11, fontWeight: '600', marginBottom: -4 },
+  tagGroupLabel: { color: '#6B7280', fontSize: 11, fontFamily: 'WantedSans-SemiBold', fontWeight: '600', marginBottom: -4 },
   tagWrap:       { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tagChip:       { backgroundColor: '#1F2937', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: '#374151' },
   tagChipOn:     { backgroundColor: ORG + '22', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1, borderColor: ORG },
   tagText:       { color: '#9CA3AF', fontSize: 12 },
-  tagTextOn:     { color: ORG, fontSize: 12, fontWeight: '700' },
+  tagTextOn:     { color: ORG, fontSize: 12, fontFamily: 'WantedSans-Bold', fontWeight: '700' },
 
   // Generate button
   genBtn:        { backgroundColor: ORG, borderRadius: 16, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
   genBtnDisabled: { backgroundColor: '#374151' },
-  genBtnText:    { color: '#fff', fontWeight: '800', fontSize: 17 },
+  genBtnText:    { color: '#fff', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', fontSize: 17 },
 
   // Generating state
   genLoadBox:    { backgroundColor: CARD, borderRadius: 16, padding: 28, alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#1F2937' },
-  genLoadTitle:  { color: '#F9FAFB', fontWeight: '800', fontSize: 16 },
+  genLoadTitle:  { color: '#F9FAFB', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', fontSize: 16 },
   genLoadSub:    { color: ORG, fontSize: 14, textAlign: 'center' },
   genLoadHint:   { color: '#6B7280', fontSize: 12, textAlign: 'center', lineHeight: 18 },
 
@@ -732,7 +732,7 @@ const s = StyleSheet.create({
   trackCard:     { backgroundColor: CARD, borderRadius: 20, padding: 20, gap: 14, borderWidth: 1, borderColor: '#1F2937' },
   tryDots:       { flexDirection: 'row', gap: 6, justifyContent: 'center' },
   tryDot:        { width: 8, height: 8, borderRadius: 4 },
-  trackTitle:    { color: '#F9FAFB', fontWeight: '800', fontSize: 18, textAlign: 'center' },
+  trackTitle:    { color: '#F9FAFB', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', fontSize: 18, textAlign: 'center' },
   trackBpm:      { color: '#6B7280', fontSize: 13, textAlign: 'center', marginTop: -8 },
   trackTag:      { backgroundColor: '#1F2937', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   trackTagText:  { color: '#9CA3AF', fontSize: 11 },
@@ -748,7 +748,7 @@ const s = StyleSheet.create({
   // Play button
   playBtn:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1F2937', borderRadius: 12, paddingVertical: 14 },
   playBtnIcon:   { fontSize: 20 },
-  playBtnText:   { color: '#F9FAFB', fontWeight: '700', fontSize: 15 },
+  playBtnText:   { color: '#F9FAFB', fontFamily: 'WantedSans-Bold', fontWeight: '700', fontSize: 15 },
   noAudio:       { alignItems: 'center', paddingVertical: 10 },
   noAudioText:   { color: '#4B5563', fontSize: 13 },
 
@@ -757,22 +757,22 @@ const s = StyleSheet.create({
   dislikeBtn:    { flex: 1, backgroundColor: '#1F2937', borderRadius: 14, paddingVertical: 16, alignItems: 'center', gap: 4 },
   likeBtn:       { flex: 1, backgroundColor: '#22C55E', borderRadius: 14, paddingVertical: 16, alignItems: 'center', gap: 4 },
   confirmBtnIcon: { fontSize: 22 },
-  confirmBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  confirmBtnText: { color: '#fff', fontFamily: 'WantedSans-Bold', fontWeight: '700', fontSize: 14 },
   lastChance:    { color: '#6B7280', fontSize: 10 },
 
   // Confirmed
   confirmedBox:  { backgroundColor: CARD, borderRadius: 20, padding: 32, alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#22C55E33' },
-  confirmedTitle: { color: '#22C55E', fontWeight: '800', fontSize: 18 },
+  confirmedTitle: { color: '#22C55E', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', fontSize: 18 },
   confirmedSub:  { color: '#9CA3AF', fontSize: 13, textAlign: 'center' },
 
   // Library
   libRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#1F2937', borderRadius: 12, padding: 12 },
   libInfo:       { flex: 1, gap: 2 },
-  libTitle:      { color: '#F9FAFB', fontWeight: '700', fontSize: 13 },
+  libTitle:      { color: '#F9FAFB', fontFamily: 'WantedSans-Bold', fontWeight: '700', fontSize: 13 },
   libBpm:        { color: '#6B7280', fontSize: 11 },
   libPlayIcon:   { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 
   // Modal
   modalHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#1F2937' },
-  modalTitle:    { color: '#F9FAFB', fontWeight: '800', fontSize: 16 },
+  modalTitle:    { color: '#F9FAFB', fontFamily: 'WantedSans-ExtraBold', fontWeight: '800', fontSize: 16 },
 });

@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>핫페퍼(HotPepper) 심층 분석 — 언니픽 적용 전략</title>
+  <style>
+    /* ── 기본 리셋 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── 폰트 ── */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&family=Noto+Serif+KR:wght@400;700&display=swap');
+
+    /* ── 화면용 기본 ── */
+    body {
+      font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 14px;
+      line-height: 1.75;
+      color: #1a1a2e;
+      background: #f7f8fa;
+      padding: 40px 20px;
+    }
+
+    .page-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 60px 64px;
+      border-radius: 4px;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+    }
+
+    /* ── 커버 헤더 ── */
+    .cover {
+      border-bottom: 3px solid #ff6f0f;
+      padding-bottom: 28px;
+      margin-bottom: 40px;
+    }
+    .cover-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #ff6f0f;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .cover h1 {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.6px;
+      line-height: 1.3;
+      color: #0d0d1a;
+      margin-bottom: 10px;
+    }
+    .cover-meta {
+      font-size: 12px;
+      color: #6b7684;
+      margin-top: 10px;
+    }
+    .cover-meta span { margin-right: 20px; }
+
+    /* ── 목차 ── */
+    .toc {
+      background: #f9fafb;
+      border: 1px solid #e5e8eb;
+      border-left: 4px solid #ff6f0f;
+      border-radius: 2px;
+      padding: 20px 24px;
+      margin-bottom: 44px;
+    }
+    .toc-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #6b7684;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .toc ol {
+      padding-left: 18px;
+    }
+    .toc li {
+      font-size: 13px;
+      line-height: 2;
+      color: #333d4b;
+    }
+    .toc li::marker { color: #ff6f0f; font-weight: 700; }
+    .toc .sub { padding-left: 16px; list-style-type: none; }
+    .toc .sub li::before { content: "— "; color: #adb5bd; }
+
+    /* ── 섹션 제목 ── */
+    h2 {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+      color: #0d0d1a;
+      margin: 48px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #ff6f0f;
+      page-break-after: avoid;
+    }
+    h2 .num {
+      display: inline-block;
+      background: #ff6f0f;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 2px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #191f28;
+      margin: 28px 0 10px;
+      page-break-after: avoid;
+    }
+    h3::before {
+      content: "▎";
+      color: #ff6f0f;
+      margin-right: 6px;
+    }
+
+    h4 {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #333d4b;
+      margin: 20px 0 8px;
+      page-break-after: avoid;
+    }
+    h4 .circle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff3eb;
+      border: 1.5px solid #ff6f0f;
+      color: #ff6f0f;
+      font-size: 11px;
+      font-weight: 800;
+      margin-right: 6px;
+    }
+
+    p {
+      margin-bottom: 12px;
+      color: #333d4b;
+    }
+
+    strong { color: #0d0d1a; font-weight: 700; }
+
+    ul, ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+    li { margin-bottom: 4px; color: #333d4b; }
+
+    /* ── 테이블 ── */
+    .table-wrap { overflow-x: auto; margin: 16px 0 24px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead tr {
+      background: #191f28;
+      color: #fff;
+    }
+    thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.3px;
+    }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    tbody tr:hover { background: #fff3eb; }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #e5e8eb;
+      vertical-align: top;
+    }
+    .badge-mvp  { color: #0ac86e; font-weight: 700; }
+    .badge-v2   { color: #ff6f0f; font-weight: 700; }
+    .badge-no   { color: #adb5bd; }
+
+    /* ── 코드 블록 (아스키 다이어그램/구조도) ── */
+    pre {
+      background: #f2f4f6;
+      border: 1px solid #e5e8eb;
+      border-left: 3px solid #ff6f0f;
+      border-radius: 3px;
+      padding: 16px 18px;
+      font-family: 'Menlo', 'Consolas', 'D2Coding', monospace;
+      font-size: 12px;
+      line-height: 1.65;
+      color: #333d4b;
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      white-space: pre;
+    }
+
+    /* ── 인용/노트 박스 ── */
+    .note {
+      background: #fff3eb;
+      border-left: 4px solid #ff6f0f;
+      border-radius: 2px;
+      padding: 14px 18px;
+      margin: 16px 0 20px;
+      font-size: 13.5px;
+      color: #333d4b;
+    }
+    .note strong { color: #cc560b; }
+
+    .insight {
+      background: #f0f9ff;
+      border-left: 4px solid #1a73e8;
+      border-radius: 2px;
+      padding: 14px 18px;
+      margin: 16px 0 20px;
+      font-size: 13.5px;
+      color: #1a3a6b;
+    }
+
+    /* ── TOP 10 카드 ── */
+    .top-list { counter-reset: top; margin: 0; padding: 0; list-style: none; }
+    .top-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 14px 0;
+      border-bottom: 1px solid #e5e8eb;
+    }
+    .top-item:last-child { border-bottom: none; }
+    .top-rank {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 900;
+      color: #fff;
+      background: #adb5bd;
+    }
+    .top-rank.gold   { background: #f0a500; }
+    .top-rank.silver { background: #8b95a1; }
+    .top-rank.bronze { background: #c27c4c; }
+    .top-content { flex: 1; }
+    .top-title { font-size: 14px; font-weight: 700; color: #0d0d1a; margin-bottom: 4px; }
+    .top-desc  { font-size: 12.5px; color: #4e5968; line-height: 1.6; }
+
+    /* ── 비교 그리드 ── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0 24px;
+    }
+    .compare-card {
+      border: 1px solid #e5e8eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .compare-card-header {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .compare-card-header.hp  { background: #ffcc00; color: #1a1a00; }
+    .compare-card-header.up  { background: #ff6f0f; color: #fff; }
+    .compare-card ul { padding: 12px 14px 12px 28px; }
+    .compare-card li { font-size: 12.5px; line-height: 1.8; }
+
+    /* ── 로드맵 ── */
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+    .roadmap-col { border: 1px solid #e5e8eb; border-radius: 4px; overflow: hidden; }
+    .roadmap-header {
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+    .roadmap-header.hp   { background: #191f28; color: #fff; }
+    .roadmap-header.mvp  { background: #ff6f0f; color: #fff; }
+    .roadmap-header.v2   { background: #fff3eb; color: #cc560b; border-bottom: 2px solid #ff6f0f; }
+    .roadmap-header.v3   { background: #f9fafb; color: #8b95a1; border-bottom: 2px solid #d1d6db; }
+    .roadmap-items { padding: 10px; }
+    .roadmap-item {
+      font-size: 11.5px;
+      line-height: 1.7;
+      color: #4e5968;
+      padding: 3px 0;
+      border-bottom: 1px dashed #e5e8eb;
+    }
+    .roadmap-item:last-child { border-bottom: none; }
+    .check { color: #0ac86e; font-weight: 700; }
+    .cross { color: #adb5bd; }
+    .soon  { color: #ff6f0f; }
+
+    /* ── 구분선 ── */
+    hr {
+      border: none;
+      border-top: 1px solid #e5e8eb;
+      margin: 36px 0;
+    }
+
+    /* ── 푸터 ── */
+    .footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e8eb;
+      font-size: 11px;
+      color: #adb5bd;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ── 페이지 넘버 구분용 섹션 마커 ── */
+    .section-marker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 44px 0 0;
+    }
+
+    /* ════════════════════════════════════
+       인쇄 스타일
+    ════════════════════════════════════ */
+    @media print {
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      body {
+        background: #fff;
+        padding: 0;
+        font-size: 11.5px;
+      }
+
+      .page-wrap {
+        max-width: 100%;
+        padding: 0;
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      /* 인쇄 시 커버에 충분한 여백 */
+      .cover { padding: 24px 0 20px; }
+
+      h2 { font-size: 15px; margin: 32px 0 12px; }
+      h3 { font-size: 13px; margin: 20px 0 8px; }
+      h4 { font-size: 12px; }
+
+      pre {
+        font-size: 10.5px;
+        padding: 10px 12px;
+        page-break-inside: avoid;
+      }
+
+      table { font-size: 11px; page-break-inside: avoid; }
+      thead th { padding: 7px 10px; }
+      td { padding: 6px 10px; }
+
+      .note, .insight { padding: 10px 14px; font-size: 12px; }
+
+      .compare-grid { gap: 10px; }
+      .roadmap { gap: 8px; }
+
+      .top-item { padding: 10px 0; }
+
+      .footer { margin-top: 32px; }
+
+      /* 페이지 나눔 제어 */
+      h2, h3, h4 { page-break-after: avoid; }
+      .top-item, .roadmap-col, .compare-card { page-break-inside: avoid; }
+      .section-break { page-break-before: always; }
+
+      /* 인쇄 시 링크 밑줄 제거 */
+      a { text-decoration: none; color: inherit; }
+    }
+
+    @page {
+      margin: 18mm 18mm 20mm;
+      size: A4;
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ══ 커버 ══ -->
+  <div class="cover">
+    <div class="cover-label">벤치마킹 분석 보고서</div>
+    <h1>핫페퍼(HotPepper) 심층 분석<br>— 언니픽 적용 전략</h1>
+    <div class="cover-meta">
+      <span>📅 작성일: 2026년 4월 16일</span>
+      <span>✍️ 작성자: bangju (언니픽)</span>
+      <span>📋 분류: 제품 전략 / 벤치마킹</span>
+    </div>
+  </div>
+
+  <!-- ══ 목차 ══ -->
+  <div class="toc">
+    <div class="toc-title">목 차</div>
+    <ol>
+      <li>핫페퍼란? — 규모와 포지션</li>
+      <li>서비스 구조 전체 맵</li>
+      <li>핵심 기능 세세 분석
+        <ul class="sub">
+          <li>쿠폰 시스템 (쿠폰북·유형·배지·화면제시·카운트다운)</li>
+          <li>검색 &amp; 탐색 시스템</li>
+          <li>가게 상세 페이지 구조</li>
+          <li>포인트 시스템</li>
+          <li>사장님 기능 (가게관리·쿠폰발행·대시보드)</li>
+          <li>알림 시스템</li>
+          <li>리뷰 &amp; 평점 시스템</li>
+          <li>뷰티 특화 기능</li>
+        </ul>
+      </li>
+      <li>핫페퍼 성공 요인 분석</li>
+      <li>핫페퍼의 약점 — 언니픽의 기회</li>
+      <li>언니픽에 즉시 적용할 기능 TOP 10</li>
+      <li>기능 로드맵 비교</li>
+    </ol>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       1. 핫페퍼란?
+  ══════════════════════════════════════ -->
+  <h2><span class="num">01</span> 핫페퍼란? — 규모와 포지션</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>항목</th><th>내용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>운영사</strong></td><td>리크루트 주식회사 (Recruit Co., Ltd.)</td></tr>
+        <tr><td><strong>시작</strong></td><td>2000년 무료 쿠폰 잡지로 출발 → 2007년 디지털 전환</td></tr>
+        <tr><td><strong>현재 규모</strong></td><td>음식점 90만+ 등록, 뷰티 살롱 25만+ 등록</td></tr>
+        <tr><td><strong>월간 사용자</strong></td><td>5,000만+ (일본 인구의 약 40%)</td></tr>
+        <tr><td><strong>월간 예약</strong></td><td>420만+ 건 (네트 예약 기준)</td></tr>
+        <tr><td><strong>연간 수익</strong></td><td>약 2,000억 엔 (약 2조 원)</td></tr>
+        <tr><td><strong>서비스</strong></td><td>HotPepper Gourmet (음식점) + HotPepper Beauty (뷰티)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <strong>핵심 포지션:</strong> "쿠폰북"에서 출발해 "O2O 예약 + 쿠폰 플랫폼"으로 진화한 일본 No.1 지역 소비 플랫폼. 일본 소비자에게 "가게 가기 전에 핫페퍼 먼저 확인한다"는 습관을 심었다.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       2. 서비스 구조 전체 맵
+  ══════════════════════════════════════ -->
+  <h2><span class="num">02</span> 서비스 구조 전체 맵</h2>
+
+<pre>핫페퍼 플랫폼
+│
+├── 사용자 측
+│   ├── 탐색 레이어
+│   │   ├── 지역/역 기반 검색
+│   │   ├── 카테고리 필터 (음식 장르, 뷰티 종류)
+│   │   ├── 가격대 필터
+│   │   └── 상황별 특집 (데이트, 단체 모임, 생일 등)
+│   │
+│   ├── 쿠폰 레이어
+│   │   ├── 가게별 쿠폰 목록 (쿠폰북)
+│   │   ├── 쿠폰 저장 (즐겨찾기)
+│   │   ├── 화면 제시형 사용 (스마트폰 화면 보여주기)
+│   │   └── 만료일 / 잔여 수량 실시간 표시
+│   │
+│   ├── 예약 레이어
+│   │   ├── 24시간 즉시 예약 (4.2만개 점포)
+│   │   ├── 인원 / 날짜 / 시간 지정
+│   │   └── 쿠폰 + 예약 동시 적용
+│   │
+│   └── 포인트 레이어
+│       ├── 예약·쿠폰 사용 시 포인트 적립 (최대 8배)
+│       └── Ponta 포인트 / d포인트 제휴 연동
+│
+└── 사장님(가게 운영자) 측
+    ├── 가게 프로필 관리 (사진, 메뉴, 영업시간, 특징 태그)
+    ├── 쿠폰 발행 / 수정 / 삭제
+    ├── 예약 캘린더 관리
+    ├── 고객 데이터 분석 (조회 수, 사용률, 매출 추이)
+    └── 광고 / 노출 상품 구매 (상단 노출, 특집 게재)</pre>
+
+
+  <!-- ══════════════════════════════════════
+       3. 핵심 기능 세세 분석
+  ══════════════════════════════════════ -->
+  <h2 class="section-break"><span class="num">03</span> 핵심 기능 세세 분석</h2>
+
+  <!-- 3-1 쿠폰 시스템 -->
+  <h3>3-1. 쿠폰 시스템 — 핵심 차별점</h3>
+
+  <h4><span class="circle">①</span> 쿠폰북(クーポン帳) 개념</h4>
+  <p>가게마다 <strong>여러 쿠폰을 묶은 "쿠폰북"</strong> 형태로 제공한다. 손님은 가게 페이지에서 원하는 쿠폰을 골라 저장한다. 단순한 할인 정보가 아니라 가게의 브랜드 카탈로그처럼 작동한다.</p>
+
+<pre>[카페봄날 쿠폰북]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎟 쿠폰 1   아메리카노 1+1                          [NEW]
+            ⏰ 3일 남음   📦 잔여 50장
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎟 쿠폰 2   런치 세트 20% 할인
+            ⏰ 7일 남음   📦 잔여 무제한
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎟 쿠폰 3   생일 케이크 무료 증정
+            ⏰ 월말까지   📦 요청 시 제공
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</pre>
+
+  <div class="note">
+    <strong>언니픽 적용 포인트:</strong> 사장님 1명이 쿠폰을 여러 개 발행하고 손님이 원하는 것을 선택. 가게 프로필 = 쿠폰북 형태로 구성. 피드 카드에는 "쿠폰 3개" 표시 → 탭하면 전체 쿠폰북 진입.
+  </div>
+
+  <h4><span class="circle">②</span> 쿠폰 유형 다양화</h4>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>유형</th><th>일본 핫페퍼 예시</th><th>언니픽 적용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>할인율</td><td>"런치 20% OFF"</td><td class="badge-mvp">✅ MVP 구현</td></tr>
+        <tr><td>금액 할인</td><td>"500엔 OFF"</td><td class="badge-mvp">✅ MVP 구현</td></tr>
+        <tr><td>세트 할인</td><td>"2인 이상 메뉴 1개 무료"</td><td class="badge-mvp">✅ MVP 추가</td></tr>
+        <tr><td>무료 증정</td><td>"디저트 서비스"</td><td class="badge-mvp">✅ MVP 구현</td></tr>
+        <tr><td>타임 쿠폰</td><td>"오후 2-5시만 1+1"</td><td class="badge-v2">🔶 v2 추가</td></tr>
+        <tr><td>웰컴 쿠폰</td><td>"첫 방문 특별 할인"</td><td class="badge-v2">🔶 v2 추가</td></tr>
+        <tr><td>생일 쿠폰</td><td>"생일 당일 무료"</td><td class="badge-v2">🔶 v2 추가</td></tr>
+        <tr><td>세트 메뉴 쿠폰</td><td>"A코스 2,500엔→1,900엔"</td><td class="badge-v2">🔶 v2 추가</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4><span class="circle">③</span> 쿠폰 상태 배지 시스템</h4>
+  <p>핫페퍼는 쿠폰에 <strong>시각적 상태 배지</strong>를 붙여 행동을 유도한다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>핫페퍼 배지 (일본어)</th><th>트리거 조건</th><th>언니픽 적용 배지</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>NEW</td><td>발행 후 24시간 이내</td><td>NEW (발행 후 3시간)</td></tr>
+        <tr><td>POPULAR</td><td>저장 수 급증 시</td><td>인기 🔥</td></tr>
+        <tr><td>残りわずか (잔여 얼마 없음)</td><td>잔여 수량 20% 이하</td><td>🔥 잔여 N장</td></tr>
+        <tr><td>本日限り (오늘 한정)</td><td>당일 마감</td><td>⏰ 오늘 마감</td></tr>
+        <tr><td>期間限定 (기간 한정)</td><td>기간 제한 쿠폰</td><td>D-1 / D-3</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4><span class="circle">④</span> 화면 제시형 쿠폰 (Show-on-Screen)</h4>
+  <p>핫페퍼의 가장 강력한 UX — <strong>QR 코드 없이 화면을 보여주면 사용 가능</strong>하다. 직원이 육안으로 확인 후 혜택을 제공한다. 별도 스캐너 장비가 필요 없어 소규모 가게에서도 즉시 운용 가능하다.</p>
+
+<pre>┌─────────────────────────────────────┐
+│   📱 이 화면을 직원에게 보여주세요    │
+│                                     │
+│   ┌─────────────────────────────┐   │
+│   │      카페봄날 전용 쿠폰      │   │
+│   │                             │   │
+│   │   ☕  아메리카노 1+1         │   │
+│   │                             │   │
+│   │   유효: 2026.04.16          │   │
+│   │   쿠폰번호: UP-20240        │   │
+│   └─────────────────────────────┘   │
+└─────────────────────────────────────┘</pre>
+
+  <div class="note">
+    <strong>언니픽 적용:</strong> MVP는 QR코드 스캔 방식(사장님 스캔). v2에서 화면 제시형 추가(번호 육안 확인). 이유: 소규모 가게 사장님은 QR 스캐너가 없는 경우가 많음.
+  </div>
+
+  <h4><span class="circle">⑤</span> 잔여 수량 &amp; 마감 카운트다운</h4>
+  <p>잔여 수량이 줄어들 때 <strong>"잔여 N장"</strong>을 실시간 표시한다. 심리적 긴박감(FOMO)을 주어 즉시 저장을 유도하는 핵심 전환율 상승 장치다.</p>
+  <ul>
+    <li><strong>잔여 3장</strong> → 빨간색 배지로 강조</li>
+    <li><strong>D-1 마감</strong> → 오렌지 배경 + 카운트다운 숫자</li>
+    <li>수량 소진 시 → "마감됐어요, 다음 쿠폰을 기다려보세요" 메시지로 재방문 유도</li>
+  </ul>
+
+
+  <!-- 3-2 검색 -->
+  <h3>3-2. 검색 &amp; 탐색 시스템</h3>
+
+  <h4><span class="circle">①</span> 다층 필터 구조</h4>
+  <p>핫페퍼의 검색은 <strong>3단계 레이어</strong>로 구성된다. 사용자가 원하는 조건을 빠르게 좁힐 수 있도록 설계되었다.</p>
+
+<pre>1단계: 위치 지정
+   → 지역명 입력 / 역명 / 현재 위치 자동 감지
+
+2단계: 카테고리 선택
+   → 음식 장르 (이자카야, 이탈리안, 야키니쿠 등) / 가격대 / 영업 시간
+
+3단계: 세부 조건 (복수 선택 가능)
+   → 주차 가능 / 개인실 / Wi-Fi / 테라스석 / 쿠폰 있는 가게만</pre>
+
+  <div class="insight">
+    <strong>핵심 인사이트:</strong> "쿠폰 있는 가게만 보기" 필터가 가장 많이 사용된다. 쿠폰을 원하는 사용자가 전체 탐색 결과를 빠르게 필터링할 수 있어 쿠폰 저장 전환율을 크게 높인다.<br><br>
+    <strong>언니픽 적용:</strong> 탐색 탭에 "현재 유효한 쿠폰 있는 가게만" 토글을 기본 ON으로 설정. 정렬 옵션은 거리순 / 쿠폰 많은 순 / 인기순.
+  </div>
+
+  <h4><span class="circle">②</span> 상황별 큐레이션 (특집 페이지)</h4>
+  <p>단순 검색 외에 소비 상황에 맞는 <strong>특집 페이지</strong>로 새로운 가게를 발견하게 한다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>핫페퍼 특집</th><th>내용</th><th>언니픽 적용 (v2)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>데이트 특집</td><td>야경 맛집, 개인실 레스토랑</td><td>분위기 좋은 카페</td></tr>
+        <tr><td>단체 모임</td><td>20인 이상 가능한 가게</td><td>단체 할인 쿠폰</td></tr>
+        <tr><td>생일·기념일</td><td>케이크 서비스, 특별석</td><td>생일 쿠폰 자동 발송</td></tr>
+        <tr><td>런치 특집</td><td>1,000엔 이하 런치 쿠폰</td><td>오전 11시 자동 큐레이션</td></tr>
+        <tr><td>야식 특집</td><td>자정 이후 영업 가게</td><td>저녁 타임 세일 배너</td></tr>
+        <tr><td>여성 모임</td><td>분위기 좋은 곳, 여성 좌석</td><td>미용/네일 특집</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4><span class="circle">③</span> 역(Station) 기반 검색 → 동네 기반 검색</h4>
+  <p>일본은 전철 중심이라 "○○역 주변" 검색이 핵심이다. 한국 맥락으로 변환하면 <strong>"○○동", "○○역", "○○건물 주변"</strong> 검색으로 적용한다.</p>
+
+
+  <!-- 3-3 가게 상세 -->
+  <h3>3-3. 가게 상세 페이지 구조</h3>
+  <p>핫페퍼의 가게 상세 페이지는 <strong>정보 밀도가 높지만 스크롤로 구조화</strong>된다. 쿠폰 섹션이 스크롤 상단에 위치해 가장 먼저 노출된다.</p>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <div class="compare-card-header hp">🇯🇵 핫페퍼 가게 상세 스크롤 구조</div>
+      <ul>
+        <li>① 히어로 이미지 (사진 슬라이드)</li>
+        <li>② 기본 정보 (이름, 장르, 가격대, 평점)</li>
+        <li>③ 예약 CTA 버튼 (상단 고정)</li>
+        <li>④ <strong>쿠폰 섹션 ← 핵심 위치</strong></li>
+        <li>⑤ 메뉴 / 코스 안내</li>
+        <li>⑥ 사진 갤러리</li>
+        <li>⑦ 스타일리스트 프로필 (Beauty)</li>
+        <li>⑧ 리뷰 목록</li>
+        <li>⑨ 지도 / 교통 안내</li>
+        <li>⑩ 영업 시간 / 연락처</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-header up">🟠 언니픽 가게 프로필 적용안</div>
+      <ul>
+        <li>① 가게 대표 이미지 + 팔로우 버튼</li>
+        <li>② 기본 정보 (카테고리, 거리, 팔로워 수)</li>
+        <li>③ <strong>쿠폰 N개 섹션 ← 최상단 배치</strong></li>
+        <li>④ 최근 공지 타임라인</li>
+        <li>⑤ 사진 갤러리</li>
+        <li>⑥ 영업 정보 (요일별 시간)</li>
+        <li>⑦ 방문 후기 (v2)</li>
+        <li>⑧ 지도</li>
+      </ul>
+    </div>
+  </div>
+
+
+  <!-- 3-4 포인트 -->
+  <h3>3-4. 포인트 시스템 → 언니픽 스탬프 시스템</h3>
+  <p>핫페퍼의 포인트는 <strong>재방문을 유도하는 핵심 리텐션 루프</strong>다. 예약/사용 시 포인트를 적립하고, 그 포인트를 쓰려면 다시 방문해야 한다.</p>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <div class="compare-card-header hp">🇯🇵 핫페퍼 포인트 시스템</div>
+      <ul>
+        <li>기본 1%  적립 → 최대 8배 캠페인</li>
+        <li>Ponta 포인트 / d포인트 제휴</li>
+        <li>신규 가입 보너스: 300포인트</li>
+        <li>특정 요일 3배 이벤트</li>
+        <li>포인트로 다음 예약 결제</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-header up">🟠 언니픽 스탬프 시스템 (v2)</div>
+      <ul>
+        <li>쿠폰 사용 1회 = 스탬프 1개</li>
+        <li>스탬프 5개 = "단골 배지" 획득</li>
+        <li>단골 배지 = 비밀 쿠폰 잠금 해제</li>
+        <li>단골 → 사장님이 VIP 관리</li>
+        <li>단골이 친구 초대 → 신규 팔로워 유입</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>설계 이유:</strong> 포인트보다 스탬프가 시각적으로 단순하고 달성감이 크다. "5개 모으면 뭔가 생긴다"는 게임 요소가 재방문 동기를 만든다. 가게마다 독립된 스탬프이므로 사장님이 "우리 가게 단골"을 쉽게 파악할 수 있다.
+  </div>
+
+
+  <!-- 3-5 사장님 -->
+  <h3 class="section-break">3-5. 사장님(가게 운영자) 기능</h3>
+
+  <h4><span class="circle">①</span> 가게 정보 관리</h4>
+  <ul>
+    <li>영업 시간, 정기 휴일 설정 (요일별)</li>
+    <li>메뉴 / 가격 정보 등록 (사진 포함, 최대 50장)</li>
+    <li>특징 태그 (주차 가능, 테라스석, 반려동물 가능, Wi-Fi 등)</li>
+    <li>지도 위치 핀 설정</li>
+  </ul>
+
+  <h4><span class="circle">②</span> 쿠폰 발행 도구 비교</h4>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>설정 항목</th><th>핫페퍼 옵션</th><th>언니픽 MVP</th><th>언니픽 v2</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>쿠폰 유형</td><td>8가지</td><td class="badge-mvp">3가지</td><td class="badge-v2">+5가지</td></tr>
+        <tr><td>수량 제한</td><td>무제한 / 선착순 N명</td><td class="badge-mvp">✅</td><td class="badge-mvp">✅</td></tr>
+        <tr><td>기간 설정</td><td>날짜 지정 / 오늘만 / 기간 없음</td><td class="badge-mvp">✅</td><td class="badge-mvp">✅</td></tr>
+        <tr><td>대상 조건</td><td>전체 / 신규만 / 미사용자만</td><td class="badge-no">—</td><td class="badge-v2">✅ v2</td></tr>
+        <tr><td>복수 쿠폰 동시 발행</td><td>✅</td><td class="badge-mvp">✅</td><td class="badge-mvp">✅</td></tr>
+        <tr><td>예약 발행 (자동 발송)</td><td>✅</td><td class="badge-no">—</td><td class="badge-v2">✅ v2</td></tr>
+        <tr><td>팔로워 즉시 알림</td><td>제한적</td><td class="badge-mvp">✅ 원클릭</td><td class="badge-mvp">✅</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4><span class="circle">③</span> 고객 데이터 대시보드</h4>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <div class="compare-card-header hp">🇯🇵 핫페퍼 대시보드 지표</div>
+      <ul>
+        <li>이번 달 예약 수</li>
+        <li>쿠폰 사용률 (%)</li>
+        <li>페이지 조회 수</li>
+        <li>쿠폰별 저장 수</li>
+        <li>신규 팔로워 수</li>
+        <li>매출 추이 그래프</li>
+        <li>경쟁 가게 대비 순위</li>
+      </ul>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-header up">🟠 언니픽 대시보드 (단계별)</div>
+      <ul>
+        <li><strong>MVP:</strong> 팔로워 수 / 신규 팔로워</li>
+        <li><strong>MVP:</strong> 쿠폰별 저장/사용/사용률</li>
+        <li><strong>MVP:</strong> 알림 도달 수</li>
+        <li><strong>v2:</strong> 주간·월간 성과 그래프</li>
+        <li><strong>v2:</strong> 방문 시간대 히트맵</li>
+        <li><strong>v2:</strong> 쿠폰 유형별 효과 비교</li>
+        <li><strong>v2:</strong> 단골 손님 리스트</li>
+      </ul>
+    </div>
+  </div>
+
+
+  <!-- 3-6 알림 -->
+  <h3>3-6. 알림 시스템</h3>
+  <p>핫페퍼의 알림은 <strong>개인화 + 시의성</strong>이 핵심이다. 사용자가 필요한 시점에 정확히 알린다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>알림 종류</th><th>트리거</th><th>방식</th><th>언니픽 적용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>즐겨찾기 가게 새 쿠폰</td><td>가게 쿠폰 발행 시</td><td>앱 푸시</td><td class="badge-mvp">✅ MVP</td></tr>
+        <tr><td>예약 리마인더</td><td>예약 전날/당일</td><td>앱 푸시 + SMS</td><td class="badge-no">— (예약 없음)</td></tr>
+        <tr><td>쿠폰 만료 임박</td><td>D-3, D-1</td><td>앱 푸시</td><td class="badge-mvp">✅ MVP (D-1)</td></tr>
+        <tr><td>포인트 만료</td><td>소멸 1개월 전</td><td>앱 푸시</td><td class="badge-v2">🔶 스탬프 만료 v2</td></tr>
+        <tr><td>타임 세일 알림</td><td>사장님 설정 시간</td><td>앱 푸시</td><td class="badge-v2">🔶 v2 (예약 발행)</td></tr>
+        <tr><td>주변 새 가게</td><td>팔로우 지역 신규 등록</td><td>주간 다이제스트</td><td class="badge-v2">🔶 v2</td></tr>
+        <tr><td>사용 완료 확인</td><td>QR 스캔 완료</td><td>진동 + 소리</td><td class="badge-mvp">✅ MVP</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- 3-7 리뷰 -->
+  <h3>3-7. 리뷰 &amp; 평점 시스템</h3>
+  <p>핫페퍼는 <strong>"방문 확인 후 리뷰"만 허용</strong>한다. QR/쿠폰 사용 기록이 있는 경우만 리뷰 작성이 가능하다.</p>
+  <ul>
+    <li>별점 1-5점 + 텍스트 리뷰</li>
+    <li>방문 날짜, 인원, 사용 금액 기록</li>
+    <li>사장님 답변 기능</li>
+    <li>사진 첨부 (Beauty: 시술 전후 사진)</li>
+  </ul>
+  <div class="note">
+    <strong>언니픽 v2 적용:</strong> 쿠폰 QR 사용 완료 후 30초 → "방문 후기 남기기" 팝업 → 별점 + 한 줄 후기(50자) → 피드에 후기 포스트 자동 생성(옵션). 실제 방문자만 리뷰 작성 가능하므로 신뢰도 높음.
+  </div>
+
+
+  <!-- 3-8 뷰티 -->
+  <h3>3-8. 핫페퍼 뷰티 특화 기능</h3>
+
+  <h4><span class="circle">①</span> 스타일리스트 개인 프로필</h4>
+  <p><strong>특정 스타일리스트를 팔로우</strong>하면 해당 직원의 쿠폰·공지를 수신한다. 스타일리스트가 인플루언서가 되는 구조다.</p>
+
+<pre>[스타일리스트 카드]
+────────────────────────────────────────
+사진  │  이름: 김스타일
+      │  경력: 7년   전문: 펌, 염색
+      │  팔로워: 3,200명
+      │  평점: ★4.8 (리뷰 420개)
+      │  [직접 예약하기]
+────────────────────────────────────────</pre>
+
+  <div class="note">
+    <strong>언니픽 뷰티 카테고리 적용:</strong> 가게 팔로우 외에 "담당 선생님 팔로우" 기능. 선생님이 가게를 이동해도 팔로워가 자동 알림 수신. 네일아티스트, 헤어디자이너가 개인 팬을 보유하는 구조로 확장.
+  </div>
+
+  <h4><span class="circle">②</span> 스타일 사진 검색 (이미지 기반 탐색)</h4>
+  <p>헤어스타일 사진 → 해당 스타일 가능한 가게 검색. 이미지로 원하는 스타일을 찾고 예약까지 연결하는 혁신적 UX.</p>
+  <div class="note">
+    <strong>언니픽 v3 적용:</strong> 음식 사진 → 비슷한 메뉴 있는 가게 탐색 (AI 이미지 검색).
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       4. 성공 요인
+  ══════════════════════════════════════ -->
+  <h2 class="section-break"><span class="num">04</span> 핫페퍼 성공 요인 분석</h2>
+
+  <h3>4-1. "쿠폰이 있어야 가게에 간다" 문화 조성</h3>
+  <p>일본 소비자는 핫페퍼를 <strong>쿠폰 검색 전용 앱</strong>으로 인식한다. 가게 선택 기준이 "좋은 가게" → "쿠폰 있는 좋은 가게"로 이동했다. 이 문화적 전환이 핵심이다.</p>
+  <div class="insight">
+    <strong>언니픽이 만들어야 할 문화:</strong> "언니픽에서 팔로우하면 단골 혜택이 온다"<br>
+    손님 행동 패턴: 가게 방문 전 → 언니픽 확인 → 쿠폰 있으면 방문 → 없으면 팔로우만
+  </div>
+
+  <h3>4-2. 무료 잡지에서 시작한 브랜드 신뢰도</h3>
+  <p>오프라인 무료 잡지로 10년간 신뢰를 쌓은 후 디지털 전환했다. <strong>오프라인 → 온라인 신뢰 이전</strong>이 성공의 핵심이었다.</p>
+  <div class="note">
+    <strong>언니픽 전략:</strong>
+    <ul style="margin-top:8px; padding-left:20px;">
+      <li>가게 계산대에 "언니픽 팔로우 QR" 스탠드 부착</li>
+      <li>"우리 가게 언니픽 있어요" → 손님이 즉석 설치 + 팔로우</li>
+      <li>가게 창문 스티커 → 지나가는 사람이 QR 스캔 → 팔로우</li>
+    </ul>
+  </div>
+
+  <h3>4-3. 가게주 입장: "돈을 내면 손님이 온다"는 신뢰</h3>
+  <p>핫페퍼는 <strong>성과 기반 과금</strong> 구조로 사장님의 신뢰를 얻었다. 예약/쿠폰 사용 건수만큼 수수료를 내므로 손님이 오지 않으면 비용이 없다.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>플랜</th><th>핫페퍼</th><th>언니픽</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>무료 플랜</td><td>기본 노출</td><td>쿠폰 월 2건, 알림 월 2회</td></tr>
+        <tr><td>유료 월정액</td><td>수십만 엔/월</td><td>월 19,900원 (무제한 발행+알림+통계)</td></tr>
+        <tr><td>성과형 과금</td><td>예약·사용 건당 수수료</td><td>쿠폰 사용 1건당 XX원 (v3)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>4-4. 포인트로 잠긴 리텐션 루프</h3>
+
+<pre>[핫페퍼 리텐션 루프]          [언니픽 스탬프 루프]
+첫 방문 → 쿠폰 사용           첫 방문 → 쿠폰 사용
+    ↓                              ↓
+포인트 적립                   스탬프 1개 적립
+    ↓                              ↓
+포인트 쓰려면 재방문 필요     스탬프 5개 → 단골 배지
+    ↓                              ↓
+재방문 → 또 포인트 적립       단골 배지 → VIP 비밀 쿠폰
+    ↓                              ↓
+반복 (리텐션 루프 완성)       단골이 친구 초대 → 신규 팔로워</pre>
+
+
+  <!-- ══════════════════════════════════════
+       5. 약점 / 기회
+  ══════════════════════════════════════ -->
+  <h2><span class="num">05</span> 핫페퍼의 약점 — 언니픽의 기회</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>핫페퍼 약점</th><th>언니픽 기회</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>UI가 복잡하고 광고가 많다</td>
+          <td>미니멀 3탭, 광고 없는 깔끔한 피드</td>
+        </tr>
+        <tr>
+          <td>쿠폰 사용이 번거롭다 (화면 제시, 직원 육안 확인)</td>
+          <td>QR 스캔으로 자동 처리 + 기록 남음</td>
+        </tr>
+        <tr>
+          <td>사장님 쿠폰 발행이 어렵다 (30분 소요)</td>
+          <td>30초 발행 + 팔로워 즉시 알림</td>
+        </tr>
+        <tr>
+          <td>팔로우 기능이 약하고 피드 개념이 없다</td>
+          <td>Twitter식 팔로우 피드가 핵심 UX</td>
+        </tr>
+        <tr>
+          <td>소통이 없다 (단방향 정보 전달)</td>
+          <td>댓글, 리액션으로 소통 (v2)</td>
+        </tr>
+        <tr>
+          <td>오프라인 잡지 이미지 (올드한 느낌)</td>
+          <td>모바일 네이티브, 채팅 피드 감성</td>
+        </tr>
+        <tr>
+          <td>월 유지비가 비싸다 (수십만 엔)</td>
+          <td>소상공인 맞춤 월 19,900원</td>
+        </tr>
+        <tr>
+          <td>일본에서만 서비스</td>
+          <td>국내 소상공인 완전 특화</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       6. TOP 10
+  ══════════════════════════════════════ -->
+  <h2 class="section-break"><span class="num">06</span> 언니픽에 즉시 적용할 기능 TOP 10</h2>
+
+  <ul class="top-list">
+    <li class="top-item">
+      <div class="top-rank gold">1</div>
+      <div class="top-content">
+        <div class="top-title">쿠폰북 개념 — 가게 프로필 = 쿠폰 묶음</div>
+        <div class="top-desc">가게 상세 페이지에 쿠폰 여러 개를 묶어 제공. 피드 카드에 "쿠폰 3개" 표시 → 탭하면 전체 쿠폰북 진입. 저장 수 상승, 재방문 유도.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank silver">2</div>
+      <div class="top-content">
+        <div class="top-title">잔여 수량 + 마감 카운트다운 배지</div>
+        <div class="top-desc">잔여 10장 이하 → "🔥 잔여 N장" 빨간 배지. D-1 → "⏰ 오늘 마감" 오렌지 배지. FOMO 심리로 즉시 저장 전환율 상승.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank bronze">3</div>
+      <div class="top-content">
+        <div class="top-title">상황별 시간대 큐레이션 피드</div>
+        <div class="top-desc">오전 11시 → 런치 특가, 오후 6시 → 저녁 타임 세일. 앱을 열 때마다 다른 콘텐츠를 보여줘 재방문 주기 단축.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank">4</div>
+      <div class="top-content">
+        <div class="top-title">화면 제시형 쿠폰 (v2)</div>
+        <div class="top-desc">QR 스캐너 없는 소규모 가게를 위해 쿠폰 화면을 보여주면 직원이 번호로 확인. 네일샵, 분식집 등 소상공인 접근성 대폭 향상.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank">5</div>
+      <div class="top-content">
+        <div class="top-title">"쿠폰 있는 가게만" 필터 (기본 ON)</div>
+        <div class="top-desc">탐색 탭에서 현재 유효한 쿠폰이 있는 가게만 표시하는 토글을 기본 ON으로 설정. 쿠폰 저장 전환율 직접 상승.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank">6</div>
+      <div class="top-content">
+        <div class="top-title">쿠폰 유형 확장 — 세트 메뉴 / 2인 이상 특가</div>
+        <div class="top-desc">할인율·금액·무료 증정 외에 "2인 이상 메뉴 1개 무료" 세트 쿠폰 추가. 객단가 높이기와 동반 방문 유도.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank">7</div>
+      <div class="top-content">
+        <div class="top-title">방문 확인 후기 (v2)</div>
+        <div class="top-desc">쿠폰 QR 사용 완료 후 자동 팝업 → 별점 + 한 줄 후기(50자) → 피드 자동 포스팅. 실 방문자만 작성 가능하여 신뢰도 높은 리뷰.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank">8</div>
+      <div class="top-content">
+        <div class="top-title">스탬프 단골 시스템 (v2)</div>
+        <div class="top-desc">쿠폰 사용 5회 → 단골 배지 → 비밀 쿠폰 잠금 해제. 게임 요소로 재방문 동기 부여. 사장님이 단골을 쉽게 파악하고 VIP 관리 가능.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank">9</div>
+      <div class="top-content">
+        <div class="top-title">오프라인 QR 유입</div>
+        <div class="top-desc">가게 계산대 스탠드: "언니픽 팔로우하고 쿠폰 받으세요" QR. 손님이 스캔 → 즉시 팔로우 + 쿠폰 발급. 오프라인 접점에서 온라인 팔로워 확보.</div>
+      </div>
+    </li>
+    <li class="top-item">
+      <div class="top-rank">10</div>
+      <div class="top-content">
+        <div class="top-title">예약 발행 — 타임 쿠폰 (v2)</div>
+        <div class="top-desc">사장님이 "오후 2시에 자동으로 쿠폰 발행 + 알림" 예약. 한가한 시간대에 손님 유도. 사장님이 카운터 앞을 못 떠나도 자동 운영 가능.</div>
+      </div>
+    </li>
+  </ul>
+
+
+  <!-- ══════════════════════════════════════
+       7. 로드맵 비교
+  ══════════════════════════════════════ -->
+  <h2 class="section-break"><span class="num">07</span> 언니픽 vs 핫페퍼 기능 로드맵 비교</h2>
+
+  <div class="roadmap">
+    <div class="roadmap-col">
+      <div class="roadmap-header hp">🇯🇵 핫페퍼</div>
+      <div class="roadmap-items">
+        <div class="roadmap-item"><span class="check">✅</span> 쿠폰 발행</div>
+        <div class="roadmap-item"><span class="check">✅</span> 쿠폰 저장/사용</div>
+        <div class="roadmap-item"><span class="check">✅</span> 푸시 알림</div>
+        <div class="roadmap-item"><span class="cross">△</span> 팔로우 (약함)</div>
+        <div class="roadmap-item"><span class="cross">❌</span> 피드 타임라인</div>
+        <div class="roadmap-item"><span class="check">✅</span> 쿠폰북 구조</div>
+        <div class="roadmap-item"><span class="check">✅</span> 잔여 수량 표시</div>
+        <div class="roadmap-item"><span class="check">✅</span> 상황별 큐레이션</div>
+        <div class="roadmap-item"><span class="check">✅</span> 포인트 시스템</div>
+        <div class="roadmap-item"><span class="check">✅</span> 방문 후기</div>
+        <div class="roadmap-item"><span class="check">✅</span> 화면 제시형 쿠폰</div>
+        <div class="roadmap-item"><span class="check">✅</span> 타임 쿠폰 예약</div>
+        <div class="roadmap-item"><span class="cross">❌</span> 오프라인 QR 유입</div>
+        <div class="roadmap-item"><span class="cross">❌</span> 저가 구독 (소상공인)</div>
+      </div>
+    </div>
+    <div class="roadmap-col">
+      <div class="roadmap-header mvp">🟠 언니픽 MVP</div>
+      <div class="roadmap-items">
+        <div class="roadmap-item"><span class="check">✅</span> 쿠폰 발행</div>
+        <div class="roadmap-item"><span class="check">✅</span> 쿠폰 저장/사용</div>
+        <div class="roadmap-item"><span class="check">✅</span> 즉시 푸시 알림</div>
+        <div class="roadmap-item"><span class="check">✅</span> 팔로우 (핵심)</div>
+        <div class="roadmap-item"><span class="check">✅</span> 피드 타임라인</div>
+        <div class="roadmap-item"><span class="check">✅</span> 쿠폰북 구조</div>
+        <div class="roadmap-item"><span class="check">✅</span> 잔여 수량 표시</div>
+        <div class="roadmap-item"><span class="cross">—</span> 큐레이션</div>
+        <div class="roadmap-item"><span class="cross">—</span> 스탬프</div>
+        <div class="roadmap-item"><span class="cross">—</span> 방문 후기</div>
+        <div class="roadmap-item"><span class="cross">—</span> 화면 제시형</div>
+        <div class="roadmap-item"><span class="cross">—</span> 타임 쿠폰</div>
+        <div class="roadmap-item"><span class="check">✅</span> 오프라인 QR 유입</div>
+        <div class="roadmap-item"><span class="check">✅</span> 월 19,900원 구독</div>
+      </div>
+    </div>
+    <div class="roadmap-col">
+      <div class="roadmap-header v2">🔶 언니픽 v2</div>
+      <div class="roadmap-items">
+        <div class="roadmap-item"><span class="soon">+</span> 쿠폰 유형 확장</div>
+        <div class="roadmap-item"><span class="soon">+</span> 화면 제시형 쿠폰</div>
+        <div class="roadmap-item"><span class="soon">+</span> 상황별 큐레이션</div>
+        <div class="roadmap-item"><span class="soon">+</span> 스탬프 단골 시스템</div>
+        <div class="roadmap-item"><span class="soon">+</span> 방문 후기</div>
+        <div class="roadmap-item"><span class="soon">+</span> 예약 발행 (타임)</div>
+        <div class="roadmap-item"><span class="soon">+</span> 댓글 / 리액션</div>
+        <div class="roadmap-item"><span class="soon">+</span> 쿠폰 공유</div>
+        <div class="roadmap-item"><span class="soon">+</span> 담당자 팔로우</div>
+        <div class="roadmap-item"><span class="soon">+</span> 주간 다이제스트</div>
+        <div class="roadmap-item"><span class="soon">+</span> 성과 그래프</div>
+        <div class="roadmap-item"><span class="soon">+</span> 대상 조건 쿠폰</div>
+        <div class="roadmap-item"><span class="soon">+</span> 안드로이드 지원</div>
+        <div class="roadmap-item"><span class="soon">+</span> 인앱 결제</div>
+      </div>
+    </div>
+    <div class="roadmap-col">
+      <div class="roadmap-header v3">⬜ 언니픽 v3</div>
+      <div class="roadmap-items">
+        <div class="roadmap-item">광고 상품 (상단 노출)</div>
+        <div class="roadmap-item">AI 이미지 탐색</div>
+        <div class="roadmap-item">가게 스토리</div>
+        <div class="roadmap-item">B2B 프랜차이즈</div>
+        <div class="roadmap-item">성과형 과금</div>
+        <div class="roadmap-item">지역 특집 기획</div>
+        <div class="roadmap-item">소셜 알림</div>
+        <div class="roadmap-item">사진 검색</div>
+        <div class="roadmap-item">멤버십 티어</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ 푸터 ══ -->
+  <div class="footer">
+    <span>언니픽 (UnniePick) 내부 문서 — 외부 공유 금지</span>
+    <span>2026-04-16 · v1.0</span>
+  </div>
+
+</div>
+</body>
+</html>
