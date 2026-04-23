@@ -56,7 +56,7 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
 </head>
 <body>
   <div id="map"></div>
-  <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false"></script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false"></script>
   <script>
     var map, myLocOverlay;
     var storeOverlays  = {};

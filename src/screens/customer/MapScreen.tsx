@@ -461,14 +461,16 @@ export default function MapScreen() {
       <WebView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
-        source={{ html: mapHtml, baseUrl: 'http://localhost' }}
+        source={{ html: mapHtml, baseUrl: 'https://unniepick.com' }}
         originWhitelist={['*']}
         javaScriptEnabled
         domStorageEnabled
         allowsInlineMediaPlayback
+        mixedContentMode="always"
         scrollEnabled={false}
         onMessage={handleMessage}
         onError={e => console.warn('[KakaoMap] WebView error', e.nativeEvent)}
+        onHttpError={e => console.warn('[KakaoMap] HTTP error', e.nativeEvent)}
       />
 
       {/* ── 상단 오버레이 ── */}
