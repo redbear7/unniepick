@@ -81,12 +81,13 @@ export function useMySummary() {
         return;
       }
 
-      // ── Query A: profiles ───────────────────────────────────────
-      const { data: prof } = await supabase
+      // ── Query A: profiles (* 로 조회해 컬럼 누락 에러 방지) ─────────
+      const { data: profRaw } = await supabase
         .from('profiles')
-        .select('nickname, created_at, level, level_progress, point_to_next, location_name, birth_month, birth_day, invite_count')
+        .select('*')
         .eq('id', uid)
         .maybeSingle();
+      const prof = profRaw as any; // 동적 컬럼(level 등) 타입 안전 접근
 
       const metaNickname = session?.user?.user_metadata?.nickname as string | undefined;
       const nickname   = prof?.nickname || metaNickname || '언니님';
@@ -95,8 +96,9 @@ export function useMySummary() {
         : 0;
       const levelInfo    = resolveLevel(prof ?? {});
       const locationName = prof?.location_name ?? null;
-      const birthMonth   = typeof prof?.birth_month === 'number' ? prof.birth_month : null;
-      const birthDay     = typeof prof?.birth_day   === 'number' ? prof.birth_day   : null;
+      // birth_month / birth_day: 숫자형 또는 문자열 모두 처리
+      const birthMonth: number | null = prof?.birth_month != null ? Number(prof.birth_month) || null : null;
+      const birthDay:   number | null = prof?.birth_day   != null ? Number(prof.birth_day)   || null : null;
       const inviteCount  = typeof prof?.invite_count === 'number' ? prof.invite_count : 0;
       const phone        = session?.user?.phone ?? null;
 
