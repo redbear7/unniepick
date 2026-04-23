@@ -11,9 +11,20 @@ import * as Location from 'expo-location';
 import { sendNearbyStoreNotification } from '../../lib/notifications';
 import { fetchDistricts, DistrictRow } from '../../lib/services/districtService';
 import { supabase } from '../../lib/supabase';
-import { buildKakaoMapHtml } from './mapHtml';
 
-const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '';
+/**
+ * 카카오맵 HTML을 서빙하는 URL
+ * - 어드민 Next.js /api/kakaomap 라우트에서 HTML을 반환
+ * - window.location.href가 실제 URL이 되어 Kakao JS SDK 도메인 인증 통과
+ *
+ * 개발: http://localhost:3000/api/kakaomap  (어드민 npm run dev 실행 필요)
+ * 프로덕션: https://[배포도메인]/api/kakaomap
+ *
+ * Kakao 콘솔 JS SDK 도메인 등록 필요:
+ *   https://developers.kakao.com/console/app/1416561/config/platform
+ */
+const KAKAO_MAP_URI = process.env.EXPO_PUBLIC_KAKAO_MAP_URI
+  ?? 'http://localhost:3000/api/kakaomap';
 
 // ── 지도 전용 가게 타입 (Supabase 실데이터) ──────────────────────
 interface MapStore {
@@ -93,7 +104,6 @@ export default function MapScreen() {
   const mapReadyRef        = useRef(false);   // MAP_READY 메시지 이후 true
   const pendingQueue       = useRef<string[]>([]);  // MAP_READY 전 쌓인 명령 큐
   const lastMarkerPressRef = useRef(0);
-  const mapHtml            = useMemo(() => buildKakaoMapHtml(KAKAO_JS_KEY), []);
 
   /* WebView injectJavaScript 헬퍼 — MAP_READY 전이면 큐에 저장 */
   const injectJS = useCallback((code: string) => {
@@ -413,7 +423,9 @@ export default function MapScreen() {
       const msg = JSON.parse(event.nativeEvent.data);
       switch (msg.type) {
         case 'DEBUG':
-          console.log('[KakaoMap DEBUG]', JSON.stringify(msg));
+          // POLL은 10회마다 또는 ready=true 일 때만 로그
+          if (msg.step !== 'POLL' || msg.ready || (msg.n % 10 === 0))
+            console.log('[KakaoMap DEBUG]', JSON.stringify(msg));
           break;
         case 'MAP_ERROR':
           console.warn('[KakaoMap ERROR]', msg.message);
@@ -479,9 +491,7 @@ export default function MapScreen() {
       <WebView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
-        source={{ html: mapHtml, baseUrl: 'http://localhost' }}
-        // ⚠️ baseUrl이 Kakao 플랫폼에 등록된 도메인과 일치해야 함
-        // 카카오 콘솔: https://developers.kakao.com/console/app/1416561/config/platform
+        source={{ uri: KAKAO_MAP_URI }}
         originWhitelist={['*']}
         javaScriptEnabled
         domStorageEnabled

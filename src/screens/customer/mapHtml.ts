@@ -183,62 +183,67 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
     function onStore(id) { send({ type:'MARKER_PRESS', storeId: id }); }
     function onDist(id)  { send({ type:'DISTRICT_PRESS', id: id }); }
 
-    /* ── ② SDK onload ─────────────────────────────────────────────────── */
+    /* ── ② SDK onload → 폴링으로 kakao.maps.LatLng 준비 대기 ───────────
+     *  autoload=true 이므로 SDK가 맵 모듈을 자동 로드.
+     *  kakao.maps.load() 콜백 방식은 WebView 에서 불안정하므로 사용 안 함.
+     *  100ms 간격으로 최대 150회(15초) 폴링.
+     * ────────────────────────────────────────────────────────────────── */
     function initKakaoMap() {
       var loc = (window.location && window.location.href) || 'unknown';
       send({ type:'DEBUG', step:'SDK_ONLOAD', loc: loc });
 
-      // 8초 안에 콜백 없으면 타임아웃 에러 표시
-      var loadTimer = setTimeout(function() {
-        showErr('타임아웃: kakao.maps.load 콜백 없음 | loc=' + loc.slice(0,30));
-      }, 8000);
+      var attempts = 0;
+      var pollTimer = setInterval(function() {
+        attempts++;
 
-      try {
-        kakao.maps.load(function() {
-          clearTimeout(loadTimer);
-          var hasLatLng = (typeof kakao.maps.LatLng !== 'undefined');
-          send({ type:'DEBUG', step:'MAPS_LOAD_CB', hasLatLng: hasLatLng, loc: loc });
+        var ready = typeof kakao !== 'undefined'
+                 && kakao.maps
+                 && typeof kakao.maps.LatLng === 'function';
 
-          if (!hasLatLng) {
-            showErr('도메인 인증 실패: LatLng 미정의 | loc=' + loc.slice(0,30));
-            return;
+        send({ type:'DEBUG', step:'POLL', n: attempts, ready: ready });
+
+        if (!ready) {
+          if (attempts >= 150) {
+            clearInterval(pollTimer);
+            showErr('카카오맵 로드 타임아웃 (' + attempts + '회) | loc=' + loc.slice(0,30));
           }
-          try {
-            var container = document.getElementById('map');
-            map = new kakao.maps.Map(container, {
-              center: new kakao.maps.LatLng(35.2340, 128.6668),
-              level:  5
-            });
+          return;
+        }
 
-            kakao.maps.event.addListener(map, 'idle', function() {
-              var c  = map.getCenter();
-              var b  = map.getBounds();
-              var sw = b.getSouthWest();
-              var ne = b.getNorthEast();
-              send({
-                type: 'REGION_CHANGE',
-                lat: c.getLat(), lng: c.getLng(),
-                latitudeDelta: ne.getLat() - sw.getLat(),
-                longitudeDelta: ne.getLng() - sw.getLng()
-              });
-            });
+        clearInterval(pollTimer);
+        try {
+          var container = document.getElementById('map');
+          map = new kakao.maps.Map(container, {
+            center: new kakao.maps.LatLng(35.2340, 128.6668),
+            level:  5
+          });
 
-            kakao.maps.event.addListener(map, 'click', function() {
-              send({ type:'MAP_PRESS' });
+          kakao.maps.event.addListener(map, 'idle', function() {
+            var c  = map.getCenter();
+            var b  = map.getBounds();
+            var sw = b.getSouthWest();
+            var ne = b.getNorthEast();
+            send({
+              type: 'REGION_CHANGE',
+              lat: c.getLat(), lng: c.getLng(),
+              latitudeDelta: ne.getLat() - sw.getLat(),
+              longitudeDelta: ne.getLng() - sw.getLng()
             });
+          });
 
-            send({ type:'MAP_READY' });
-          } catch(e2) {
-            showErr('지도 초기화 실패: ' + e2.message);
-          }
-        });
-      } catch(e) {
-        showErr('Kakao SDK 오류: ' + e.message);
-      }
+          kakao.maps.event.addListener(map, 'click', function() {
+            send({ type:'MAP_PRESS' });
+          });
+
+          send({ type:'MAP_READY' });
+        } catch(e) {
+          showErr('지도 초기화 실패: ' + e.message);
+        }
+      }, 100);
     }
   </script>
 
-  <!-- ③ SDK 로드 — autoload=true(기본값) + onload 콜백 -->
+  <!-- ③ SDK 로드 — autoload=true(기본값): 맵 모듈 자동 로드 -->
   <script
     src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}"
     onload="initKakaoMap()"
