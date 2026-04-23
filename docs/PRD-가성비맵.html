@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PRD — 언니픽 가성비맵 (거지맵 대응)</title>
+<style>
+  :root {
+    --orange: #FF6F0F;
+    --orange-light: #FFF3EB;
+    --green: #10B981;
+    --green-light: #ECFDF5;
+    --blue: #3B82F6;
+    --blue-light: #EFF6FF;
+    --red: #EF4444;
+    --gray900: #111827;
+    --gray700: #374151;
+    --gray500: #6B7280;
+    --gray300: #D1D5DB;
+    --gray100: #F3F4F6;
+    --bg: #FAFAFA;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    background: var(--bg);
+    color: var(--gray900);
+    line-height: 1.7;
+  }
+
+  /* 헤더 */
+  .hero {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    color: white;
+    padding: 60px 40px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: '💸';
+    position: absolute;
+    right: 60px;
+    top: 40px;
+    font-size: 120px;
+    opacity: 0.12;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: var(--orange);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--orange); }
+  .hero p {
+    font-size: 16px;
+    color: rgba(255,255,255,0.65);
+    max-width: 560px;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+  }
+  .hero-meta-item strong { color: rgba(255,255,255,0.9); }
+
+  /* 레이아웃 */
+  .container { max-width: 900px; margin: 0 auto; padding: 48px 24px; }
+
+  /* 섹션 */
+  .section { margin-bottom: 56px; }
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .section-num {
+    width: 28px; height: 28px;
+    background: var(--orange);
+    color: white;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--gray900);
+  }
+
+  /* 카드 */
+  .card {
+    background: white;
+    border: 1px solid var(--gray300);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-orange { border-left: 4px solid var(--orange); }
+  .card-green  { border-left: 4px solid var(--green); }
+  .card-blue   { border-left: 4px solid var(--blue); }
+  .card-red    { border-left: 4px solid var(--red); }
+
+  /* 인사이트 박스 */
+  .insight {
+    background: #1a1a2e;
+    color: white;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .insight h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--orange);
+  }
+  .insight p { font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.8; }
+  .insight .stat {
+    display: inline-block;
+    background: var(--orange);
+    color: white;
+    font-weight: 800;
+    padding: 2px 10px;
+    border-radius: 6px;
+    margin: 0 2px;
+  }
+
+  /* 비교 테이블 */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    background: var(--gray900);
+    color: white;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+  th:first-child { border-radius: 12px 0 0 0; }
+  th:last-child  { border-radius: 0 12px 0 0; }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gray100);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: var(--gray100); }
+  .check { color: var(--green); font-weight: 700; }
+  .cross { color: var(--red); }
+  .partial { color: var(--orange); }
+
+  /* 기능 그리드 */
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .feat-card {
+    background: white;
+    border: 1px solid var(--gray300);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .feat-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .feat-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--gray900);
+  }
+  .feat-desc {
+    font-size: 13px;
+    color: var(--gray500);
+    line-height: 1.6;
+  }
+  .feat-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 100px;
+    margin-top: 10px;
+    letter-spacing: 0.3px;
+  }
+  .badge-now   { background: var(--orange-light); color: var(--orange); }
+  .badge-later { background: var(--blue-light);   color: var(--blue); }
+  .badge-reuse { background: var(--green-light);  color: var(--green); }
+
+  /* OKR */
+  .okr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .okr-card {
+    background: white;
+    border: 1px solid var(--gray300);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+  }
+  .okr-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--orange);
+    margin-bottom: 4px;
+  }
+  .okr-label {
+    font-size: 13px;
+    color: var(--gray500);
+    line-height: 1.5;
+  }
+
+  /* 릴리즈 타임라인 */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--gray300);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 28px;
+  }
+  .timeline-dot {
+    position: absolute;
+    left: -24px;
+    top: 4px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px var(--orange);
+    background: var(--orange);
+  }
+  .timeline-dot.later {
+    background: white;
+    box-shadow: 0 0 0 2px var(--blue);
+  }
+  .timeline-phase {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--orange);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .timeline-phase.later { color: var(--blue); }
+  .timeline-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .timeline-items {
+    list-style: none;
+    font-size: 13px;
+    color: var(--gray500);
+  }
+  .timeline-items li::before { content: '· '; color: var(--orange); font-weight: 700; }
+  .timeline-items li.later::before { color: var(--blue); }
+
+  /* 유저 스토리 */
+  .story {
+    background: white;
+    border: 1px solid var(--gray300);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .story-emoji { font-size: 32px; flex-shrink: 0; }
+  .story-as { font-size: 11px; font-weight: 700; color: var(--gray500); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .story-text { font-size: 14px; color: var(--gray700); line-height: 1.6; }
+  .story-text strong { color: var(--orange); }
+
+  /* 태그 */
+  .tag {
+    display: inline-block;
+    background: var(--orange-light);
+    color: var(--orange);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin: 3px 2px;
+  }
+  .tag-blue { background: var(--blue-light); color: var(--blue); }
+  .tag-green { background: var(--green-light); color: var(--green); }
+
+  /* 구분선 */
+  hr { border: none; border-top: 1px solid var(--gray300); margin: 40px 0; }
+
+  /* 푸터 */
+  footer {
+    background: var(--gray900);
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+  }
+  footer strong { color: var(--orange); }
+
+  @media (max-width: 600px) {
+    .hero { padding: 40px 24px; }
+    .hero h1 { font-size: 26px; }
+    .hero::after { display: none; }
+    .container { padding: 32px 16px; }
+    .feat-grid { grid-template-columns: 1fr; }
+    .okr-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">PRD v1.0 · 2026.04.23</div>
+  <h1>언니픽 <span>가성비맵</span><br>— 창원판 거지맵</h1>
+  <p>고물가 시대, 1만 원 이하 창원 맛집을 지도로 한눈에. 거지맵 트렌드를 언니픽만의 방식으로 흡수합니다.</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">📋 <strong>담당</strong> bangju (1인 개발)</div>
+    <div class="hero-meta-item">📱 <strong>플랫폼</strong> iOS 앱 + 웹 어드민</div>
+    <div class="hero-meta-item">🎯 <strong>대상</strong> 창원 2030 직장인·대학생</div>
+    <div class="hero-meta-item">⏱ <strong>1차 출시</strong> 2~3주 이내 목표</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 1. 배경 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">1</div>
+      <div class="section-title">배경 — 거지맵이 왜 100만을 모았나</div>
+    </div>
+
+    <div class="insight">
+      <h3>🔥 거지맵 핵심 지표 (2026.03 출시)</h3>
+      <p>
+        출시 <span class="stat">3주</span> 만에 누적 <span class="stat">94만 명</span> 방문.
+        앱 설치·회원가입 없이 웹으로 즉시 접속. 핵심은 단 하나 —
+        <strong>1만 원 이하 식당을 지도에서 바로 찾는다.</strong>
+        고물가에 지친 2030 직장인이 "점심값 아꼈다"는 경험을 SNS에 공유하며 바이럴.
+      </p>
+    </div>
+
+    <div class="card card-orange">
+      <p style="font-size:14px; color:var(--gray700);">
+        <strong style="color:var(--orange);">왜 지금인가?</strong><br>
+        언니픽은 이미 창원 맛집 DB·지도·리뷰를 보유하고 있습니다. 여기에
+        <strong>가격 필터 + 가성비 제보 보상</strong>만 추가하면
+        거지맵이 전국 단위로 못 하는 <em>"창원 특화 초밀도 가성비맵"</em>이 됩니다.
+        거지맵의 전국 DB가 창원을 채우기 전에 선점해야 합니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 2. 경쟁 분석 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">2</div>
+      <div class="section-title">경쟁 분석</div>
+    </div>
+    <div style="overflow-x:auto; border-radius:12px; border:1px solid var(--gray300);">
+      <table>
+        <thead>
+          <tr>
+            <th>기능</th>
+            <th>거지맵</th>
+            <th>네이버맵</th>
+            <th>카카오맵</th>
+            <th style="background:var(--orange);">언니픽 (목표)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>가격대 필터 (1만원↓)</td>
+            <td class="check">✓ 핵심기능</td>
+            <td class="partial">△ 제한적</td>
+            <td class="cross">✗</td>
+            <td class="check" style="font-weight:700;">✓ 추가 예정</td>
+          </tr>
+          <tr>
+            <td>창원 특화 DB</td>
+            <td class="cross">✗ 전국단위</td>
+            <td class="partial">△ 일반 정보</td>
+            <td class="partial">△ 일반 정보</td>
+            <td class="check" style="font-weight:700;">✓ 기존 보유</td>
+          </tr>
+          <tr>
+            <td>스탬프·쿠폰 연동</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="check" style="font-weight:700;">✓ 기존 시스템</td>
+          </tr>
+          <tr>
+            <td>가격 제보 보상</td>
+            <td class="cross">✗ 무보상</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="check" style="font-weight:700;">✓ 코인 지급</td>
+          </tr>
+          <tr>
+            <td>앱 없이 즉시 사용</td>
+            <td class="check">✓</td>
+            <td class="partial">△</td>
+            <td class="partial">△</td>
+            <td class="cross">앱 필요 (약점)</td>
+          </tr>
+          <tr>
+            <td>가성비 평가 시스템</td>
+            <td class="check">✓ 올림/내림</td>
+            <td class="partial">△ 별점</td>
+            <td class="partial">△ 별점</td>
+            <td class="check" style="font-weight:700;">✓ 추가 예정</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. 목표 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">3</div>
+      <div class="section-title">목표 (OKR)</div>
+    </div>
+    <div class="okr-grid">
+      <div class="okr-card">
+        <div class="okr-value">500+</div>
+        <div class="okr-label">출시 1개월 내<br>가성비맵 MAU</div>
+      </div>
+      <div class="okr-card">
+        <div class="okr-value">200+</div>
+        <div class="okr-label">사용자 가격제보<br>1개월 누적</div>
+      </div>
+      <div class="okr-card">
+        <div class="okr-value">30%↑</div>
+        <div class="okr-label">지도 탭<br>체류 시간 증가</div>
+      </div>
+      <div class="okr-card">
+        <div class="okr-value">50+</div>
+        <div class="okr-label">1만원↓<br>등록 매장 수</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 타겟 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">4</div>
+      <div class="section-title">타겟 사용자</div>
+    </div>
+    <div class="story">
+      <div class="story-emoji">👩‍💼</div>
+      <div>
+        <div class="story-as">Primary · 창원 직장인 (25~35세)</div>
+        <div class="story-text">
+          점심시간 12시에 지도를 켜서 <strong>도보 5분 이내, 8천원 이하</strong> 식당을 바로 찾고 싶다.
+          매일 같은 가게만 가기 싫고, 새로운 가성비 맛집을 발견하면 동료에게 공유한다.
+        </div>
+      </div>
+    </div>
+    <div class="story">
+      <div class="story-emoji">🎓</div>
+      <div>
+        <div class="story-as">Secondary · 창원대·경남대 대학생</div>
+        <div class="story-text">
+          한 달 식비 예산이 빠듯하다. <strong>5천원 이하</strong> 식당을 미리 파악해두고,
+          가격 제보하면 <strong>코인을 받아서 쿠폰으로 교환</strong>하고 싶다.
+        </div>
+      </div>
+    </div>
+    <div class="story">
+      <div class="story-emoji">🏪</div>
+      <div>
+        <div class="story-as">Tertiary · 창원 소상공인 (가맹점주)</div>
+        <div class="story-text">
+          내 가게가 가성비맵에 노출되면 <strong>새 고객 유입</strong>이 생긴다.
+          가성비 뱃지를 받으면 앱 메인에 노출 기회가 생긴다.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 핵심 기능 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">5</div>
+      <div class="section-title">핵심 기능 명세</div>
+    </div>
+
+    <p style="font-size:13px; color:var(--gray500); margin-bottom:20px;">
+      <span class="tag">🟠 1차 출시</span> 즉시 구현 가능 &nbsp;
+      <span class="tag tag-green">🟢 재활용</span> 기존 코드 확장 &nbsp;
+      <span class="tag tag-blue">🔵 2차</span> 출시 이후 추가
+    </p>
+
+    <div class="feat-grid">
+      <div class="feat-card">
+        <span class="feat-icon">🗺️</span>
+        <div class="feat-title">가성비 모드 (지도 필터)</div>
+        <div class="feat-desc">
+          지도 상단에 "가성비맵" 토글 버튼. 활성화 시 1만원 이하 메뉴가 있는 매장만 핀으로 표시.
+          5천원↓ / 8천원↓ / 1만원↓ 세 단계 슬라이더.
+        </div>
+        <span class="feat-badge badge-now">🟠 1차 출시</span>
+        <span class="feat-badge badge-reuse">🟢 기존 MapScreen 확장</span>
+      </div>
+
+      <div class="feat-card">
+        <span class="feat-icon">💬</span>
+        <div class="feat-title">가격 제보 + 코인 보상</div>
+        <div class="feat-desc">
+          매장 상세 페이지에 "가격 제보하기" 버튼. 메뉴명·가격 입력 후 제보 시
+          언니픽 코인 10개 지급. 어드민 승인 후 지도에 반영.
+        </div>
+        <span class="feat-badge badge-now">🟠 1차 출시</span>
+        <span class="feat-badge badge-reuse">🟢 기존 코인 시스템 연동</span>
+      </div>
+
+      <div class="feat-card">
+        <span class="feat-icon">👍</span>
+        <div class="feat-title">가성비 올림 / 내림</div>
+        <div class="feat-desc">
+          거지맵의 핵심 자정 시스템 도입. 매장 카드에 엄지 위/아래 버튼.
+          올림 많을수록 "가성비 뱃지" 자동 부여. 로그인 유저만 1일 1회 가능.
+        </div>
+        <span class="feat-badge badge-now">🟠 1차 출시</span>
+      </div>
+
+      <div class="feat-card">
+        <span class="feat-icon">🏅</span>
+        <div class="feat-title">가성비 뱃지 시스템</div>
+        <div class="feat-desc">
+          올림 10개↑ → 💚 가성비 맛집 뱃지 자동 부여.
+          뱃지 보유 매장은 지도 핀 색상 변경 + 홈 "오늘의 가성비" 섹션 노출.
+        </div>
+        <span class="feat-badge badge-now">🟠 1차 출시</span>
+      </div>
+
+      <div class="feat-card">
+        <span class="feat-icon">📋</span>
+        <div class="feat-title">창원 가성비 랭킹</div>
+        <div class="feat-desc">
+          홈 탭에 "이번 주 창원 가성비 TOP 10" 섹션 추가.
+          올림 수 + 방문 수 기반 자동 순위. 매주 월요일 갱신.
+        </div>
+        <span class="feat-badge badge-now">🟠 1차 출시</span>
+      </div>
+
+      <div class="feat-card">
+        <span class="feat-icon">🔍</span>
+        <div class="feat-title">가격대 검색 필터</div>
+        <div class="feat-desc">
+          기존 검색 화면에 "예산" 필터 추가. "5천원으로 뭐 먹지?" 입력 시
+          해당 가격 이하 메뉴 보유 매장 자동 필터링.
+        </div>
+        <span class="feat-badge badge-now">🟠 1차 출시</span>
+      </div>
+
+      <div class="feat-card">
+        <span class="feat-icon">🎫</span>
+        <div class="feat-title">가성비 쿠폰 연동</div>
+        <div class="feat-desc">
+          가성비맵에서 직접 쿠폰 발급 가능. "이 가게 쿠폰 받기" 버튼.
+          가성비 뱃지 매장에서 첫 방문 시 자동 쿠폰 지급.
+        </div>
+        <span class="feat-badge badge-later">🔵 2차</span>
+      </div>
+
+      <div class="feat-card">
+        <span class="feat-icon">📸</span>
+        <div class="feat-title">가성비 피드 (SNS 공유)</div>
+        <div class="feat-desc">
+          "오늘 8,500원으로 점심 해결!" 형식의 공유 카드 자동 생성.
+          인스타 스토리에 바로 공유되는 가성비 인증 템플릿.
+        </div>
+        <span class="feat-badge badge-later">🔵 2차</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. DB 변경 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">6</div>
+      <div class="section-title">DB 스키마 변경 (최소)</div>
+    </div>
+    <div class="card card-green">
+      <pre style="font-size:13px; line-height:1.8; color:var(--gray700); overflow-x:auto;">
+-- restaurants 테이블에 컬럼 추가
+ALTER TABLE restaurants
+  ADD COLUMN IF NOT EXISTS cheapest_price   integer,   -- 최저 메뉴 가격 (원)
+  ADD COLUMN IF NOT EXISTS value_score      integer DEFAULT 0,  -- 올림 - 내림
+  ADD COLUMN IF NOT EXISTS value_badge      boolean DEFAULT false; -- 가성비 뱃지
+
+-- 가격 제보 테이블 (신규)
+CREATE TABLE price_reports (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id uuid REFERENCES restaurants(id),
+  user_id       uuid REFERENCES users(id),
+  menu_name     text NOT NULL,
+  price         integer NOT NULL,
+  status        text DEFAULT 'pending',  -- pending | approved | rejected
+  created_at    timestamptz DEFAULT now()
+);
+
+-- 가성비 평가 테이블 (신규)
+CREATE TABLE value_votes (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id uuid REFERENCES restaurants(id),
+  user_id       uuid REFERENCES users(id),
+  vote          smallint NOT NULL CHECK (vote IN (1, -1)),
+  created_at    timestamptz DEFAULT now(),
+  UNIQUE (restaurant_id, user_id)
+);</pre>
+    </div>
+  </div>
+
+  <!-- 7. 사용자 플로우 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">7</div>
+      <div class="section-title">핵심 사용자 플로우</div>
+    </div>
+    <div class="card">
+      <div style="font-size:14px; line-height:2.2; color:var(--gray700);">
+        <strong style="color:var(--orange);">플로우 A — 가성비 점심 찾기</strong><br>
+        홈 탭 → 지도 탭 진입 → 상단 <strong>"💸 가성비맵"</strong> 토글 ON
+        → 가격 슬라이더 8천원으로 설정 → 현재 위치 기준 핀 필터링
+        → 매장 카드 탭 → 메뉴·가격 확인 → 쿠폰 발급 → 방문
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:14px; line-height:2.2; color:var(--gray700);">
+        <strong style="color:var(--orange);">플로우 B — 가격 제보로 코인 획득</strong><br>
+        매장 상세 → <strong>"💬 가격 제보"</strong> 탭 → 메뉴명 + 가격 입력 → 제출
+        → 코인 10개 즉시 지급 알림 → 어드민 승인 (24시간 이내) → 지도에 반영
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:14px; line-height:2.2; color:var(--gray700);">
+        <strong style="color:var(--orange);">플로우 C — 가성비 평가</strong><br>
+        매장 카드 → 👍 올림 탭 → 로그인 확인 → 1일 1회 투표 반영
+        → 올림 10개 도달 시 자동 뱃지 부여 → 홈 TOP 10 노출
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. 릴리즈 플랜 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">8</div>
+      <div class="section-title">릴리즈 플랜</div>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-phase">Phase 1 — 2주 이내</div>
+        <div class="timeline-title">가성비맵 MVP</div>
+        <ul class="timeline-items">
+          <li>DB 스키마 추가 (cheapest_price, value_score, value_badge)</li>
+          <li>지도 탭 가성비 필터 토글 + 가격 슬라이더</li>
+          <li>매장 카드에 가성비 뱃지 + 최저가 표시</li>
+          <li>올림/내림 투표 버튼</li>
+          <li>홈 "이번 주 가성비 TOP 5" 섹션</li>
+          <li>어드민 웹에 가격제보 승인 화면</li>
+        </ul>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-phase">Phase 2 — 런칭 후 2주</div>
+        <div class="timeline-title">제보 보상 + 데이터 축적</div>
+        <ul class="timeline-items">
+          <li>가격 제보 화면 + 코인 10개 보상</li>
+          <li>가성비 랭킹 주간 자동 갱신 (크론)</li>
+          <li>가격대 검색 필터 (예산 입력)</li>
+          <li>푸시 알림 "내 동네 새 가성비 맛집 등록됨"</li>
+        </ul>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot later"></div>
+        <div class="timeline-phase later">Phase 3 — 런칭 후 1개월</div>
+        <div class="timeline-title">바이럴 + 가맹점 연동</div>
+        <ul class="timeline-items later">
+          <li class="later">가성비 인증 공유 카드 (인스타 스토리)</li>
+          <li class="later">가성비 뱃지 매장 — 첫 방문 자동 쿠폰</li>
+          <li class="later">가맹점주 어드민에 가성비맵 노출 통계</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 가정 / 리스크 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">9</div>
+      <div class="section-title">가정 & 리스크</div>
+    </div>
+    <div class="card card-red">
+      <table style="font-size:13px;">
+        <thead>
+          <tr>
+            <th>리스크</th>
+            <th>가능성</th>
+            <th>대응</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>거지맵이 창원 DB를 빠르게 채움</td>
+            <td>중</td>
+            <td>스탬프·쿠폰 연동 차별화. 거지맵엔 없는 로열티 시스템.</td>
+          </tr>
+          <tr>
+            <td>허위 가격 제보 어뷰징</td>
+            <td>중</td>
+            <td>어드민 승인 필수 + 올림/내림 자정 시스템</td>
+          </tr>
+          <tr>
+            <td>가맹점주 반발 (가격 공개 부담)</td>
+            <td>저</td>
+            <td>opt-in 방식. 참여 매장만 가성비맵 노출.</td>
+          </tr>
+          <tr>
+            <td>초기 데이터 부족 (가격 미입력 매장)</td>
+            <td>고</td>
+            <td>런칭 전 기존 DB에서 menu_items 가격 자동 추출. 부족분은 제보로 채움.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 10. 왜 언니픽이 유리한가 -->
+  <div class="section">
+    <div class="section-label">
+      <div class="section-num">10</div>
+      <div class="section-title">언니픽만의 차별점 — 거지맵이 따라올 수 없는 것</div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px;">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:32px; margin-bottom:8px;">🎟</div>
+        <div style="font-weight:700; margin-bottom:6px;">스탬프 & 쿠폰</div>
+        <div style="font-size:13px; color:var(--gray500);">가성비 맛집 방문하면 스탬프 2배 적립. 거지맵엔 없는 리텐션 루프.</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:32px; margin-bottom:8px;">📍</div>
+        <div style="font-weight:700; margin-bottom:6px;">창원 초밀도 DB</div>
+        <div style="font-size:13px; color:var(--gray500);">이미 수백 개 창원 맛집 DB 보유. 거지맵이 창원을 채우려면 시간이 걸림.</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:32px; margin-bottom:8px;">🏪</div>
+        <div style="font-weight:700; margin-bottom:6px;">가맹점 네트워크</div>
+        <div style="font-size:13px; color:var(--gray500);">실제 가맹점주와 관계. 정확한 가격 정보를 공식 채널로 받을 수 있음.</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:32px; margin-bottom:8px;">🪙</div>
+        <div style="font-weight:700; margin-bottom:6px;">코인 보상 생태계</div>
+        <div style="font-size:13px; color:var(--gray500);">제보하면 코인 → 쿠폰 교환. 거지맵은 무보상 자원봉사 구조.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <strong>언니픽 PRD</strong> — 가성비맵 (거지맵 대응) &nbsp;·&nbsp; v1.0 &nbsp;·&nbsp; 2026.04.23 &nbsp;·&nbsp; 담당: bangju
+</footer>
+
+</body>
+</html>
