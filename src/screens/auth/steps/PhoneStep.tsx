@@ -24,7 +24,6 @@ interface Props {
   error?:   string;
   // 소셜 로그인
   onKakaoLogin?:  () => void;
-  onGoogleLogin?: () => void;
   onAppleLogin?:  () => void;
   showApple?:     boolean;    // iOS 기기 + AppleAuth 가능 여부
   socialLoading?: boolean;
@@ -40,7 +39,7 @@ function formatPhone(raw: string): string {
 
 export default function PhoneStep({
   phone, setPhone, onNext, loading, error,
-  onKakaoLogin, onGoogleLogin, onAppleLogin,
+  onKakaoLogin, onAppleLogin,
   showApple = false, socialLoading = false,
 }: Props) {
   const inputRef = useRef<TextInput>(null);
@@ -95,7 +94,7 @@ export default function PhoneStep({
         </View>
 
         {/* ── 소셜 로그인 ── */}
-        {(onKakaoLogin || onGoogleLogin) && (
+        {(onKakaoLogin || (showApple && onAppleLogin)) && (
           <View style={s.social}>
             {/* 구분선 */}
             <View style={s.divRow}>
@@ -119,19 +118,6 @@ export default function PhoneStep({
                       <Text style={[s.socialText, { color: '#3C1E1E' }]}>카카오로 시작하기</Text>
                     </>
                 }
-              </TouchableOpacity>
-            )}
-
-            {/* 구글 버튼 */}
-            {onGoogleLogin && (
-              <TouchableOpacity
-                style={[s.socialBtn, s.googleBg]}
-                onPress={onGoogleLogin}
-                disabled={socialLoading || loading}
-                activeOpacity={0.85}
-              >
-                <Text style={s.socialIcon}>G</Text>
-                <Text style={[s.socialText, { color: PALETTE.gray900 }]}>Google로 시작하기</Text>
               </TouchableOpacity>
             )}
 
@@ -329,11 +315,6 @@ const s = StyleSheet.create({
   },
   kakaoBg: {
     backgroundColor: '#FEE500',
-  },
-  googleBg: {
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: PALETTE.gray200,
   },
   appleBg: {
     backgroundColor: '#000',

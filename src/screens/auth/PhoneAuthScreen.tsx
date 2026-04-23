@@ -21,7 +21,7 @@ import { supabase } from '../../lib/supabase';
 import { PALETTE } from '../../constants/theme';
 import { notifyAdmin, registerPushToken } from '../../lib/services/pushService';
 import {
-  signInWithKakao, signInWithGoogle, signInWithApple,
+  signInWithKakao, signInWithApple,
   ensureSocialProfile, isAppleSignInAvailable,
 } from '../../lib/services/socialAuthService';
 
@@ -102,9 +102,8 @@ export default function PhoneAuthScreen() {
     }
   }, [navigation]);
 
-  const handleKakaoLogin  = useCallback(() => handleSocialLogin(signInWithKakao),  [handleSocialLogin]);
-  const handleGoogleLogin = useCallback(() => handleSocialLogin(signInWithGoogle), [handleSocialLogin]);
-  const handleAppleLogin  = useCallback(() => handleSocialLogin(signInWithApple),  [handleSocialLogin]);
+  const handleKakaoLogin = useCallback(() => handleSocialLogin(signInWithKakao),  [handleSocialLogin]);
+  const handleAppleLogin = useCallback(() => handleSocialLogin(signInWithApple),  [handleSocialLogin]);
 
   // ── 국제 전화번호 ─────────────────────────────────────────────────
   const intlPhone = (p: string) => '+82' + p.replace(/\D/g, '').slice(1); // 010→+8210
@@ -388,7 +387,6 @@ export default function PhoneAuthScreen() {
           loading={loading}
           error={error}
           onKakaoLogin={handleKakaoLogin}
-          onGoogleLogin={handleGoogleLogin}
           onAppleLogin={handleAppleLogin}
           showApple={appleAvail}
           socialLoading={socialLoading}
