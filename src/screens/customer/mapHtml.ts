@@ -183,50 +183,44 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
     function onStore(id) { send({ type:'MARKER_PRESS', storeId: id }); }
     function onDist(id)  { send({ type:'DISTRICT_PRESS', id: id }); }
 
-    /* ── ② Kakao SDK 초기화 (onload 콜백에서만 실행) ─────────── */
+    /* ── ② 지도 직접 초기화 (autoload 기본값 사용, kakao.maps.load() 없음) ── */
     function initKakaoMap() {
       try {
-        kakao.maps.load(function() {
-          try {
-            var container = document.getElementById('map');
-            map = new kakao.maps.Map(container, {
-              center: new kakao.maps.LatLng(35.2340, 128.6668),
-              level:  5
-            });
-
-            kakao.maps.event.addListener(map, 'idle', function() {
-              var c  = map.getCenter();
-              var b  = map.getBounds();
-              var sw = b.getSouthWest();
-              var ne = b.getNorthEast();
-              send({
-                type: 'REGION_CHANGE',
-                lat: c.getLat(), lng: c.getLng(),
-                latitudeDelta: ne.getLat() - sw.getLat(),
-                longitudeDelta: ne.getLng() - sw.getLng()
-              });
-            });
-
-            kakao.maps.event.addListener(map, 'click', function() {
-              send({ type:'MAP_PRESS' });
-            });
-
-            send({ type:'MAP_READY' });
-          } catch(e) {
-            showErr('지도 초기화 실패: ' + e.message);
-          }
+        var container = document.getElementById('map');
+        map = new kakao.maps.Map(container, {
+          center: new kakao.maps.LatLng(35.2340, 128.6668),
+          level:  5
         });
+
+        kakao.maps.event.addListener(map, 'idle', function() {
+          var c  = map.getCenter();
+          var b  = map.getBounds();
+          var sw = b.getSouthWest();
+          var ne = b.getNorthEast();
+          send({
+            type: 'REGION_CHANGE',
+            lat: c.getLat(), lng: c.getLng(),
+            latitudeDelta: ne.getLat() - sw.getLat(),
+            longitudeDelta: ne.getLng() - sw.getLng()
+          });
+        });
+
+        kakao.maps.event.addListener(map, 'click', function() {
+          send({ type:'MAP_PRESS' });
+        });
+
+        send({ type:'MAP_READY' });
       } catch(e) {
-        showErr('Kakao SDK 오류: ' + e.message);
+        showErr('지도 초기화 실패: ' + e.message);
       }
     }
   </script>
 
-  <!-- ③ SDK 로드 — onload/onerror 로 안전하게 처리 -->
+  <!-- ③ SDK 로드 (autoload=false 제거 → 기본 autoload 사용, kakao.maps.load() 불필요) -->
   <script
-    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false"
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}"
     onload="initKakaoMap()"
-    onerror="showErr('카카오맵 SDK 로드 실패. 네트워크 또는 플랫폼 등록을 확인하세요.')">
+    onerror="showErr('카카오맵 SDK 로드 실패. 네트워크 또는 앱키를 확인하세요.')">
   </script>
 </body>
 </html>`;
