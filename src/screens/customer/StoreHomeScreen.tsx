@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 import { fetchStore, StoreRow } from '../../lib/services/storeService';
 import {
@@ -35,6 +35,9 @@ interface PriceReport {
   disagree_count: number;
   myVote?:        'agree' | 'disagree' | null;  // 현재 유저 투표
 }
+
+const KAKAO_MAP_URI =
+  process.env.EXPO_PUBLIC_KAKAO_MAP_URI ?? 'http://localhost:3000/api/kakaomap';
 
 export default function StoreHomeScreen() {
   const navigation = useNavigation<any>();
@@ -331,45 +334,38 @@ export default function StoreHomeScreen() {
             </View>
           )}
 
-          {/* 위치 지도 썸네일 → 언니픽 지도로 이동 */}
+          {/* 위치 지도 썸네일 (카카오맵) → 언니픽 지도로 이동 */}
           {!!store.latitude && !!store.longitude && (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('CustomerTabs', {
-                screen:  'MapTab',
-                params: {
-                  focusLat:   store.latitude,
-                  focusLng:   store.longitude,
-                  focusStore: store.id,
-                },
-              })}
-            >
-              <View style={styles.mapWrap}>
-                <MapView
-                  provider={PROVIDER_DEFAULT}
-                  style={styles.mapView}
-                  initialRegion={{
-                    latitude: store.latitude,
-                    longitude: store.longitude,
-                    latitudeDelta: 0.004,
-                    longitudeDelta: 0.004,
-                  }}
-                  scrollEnabled={false}
-                  zoomEnabled={false}
-                  rotateEnabled={false}
-                  pitchEnabled={false}
-                  pointerEvents="none"
-                >
-                  <Marker
-                    coordinate={{ latitude: store.latitude, longitude: store.longitude }}
-                    title={store.name}
-                  />
-                </MapView>
+            <View style={styles.mapWrap}>
+              <WebView
+                source={{
+                  uri: `${KAKAO_MAP_URI}?lat=${store.latitude}&lng=${store.longitude}&level=4`,
+                }}
+                style={StyleSheet.absoluteFill}
+                scrollEnabled={false}
+                bounces={false}
+                javaScriptEnabled
+                domStorageEnabled
+                pointerEvents="none"
+              />
+              {/* 터치 인터셉터: WebView 위를 덮어 탭을 가로챔 */}
+              <TouchableOpacity
+                style={StyleSheet.absoluteFill}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('CustomerTabs', {
+                  screen: 'MapTab',
+                  params: {
+                    focusLat:   store.latitude,
+                    focusLng:   store.longitude,
+                    focusStore: store.id,
+                  },
+                })}
+              >
                 <View style={styles.mapOverlay}>
                   <Text style={styles.mapOverlayText}>🗺 언니픽 지도로 보기</Text>
                 </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* A사 플레이스 링크 */}
@@ -379,7 +375,7 @@ export default function StoreHomeScreen() {
               onPress={() => Linking.openURL(store.naver_place_url!)}
               activeOpacity={0.75}
             >
-              <Text style={styles.naverBtnText}>A사 업체정보</Text>
+              <Text style={styles.naverBtnText}>네이버 업체정보</Text>
             </TouchableOpacity>
           )}
 
@@ -693,10 +689,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     overflow: 'hidden',
     marginTop: 2,
-  },
-  mapView: {
-    width: '100%',
-    height: '100%',
   },
   mapOverlay: {
     position: 'absolute',
