@@ -4,6 +4,10 @@
  *
  * RN → WebView : injectJavaScript (window.moveMap / window.setStores / ...)
  * WebView → RN : ReactNativeWebView.postMessage (JSON)
+ *
+ * ⚠️ 구조 원칙
+ *  - window.* 명령 함수들은 SDK와 무관하게 첫 번째 <script>에서 즉시 정의
+ *  - SDK 로드는 onload/onerror 콜백으로만 처리 → 로드 실패해도 window.panMap 등 undefined 방지
  */
 
 export function buildKakaoMapHtml(kakaoJsKey: string): string {
@@ -15,23 +19,10 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html, body, #map { width:100%; height:100vh; overflow:hidden; }
-
-    .chip {
-      display:flex; align-items:center; gap:4px;
-      border-radius:20px; border:2px solid;
-      padding:5px 10px; cursor:pointer;
-      box-shadow:0 2px 6px rgba(0,0,0,0.18);
-      font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
-      max-width:130px;
-    }
-    .chip-label {
-      font-size:12px; font-weight:700;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px;
-    }
-    .chip-tail {
-      width:0; height:0;
-      border-left:5px solid transparent; border-right:5px solid transparent;
-      border-top:7px solid; margin:-1px auto 0;
+    #err-banner {
+      display:none; position:fixed; top:0; left:0; right:0;
+      background:#E53935; color:#fff; font-size:12px;
+      padding:6px 12px; text-align:center; z-index:9999;
     }
     .dist-chip {
       display:flex; align-items:center; gap:4px;
@@ -56,54 +47,34 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
 </head>
 <body>
   <div id="map"></div>
-  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false"></script>
+  <div id="err-banner"></div>
+
+  <!-- ① window.* 명령 함수 즉시 정의 (SDK 로드 성공/실패와 무관) -->
   <script>
-    var map, myLocOverlay;
-    var storeOverlays  = {};
-    var distOverlays   = [];
-    var selectedId     = null;
+    var map = null;
+    var myLocOverlay = null;
+    var storeOverlays = {};
+    var distOverlays  = [];
+    var selectedId    = null;
     var C = { brand:'#FF6F0F', red:'#E53935', gray:'#ADB5BD' };
 
-    kakao.maps.load(function() {
-      var container = document.getElementById('map');
-      map = new kakao.maps.Map(container, {
-        center: new kakao.maps.LatLng(35.2340, 128.6668),
-        level:  5
-      });
-
-      /* 지도 드래그·줌 완료 → region 전달 */
-      kakao.maps.event.addListener(map, 'idle', function() {
-        var c  = map.getCenter();
-        var b  = map.getBounds();
-        var sw = b.getSouthWest();
-        var ne = b.getNorthEast();
-        send({ type:'REGION_CHANGE',
-          lat: c.getLat(), lng: c.getLng(),
-          latitudeDelta: ne.getLat() - sw.getLat(),
-          longitudeDelta: ne.getLng() - sw.getLng()
-        });
-      });
-
-      /* 빈 곳 클릭 → 선택 해제 */
-      kakao.maps.event.addListener(map, 'click', function() {
-        send({ type:'MAP_PRESS' });
-      });
-
-      send({ type:'MAP_READY' });
-    });
-
-    /* ─────────────────── 유틸 ─────────────────── */
+    /* ── 유틸 ─────────────────────────────── */
     function send(data) {
       if (window.ReactNativeWebView)
         window.ReactNativeWebView.postMessage(JSON.stringify(data));
     }
     function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
         .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
+    function showErr(msg) {
+      var b = document.getElementById('err-banner');
+      b.textContent = msg; b.style.display = 'block';
+      send({ type:'MAP_ERROR', message: msg });
+    }
 
-    /* ─────────────────── RN → WebView 명령 ─────────────────── */
-
+    /* ── RN → WebView 명령 (map이 null이면 조용히 무시) ─────────── */
     window.moveMap = function(lat, lng, level) {
       if (!map) return;
       map.setCenter(new kakao.maps.LatLng(lat, lng));
@@ -117,6 +88,7 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
     };
 
     window.setMyLocation = function(lat, lng) {
+      if (!map) return;
       var pos = new kakao.maps.LatLng(lat, lng);
       if (!myLocOverlay) {
         myLocOverlay = new kakao.maps.CustomOverlay({
@@ -131,12 +103,15 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
     };
 
     window.setDistricts = function(arr) {
+      if (!map) return;
       distOverlays.forEach(function(o){ o.setMap(null); });
       distOverlays = [];
       if (!arr || !arr.length) return;
       arr.forEach(function(d) {
         if (!d.latitude || !d.longitude) return;
-        var content = '<div onclick="onDist(\\'' + esc(d.id) + '\\')" style="display:flex;flex-direction:column;align-items:center;">' +
+        var content =
+          '<div onclick="onDist(\\'' + esc(d.id) + '\\')" ' +
+          'style="display:flex;flex-direction:column;align-items:center;">' +
           '<div class="dist-chip">🗺 ' + esc(d.name) + '</div>' +
           '<div class="dist-tail"></div></div>';
         var ov = new kakao.maps.CustomOverlay({
@@ -148,36 +123,28 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
       });
     };
 
-    window.setStores = function(arr, selId) {
-      selectedId = selId !== undefined ? selId : selectedId;
-      /* 기존 오버레이 제거 */
-      Object.keys(storeOverlays).forEach(function(k){
-        storeOverlays[k].setMap(null);
-      });
+    function _setStoresImpl(arr, selId) {
+      if (!map) return;
+      if (selId !== undefined) selectedId = selId;
+      Object.keys(storeOverlays).forEach(function(k){ storeOverlays[k].setMap(null); });
       storeOverlays = {};
       if (!arr || !arr.length) return;
-      arr.forEach(function(s) {
-        renderStore(s);
-      });
+      arr.forEach(function(s){ renderStore(s); });
+    }
+
+    window.setStores = function(arr, selId) {
+      window.__stores = arr;
+      _setStoresImpl(arr, selId);
     };
 
     window.setSelectedStore = function(id) {
       selectedId = id;
-      Object.keys(storeOverlays).forEach(function(k){
-        storeOverlays[k].setMap(null);
-      });
+      Object.keys(storeOverlays).forEach(function(k){ storeOverlays[k].setMap(null); });
       storeOverlays = {};
-      /* 현재 stores 배열에서 다시 렌더 — window.__stores 에 캐시 */
-      if (window.__stores) window.setStores(window.__stores, id);
+      if (window.__stores) _setStoresImpl(window.__stores, id);
     };
 
-    /* stores 캐시 지원 */
-    var _origSetStores = window.setStores;
-    window.setStores = function(arr, selId) {
-      window.__stores = arr;
-      _origSetStores(arr, selId);
-    };
-
+    /* ── 마커 렌더 ─────────────────────────── */
     function renderStore(s) {
       var color     = s.has_timesale ? C.red : (s.coupon_count > 0 ? C.brand : C.gray);
       var isSel     = selectedId === s.id;
@@ -189,7 +156,8 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
       var zIndex    = isSel ? 10 : 5;
 
       var content =
-        '<div onclick="onStore(\\'' + esc(s.id) + '\\')" style="display:flex;flex-direction:column;align-items:center;">' +
+        '<div onclick="onStore(\\'' + esc(s.id) + '\\')" ' +
+        'style="display:flex;flex-direction:column;align-items:center;">' +
         '<div style="display:flex;align-items:center;gap:4px;background:' + chipBg +
           ';border-radius:20px;border:2px solid ' + color +
           ';padding:5px 10px;box-shadow:' + shadow +
@@ -199,7 +167,8 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
           ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;">' +
           esc(s.label) + '</span>' +
         '</div>' +
-        '<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid ' +
+        '<div style="width:0;height:0;border-left:5px solid transparent;' +
+          'border-right:5px solid transparent;border-top:7px solid ' +
           color + ';margin-top:-1px;"></div>' +
         '</div>';
 
@@ -213,6 +182,51 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
 
     function onStore(id) { send({ type:'MARKER_PRESS', storeId: id }); }
     function onDist(id)  { send({ type:'DISTRICT_PRESS', id: id }); }
+
+    /* ── ② Kakao SDK 초기화 (onload 콜백에서만 실행) ─────────── */
+    function initKakaoMap() {
+      try {
+        kakao.maps.load(function() {
+          try {
+            var container = document.getElementById('map');
+            map = new kakao.maps.Map(container, {
+              center: new kakao.maps.LatLng(35.2340, 128.6668),
+              level:  5
+            });
+
+            kakao.maps.event.addListener(map, 'idle', function() {
+              var c  = map.getCenter();
+              var b  = map.getBounds();
+              var sw = b.getSouthWest();
+              var ne = b.getNorthEast();
+              send({
+                type: 'REGION_CHANGE',
+                lat: c.getLat(), lng: c.getLng(),
+                latitudeDelta: ne.getLat() - sw.getLat(),
+                longitudeDelta: ne.getLng() - sw.getLng()
+              });
+            });
+
+            kakao.maps.event.addListener(map, 'click', function() {
+              send({ type:'MAP_PRESS' });
+            });
+
+            send({ type:'MAP_READY' });
+          } catch(e) {
+            showErr('지도 초기화 실패: ' + e.message);
+          }
+        });
+      } catch(e) {
+        showErr('Kakao SDK 오류: ' + e.message);
+      }
+    }
+  </script>
+
+  <!-- ③ SDK 로드 — onload/onerror 로 안전하게 처리 -->
+  <script
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false"
+    onload="initKakaoMap()"
+    onerror="showErr('카카오맵 SDK 로드 실패. 네트워크 또는 플랫폼 등록을 확인하세요.')">
   </script>
 </body>
 </html>`;

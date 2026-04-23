@@ -91,12 +91,23 @@ export default function MapScreen() {
   const canGoBack  = navigation.canGoBack();
   const mapRef             = useRef<WebView>(null);
   const mapReadyRef        = useRef(false);   // MAP_READY 메시지 이후 true
+  const pendingQueue       = useRef<string[]>([]);  // MAP_READY 전 쌓인 명령 큐
   const lastMarkerPressRef = useRef(0);
   const mapHtml            = useMemo(() => buildKakaoMapHtml(KAKAO_JS_KEY), []);
 
-  /* WebView injectJavaScript 헬퍼 */
+  /* WebView injectJavaScript 헬퍼 — MAP_READY 전이면 큐에 저장 */
   const injectJS = useCallback((code: string) => {
+    if (!mapReadyRef.current) {
+      pendingQueue.current.push(code);
+      return;
+    }
     mapRef.current?.injectJavaScript(code + '; true;');
+  }, []);
+
+  /* 큐 플러시 (MAP_READY 수신 시 호출) */
+  const flushQueue = useCallback(() => {
+    const q = pendingQueue.current.splice(0);
+    q.forEach(code => mapRef.current?.injectJavaScript(code + '; true;'));
   }, []);
   const cardAnim = useRef(new Animated.Value(0)).current;
   const locationSub = useRef<Location.LocationSubscription | null>(null);
@@ -403,6 +414,7 @@ export default function MapScreen() {
       switch (msg.type) {
         case 'MAP_READY':
           mapReadyRef.current = true;
+          flushQueue();  // 큐에 쌓인 명령 먼저 처리
           if (location) injectJS(`window.setMyLocation(${location.coords.latitude}, ${location.coords.longitude})`);
           injectJS(`window.setDistricts(${JSON.stringify(showDistricts ? districts : [])})`);
           syncStoresToMap();
@@ -461,7 +473,7 @@ export default function MapScreen() {
       <WebView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
-        source={{ html: mapHtml, baseUrl: 'https://unniepick.com' }}
+        source={{ html: mapHtml, baseUrl: 'http://localhost' }}
         originWhitelist={['*']}
         javaScriptEnabled
         domStorageEnabled
