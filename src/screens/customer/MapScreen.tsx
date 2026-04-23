@@ -470,15 +470,7 @@ export default function MapScreen() {
   };
 
   // 마커 칩 레이블 (가격 우선)
-  const getMarkerLabel = (store: MapStore) => {
-    if (store.has_timesale) return '⚡ 타임세일';
-    // 가격 있으면 가격 우선 표시
-    if (store.representative_price != null) {
-      return store.price_label ?? `${(store.representative_price / 1000).toFixed(0)}천원~`;
-    }
-    if (store.coupon_count > 0) return `🎟 쿠폰 ${store.coupon_count}개`;
-    return store.name.length > 6 ? store.name.slice(0, 5) + '…' : store.name;
-  };
+  const getMarkerLabel = (store: MapStore) => store.name;
 
   const cardTranslateY = cardAnim.interpolate({
     inputRange: [0, 1],
@@ -521,7 +513,7 @@ export default function MapScreen() {
             <View style={styles.backBtnPlaceholder} />
           )}
           <View style={styles.titleBadge}>
-            <Text style={styles.titleText}>📍 지도</Text>
+            <Text style={styles.titleText}>📍 언니픽 지도</Text>
           </View>
           <View style={{ flex: 1 }} />
           <View style={styles.topBtns}>

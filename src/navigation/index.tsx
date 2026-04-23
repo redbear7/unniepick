@@ -127,7 +127,7 @@ function CustomerTabs() {
         }} />
       <Tab.Screen name="MapTab" component={MapScreen}
         options={{
-          tabBarLabel: '지도',
+          tabBarLabel: '언니픽 지도',
           tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'map' : 'map-outline'} focused={focused} />,
         }} />
       <Tab.Screen name="Wallet" component={WalletScreen}
