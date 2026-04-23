@@ -473,7 +473,7 @@ export default function MapScreen() {
       <WebView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
-        source={{ html: mapHtml, baseUrl: 'http://localhost' }}
+        source={{ html: mapHtml, baseUrl: 'about:blank' }}
         originWhitelist={['*']}
         javaScriptEnabled
         domStorageEnabled
