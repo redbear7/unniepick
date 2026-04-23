@@ -412,6 +412,12 @@ export default function MapScreen() {
     try {
       const msg = JSON.parse(event.nativeEvent.data);
       switch (msg.type) {
+        case 'DEBUG':
+          console.log('[KakaoMap DEBUG]', JSON.stringify(msg));
+          break;
+        case 'MAP_ERROR':
+          console.warn('[KakaoMap ERROR]', msg.message);
+          break;
         case 'MAP_READY':
           mapReadyRef.current = true;
           flushQueue();  // 큐에 쌓인 명령 먼저 처리
@@ -474,6 +480,8 @@ export default function MapScreen() {
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         source={{ html: mapHtml, baseUrl: 'http://localhost' }}
+        // ⚠️ baseUrl이 Kakao 플랫폼에 등록된 도메인과 일치해야 함
+        // 카카오 콘솔: https://developers.kakao.com/console/app/1416561/config/platform
         originWhitelist={['*']}
         javaScriptEnabled
         domStorageEnabled

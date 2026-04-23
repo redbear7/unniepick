@@ -183,10 +183,26 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
     function onStore(id) { send({ type:'MARKER_PRESS', storeId: id }); }
     function onDist(id)  { send({ type:'DISTRICT_PRESS', id: id }); }
 
-    /* ── ② SDK 스크립트 onload → kakao.maps.load()로 지도 모듈 로드 ── */
+    /* ── ② SDK onload ─────────────────────────────────────────────────── */
     function initKakaoMap() {
+      var loc = (window.location && window.location.href) || 'unknown';
+      send({ type:'DEBUG', step:'SDK_ONLOAD', loc: loc });
+
+      // 8초 안에 콜백 없으면 타임아웃 에러 표시
+      var loadTimer = setTimeout(function() {
+        showErr('타임아웃: kakao.maps.load 콜백 없음 | loc=' + loc.slice(0,30));
+      }, 8000);
+
       try {
         kakao.maps.load(function() {
+          clearTimeout(loadTimer);
+          var hasLatLng = (typeof kakao.maps.LatLng !== 'undefined');
+          send({ type:'DEBUG', step:'MAPS_LOAD_CB', hasLatLng: hasLatLng, loc: loc });
+
+          if (!hasLatLng) {
+            showErr('도메인 인증 실패: LatLng 미정의 | loc=' + loc.slice(0,30));
+            return;
+          }
           try {
             var container = document.getElementById('map');
             map = new kakao.maps.Map(container, {
@@ -222,9 +238,9 @@ export function buildKakaoMapHtml(kakaoJsKey: string): string {
     }
   </script>
 
-  <!-- ③ SDK 로드 — autoload=false + onload 콜백 -->
+  <!-- ③ SDK 로드 — autoload=true(기본값) + onload 콜백 -->
   <script
-    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&autoload=false"
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}"
     onload="initKakaoMap()"
     onerror="showErr('카카오맵 SDK 로드 실패. 앱키를 확인하세요.')">
   </script>
