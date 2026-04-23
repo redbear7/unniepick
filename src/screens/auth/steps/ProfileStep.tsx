@@ -29,6 +29,7 @@ interface Props {
   onCheckNick:    (nick: string) => Promise<boolean>; // true = available
   onNext:         () => void;
   onValidChange?: (valid: boolean) => void;
+  canNext?:       boolean;
   loading?:       boolean;
   error?:         string;
 }
@@ -45,7 +46,7 @@ function nickWeight(s: string): number {
 }
 
 export default function ProfileStep({
-  profile, setProfile, onCheckNick, onNext, onValidChange, loading, error,
+  profile, setProfile, onCheckNick, onNext, onValidChange, canNext, loading, error,
 }: Props) {
   const { nickname, birthMonth, birthDay, birthSkip } = profile;
   const [checking, setChecking] = useState<CheckState>('idle');
@@ -200,6 +201,18 @@ export default function ProfileStep({
 
       {error ? <Text style={s.error}>{error}</Text> : null}
     </ScrollView>
+
+    {/* 다음 버튼 — 키보드 위에 고정 */}
+    <View style={s.footer}>
+      <TouchableOpacity
+        style={[s.btn, (!canNext || loading) && s.btnDisabled]}
+        onPress={onNext}
+        disabled={!canNext || loading}
+        activeOpacity={0.85}
+      >
+        <Text style={s.btnText}>{loading ? '저장 중…' : '다음'}</Text>
+      </TouchableOpacity>
+    </View>
 
     {/* 생일 피커 */}
     {pickerOpen && (

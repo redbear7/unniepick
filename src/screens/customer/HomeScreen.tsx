@@ -1149,6 +1149,11 @@ export default function HomeScreen() {
       {/* 1행: 로고 + 현재위치 + 우측 아이콘 */}
       <View style={s.appBarRow1}>
         {/* 로고 + 위치 */}
+        <TouchableOpacity
+          activeOpacity={1}
+          onLongPress={() => navigation.navigate('SuperAdminLogin')}
+          delayLongPress={5000}
+        >
         <View style={s.logoGroup}>
           <Text style={s.logo}>언니픽</Text>
           {locationName ? (
@@ -1157,6 +1162,7 @@ export default function HomeScreen() {
             </View>
           ) : null}
         </View>
+        </TouchableOpacity>
 
         {/* 우측 버튼들 */}
         <View style={s.appBarRight}>
@@ -1171,12 +1177,7 @@ export default function HomeScreen() {
           {userId ? (
             <TouchableOpacity
               style={s.iconBtn}
-              onLongPress={() => {
-                Alert.alert('계정', '로그아웃 하시겠습니까?', [
-                  { text: '취소', style: 'cancel' },
-                  { text: '로그아웃', style: 'destructive', onPress: () => supabase.auth.signOut() },
-                ]);
-              }}
+              onPress={() => navigation.navigate('Notification')}
             >
               <Text style={{ fontSize: 16 }}>🔔</Text>
             </TouchableOpacity>

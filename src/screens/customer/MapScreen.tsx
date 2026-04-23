@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Alert, ActivityIndicator, Platform,
+  ScrollView, Alert, ActivityIndicator,
   Animated, Dimensions,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
-import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { sendNearbyStoreNotification } from '../../lib/notifications';
 import { fetchDistricts, DistrictRow } from '../../lib/services/districtService';
 import { supabase } from '../../lib/supabase';
+import { buildKakaoMapHtml } from './mapHtml';
+
+const KAKAO_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_JS_KEY ?? '';
 
 // ── 지도 전용 가게 타입 (Supabase 실데이터) ──────────────────────
 interface MapStore {
@@ -86,9 +89,15 @@ export default function MapScreen() {
   const navigation = useNavigation<any>();
   const route      = useRoute<any>();
   const canGoBack  = navigation.canGoBack();
-  const mapRef            = useRef<MapView>(null);
-  const mapReadyRef       = useRef(false);   // onMapReady 이후 true
+  const mapRef             = useRef<WebView>(null);
+  const mapReadyRef        = useRef(false);   // MAP_READY 메시지 이후 true
   const lastMarkerPressRef = useRef(0);
+  const mapHtml            = useMemo(() => buildKakaoMapHtml(KAKAO_JS_KEY), []);
+
+  /* WebView injectJavaScript 헬퍼 */
+  const injectJS = useCallback((code: string) => {
+    mapRef.current?.injectJavaScript(code + '; true;');
+  }, []);
   const cardAnim = useRef(new Animated.Value(0)).current;
   const locationSub = useRef<Location.LocationSubscription | null>(null);
 
@@ -113,18 +122,11 @@ export default function MapScreen() {
     const { focusLat, focusLng, focusStore } = route.params ?? {};
     if (!focusLat || !focusLng) return;
 
-    // 지도가 이미 준비됐으면 짧은 딜레이, 아직이면 충분히 기다림
     const delay = mapReadyRef.current ? 150 : 900;
     const animTimer = setTimeout(() => {
-      mapRef.current?.animateToRegion({
-        latitude:      focusLat - 0.002,
-        longitude:     focusLng,
-        latitudeDelta:  0.008,
-        longitudeDelta: 0.008,
-      }, 600);
+      injectJS(`window.panMap(${focusLat - 0.002}, ${focusLng}, 4)`);
     }, delay);
 
-    // 가게 카드 선택 (스토어 데이터 로드 대기 포함)
     let selectTimer: ReturnType<typeof setInterval> | null = null;
     if (focusStore) {
       const trySelect = (stores: MapStore[]) => {
@@ -243,15 +245,9 @@ export default function MapScreen() {
   // 탭 포커스: 실시간 위치 추적 ON/OFF
   useEffect(() => {
     if (isFocused) {
-      // focusLat/Lng 파라미터가 있으면 가게 위치 포커스가 우선 — 사용자 위치로 이동 않음
       const { focusLat, focusLng } = route.params ?? {};
       if (!focusLat && !focusLng && location) {
-        mapRef.current?.animateToRegion({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.015,
-          longitudeDelta: 0.015,
-        }, 600);
+        injectJS(`window.panMap(${location.coords.latitude}, ${location.coords.longitude}, 5)`);
       }
       // 실시간 추적 시작 (3초 간격 or 10m 이동)
       Location.watchPositionAsync(
@@ -300,30 +296,16 @@ export default function MapScreen() {
 
     // 1단계: 빠른 위치 (셀타워/WiFi) → 지도 즉시 이동
     try {
-      const roughLoc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Low,
-      });
+      const roughLoc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
       setLocation(roughLoc);
-      mapRef.current?.animateToRegion({
-        latitude: roughLoc.coords.latitude,
-        longitude: roughLoc.coords.longitude,
-        latitudeDelta: 0.015,
-        longitudeDelta: 0.015,
-      }, 500);
+      injectJS(`window.panMap(${roughLoc.coords.latitude}, ${roughLoc.coords.longitude}, 5)`);
     } catch { /* 1단계 실패 시 2단계에서 처리 */ }
 
     // 2단계: 정밀 GPS 위치 → 조용히 업데이트
     try {
-      const preciseLoc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      const preciseLoc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setLocation(preciseLoc);
-      mapRef.current?.animateToRegion({
-        latitude: preciseLoc.coords.latitude,
-        longitude: preciseLoc.coords.longitude,
-        latitudeDelta: 0.015,
-        longitudeDelta: 0.015,
-      }, 400);
+      injectJS(`window.panMap(${preciseLoc.coords.latitude}, ${preciseLoc.coords.longitude}, 5)`);
     } catch { /* 위치 실패 시 1단계 결과 또는 기본 좌표 사용 */ }
 
     setLoading(false);
@@ -333,33 +315,18 @@ export default function MapScreen() {
 
   const moveToMyLocation = () => {
     if (!location) return;
-    mapRef.current?.animateToRegion({
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    }, 600);
+    injectJS(`window.panMap(${location.coords.latitude}, ${location.coords.longitude}, 5)`);
   };
 
   const moveToDistrict = (d: DistrictRow) => {
     if (!d.latitude || !d.longitude) return;
-    mapRef.current?.animateToRegion({
-      latitude: d.latitude,
-      longitude: d.longitude,
-      latitudeDelta: 0.015,
-      longitudeDelta: 0.015,
-    }, 600);
+    injectJS(`window.panMap(${d.latitude}, ${d.longitude}, 5)`);
   };
 
   const moveToStore = (store: MapStore) => {
     lastMarkerPressRef.current = Date.now();
     setSelectedStore(store);
-    mapRef.current?.animateToRegion({
-      latitude: store.latitude - 0.002,
-      longitude: store.longitude,
-      latitudeDelta: 0.008,
-      longitudeDelta: 0.008,
-    }, 600);
+    injectJS(`window.panMap(${store.latitude - 0.002}, ${store.longitude}, 4)`);
   };
 
   const handleNearbyAlert = async (store: MapStore) => {
@@ -400,6 +367,72 @@ export default function MapScreen() {
       });
   }, [mapRegion, filteredStores, location]);
 
+  /* ── WebView ↔ RN 동기화 ── */
+
+  // 마커 데이터 동기화
+  const syncStoresToMap = useCallback(() => {
+    if (!mapReadyRef.current) return;
+    const payload = filteredStores.map(s => ({
+      id: s.id, emoji: s.emoji,
+      latitude: s.latitude, longitude: s.longitude,
+      coupon_count: s.coupon_count, has_timesale: s.has_timesale,
+      label: getMarkerLabel(s),
+    }));
+    injectJS(`window.setStores(${JSON.stringify(payload)}, ${JSON.stringify(selectedStore?.id ?? null)})`);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredStores, selectedStore, injectJS]);
+
+  useEffect(() => { syncStoresToMap(); }, [syncStoresToMap]);
+
+  // 내 위치 동기화
+  useEffect(() => {
+    if (!mapReadyRef.current || !location) return;
+    injectJS(`window.setMyLocation(${location.coords.latitude}, ${location.coords.longitude})`);
+  }, [location, injectJS]);
+
+  // 상권 동기화
+  useEffect(() => {
+    if (!mapReadyRef.current) return;
+    injectJS(`window.setDistricts(${JSON.stringify(showDistricts ? districts : [])})`);
+  }, [districts, showDistricts, injectJS]);
+
+  // WebView → RN 메시지 처리
+  const handleMessage = useCallback((event: any) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data);
+      switch (msg.type) {
+        case 'MAP_READY':
+          mapReadyRef.current = true;
+          if (location) injectJS(`window.setMyLocation(${location.coords.latitude}, ${location.coords.longitude})`);
+          injectJS(`window.setDistricts(${JSON.stringify(showDistricts ? districts : [])})`);
+          syncStoresToMap();
+          break;
+        case 'REGION_CHANGE':
+          setMapRegion({
+            latitude:      msg.lat,
+            longitude:     msg.lng,
+            latitudeDelta: msg.latitudeDelta,
+            longitudeDelta: msg.longitudeDelta,
+          });
+          break;
+        case 'MARKER_PRESS': {
+          const store = realStores.find(s => s.id === msg.storeId);
+          if (store) moveToStore(store);
+          break;
+        }
+        case 'DISTRICT_PRESS': {
+          const d = districts.find(x => x.id === msg.id);
+          if (d) moveToDistrict(d);
+          break;
+        }
+        case 'MAP_PRESS':
+          if (Date.now() - lastMarkerPressRef.current > 200) setSelectedStore(null);
+          break;
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location, districts, showDistricts, realStores, syncStoresToMap, injectJS]);
+
   const getMarkerColor = (store: MapStore) => {
     if (store.has_timesale)    return C.red;
     if (store.coupon_count > 0) return C.brand;
@@ -417,14 +450,6 @@ export default function MapScreen() {
     return store.name.length > 6 ? store.name.slice(0, 5) + '…' : store.name;
   };
 
-  const { focusLat: _fLat, focusLng: _fLng } = route.params ?? {};
-  const initialRegion = (_fLat && _fLng)
-    ? { latitude: _fLat, longitude: _fLng, latitudeDelta: 0.008, longitudeDelta: 0.008 }
-    : location
-      ? { latitude: location.coords.latitude, longitude: location.coords.longitude,
-          latitudeDelta: 0.015, longitudeDelta: 0.015 }
-      : DEFAULT_REGION;
-
   const cardTranslateY = cardAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [260, 0],
@@ -432,105 +457,19 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      {/* ── 지도 (풀스크린) ── */}
-      <MapView
+      {/* ── 카카오맵 WebView (풀스크린) ── */}
+      <WebView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        initialRegion={initialRegion}
-        showsUserLocation
-        showsMyLocationButton={false}
-        showsCompass={false}
-        onPress={() => {
-          if (Date.now() - lastMarkerPressRef.current > 200) {
-            setSelectedStore(null);
-          }
-        }}
-        onRegionChangeComplete={setMapRegion}
-        onMapReady={() => {
-          mapReadyRef.current = true;
-          // focusLat/Lng 파라미터가 없을 때만 사용자 위치로 초기 이동
-          const { focusLat, focusLng } = route.params ?? {};
-          if (!focusLat && !focusLng && location) {
-            mapRef.current?.animateToRegion({
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-              latitudeDelta: 0.015,
-              longitudeDelta: 0.015,
-            }, 500);
-          }
-        }}
-      >
-        {/* 내 위치 반경 */}
-        {location && (
-          <Circle
-            center={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }}
-            radius={300}
-            strokeColor={C.brand + '55'}
-            fillColor={C.brand + '12'}
-          />
-        )}
-
-        {/* 상권 마커 */}
-        {showDistricts && districts.map(d =>
-          d.latitude && d.longitude ? (
-            <Marker
-              key={`district-${d.id}`}
-              coordinate={{ latitude: d.latitude, longitude: d.longitude }}
-              anchor={{ x: 0.5, y: 1 }}
-              tracksViewChanges={false}
-              onPress={() => moveToDistrict(d)}
-            >
-              <View style={styles.distMarkerWrap} pointerEvents="none">
-                <View style={styles.distMarker}>
-                  <Text style={styles.distMarkerIcon}>🗺</Text>
-                  <Text style={styles.distMarkerText}>{d.name}</Text>
-                </View>
-                <View style={styles.distMarkerTail} />
-              </View>
-            </Marker>
-          ) : null
-        )}
-
-        {/* 가게 마커 (칩 스타일) */}
-        {filteredStores.map((store) => {
-          const color     = getMarkerColor(store);
-          const label     = getMarkerLabel(store);
-          const isSelected = selectedStore?.id === store.id;
-          const hasBenefit = store.coupon_count > 0 || store.has_timesale;
-          return (
-          <Marker
-            key={store.id}
-            coordinate={{ latitude: store.latitude, longitude: store.longitude }}
-            anchor={{ x: 0.5, y: 1 }}
-            tracksViewChanges={isSelected}
-            onPress={() => moveToStore(store)}
-          >
-            {/* pointerEvents="none" — 내부 View가 터치를 흡수하지 않도록 */}
-            <View style={styles.markerWrap} pointerEvents="none">
-              <View style={[
-                styles.markerChip,
-                { borderColor: color, backgroundColor: isSelected ? color : C.white },
-                isSelected && styles.markerChipSelected,
-              ]}>
-                <Text style={styles.markerChipEmoji}>{store.emoji}</Text>
-                <Text style={[
-                  styles.markerChipLabel,
-                  { color: isSelected ? C.white : (hasBenefit ? color : C.g700) },
-                  isSelected && { fontWeight: '900' },
-                ]} numberOfLines={1}>
-                  {label}
-                </Text>
-              </View>
-              <View style={[styles.markerChipTail, { borderTopColor: color }]} />
-            </View>
-          </Marker>
-          );
-        })}
-      </MapView>
+        source={{ html: mapHtml, baseUrl: 'http://localhost' }}
+        originWhitelist={['*']}
+        javaScriptEnabled
+        domStorageEnabled
+        allowsInlineMediaPlayback
+        scrollEnabled={false}
+        onMessage={handleMessage}
+        onError={e => console.warn('[KakaoMap] WebView error', e.nativeEvent)}
+      />
 
       {/* ── 상단 오버레이 ── */}
       <View style={[styles.topOverlay, { top: insets.top + 8 }]}>
@@ -923,49 +862,7 @@ const styles = StyleSheet.create({
   },
   myLocFabText: { fontSize: 14, fontWeight: '700', color: C.white },
 
-  // 마커 (상권)
-  distMarkerWrap: { alignItems: 'center' },
-  distMarker: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: C.brand, borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 6,
-    borderWidth: 2, borderColor: C.white,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
-  },
-  distMarkerIcon: { fontSize: 13 },
-  distMarkerText: { fontSize: 12, fontWeight: '800', color: C.white },
-  distMarkerTail: {
-    width: 0, height: 0,
-    borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 8,
-    borderLeftColor: 'transparent', borderRightColor: 'transparent',
-    borderTopColor: C.brand,
-    alignSelf: 'center', marginTop: -1,
-  },
-
-  // 마커 (칩 스타일)
-  markerWrap: { alignItems: 'center' },
-  markerChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: C.white,
-    borderRadius: 20, borderWidth: 2,
-    paddingHorizontal: 10, paddingVertical: 6,
-    maxWidth: 130,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18, shadowRadius: 4, elevation: 5,
-  },
-  markerChipSelected: {
-    shadowOpacity: 0.28, shadowRadius: 6, elevation: 8,
-    transform: [{ scale: 1.08 }],
-  },
-  markerChipEmoji: { fontSize: 14 },
-  markerChipLabel: { fontSize: 12, fontWeight: '700', flexShrink: 1 },
-  markerChipTail: {
-    width: 0, height: 0,
-    borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 7,
-    borderLeftColor: 'transparent', borderRightColor: 'transparent',
-    alignSelf: 'center', marginTop: -1,
-  },
+  // 마커는 카카오맵 HTML CustomOverlay 로 렌더링됨
 
   // 하단 카드 래퍼
   cardWrapper: {

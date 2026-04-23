@@ -113,14 +113,14 @@ export async function savePushToken(userId: string, optIn: boolean): Promise<voi
   }
 
   await supabase
-    .from('notification_tokens')
+    .from('push_tokens')
     .upsert({ user_id: userId, token, opt_in: optIn }, { onConflict: 'user_id' });
 }
 
 // 알림 수신 동의한 사용자 토큰 목록 (사장님용)
 export async function fetchOptInTokens(): Promise<string[]> {
   const { data, error } = await supabase
-    .from('notification_tokens')
+    .from('push_tokens')
     .select('token')
     .eq('opt_in', true)
     .neq('token', 'simulator-no-token');

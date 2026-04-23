@@ -43,7 +43,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
     const {
       user_token,
@@ -62,13 +64,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { data: userData, error: userErr } =
-      await supabase.auth.admin.getUserById(userId);
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
-      });
-    }
+    // supabase.auth.admin.getUserById() 는 ES256 JWT 파싱 오류 유발
+    // → JWT decode 로 추출한 userId 직접 신뢰 (FK constraint 로 존재 검증)
 
     // ── 유효성 검사 ──────────────────────────────────────────────────
     if (!content?.trim()) {

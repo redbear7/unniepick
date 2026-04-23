@@ -1,5 +1,5 @@
 // AuthHeader — 뒤로가기 버튼 + DotIndicator ●●○○
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { PALETTE } from '../../../constants/theme';
 import { F } from '../../../constants/typography';
@@ -10,6 +10,7 @@ interface Props {
   onBack: () => void;
   canBack?: boolean;
   rightAction?: React.ReactNode;
+  onSecretTap?: () => void;
 }
 
 function DotIndicator({ step, total }: { step: number; total: number }) {
@@ -30,7 +31,22 @@ function DotIndicator({ step, total }: { step: number; total: number }) {
   );
 }
 
-export default function AuthHeader({ step, total, onBack, canBack = true, rightAction }: Props) {
+export default function AuthHeader({ step, total, onBack, canBack = true, rightAction, onSecretTap }: Props) {
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSecretZone = useCallback(() => {
+    if (!onSecretTap) return;
+    tapCount.current += 1;
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    if (tapCount.current >= 5) {
+      tapCount.current = 0;
+      onSecretTap();
+      return;
+    }
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 1500);
+  }, [onSecretTap]);
+
   return (
     <View style={s.container}>
       <View style={s.row}>
@@ -42,7 +58,13 @@ export default function AuthHeader({ step, total, onBack, canBack = true, rightA
         >
           <Text style={[s.backChevron, !canBack && s.backChevronHidden]}>‹</Text>
         </TouchableOpacity>
-        {rightAction ?? <View style={s.spacer} />}
+        {rightAction ?? (
+          <TouchableOpacity
+            onPress={handleSecretZone}
+            style={s.spacer}
+            activeOpacity={1}
+          />
+        )}
       </View>
       <DotIndicator step={step} total={total} />
     </View>

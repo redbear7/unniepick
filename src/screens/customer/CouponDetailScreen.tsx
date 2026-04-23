@@ -9,6 +9,8 @@ import { getCouponKindConfig, claimCoupon, cancelDeadlineText } from '../../lib/
 import { getSession } from '../../lib/services/authService';
 import { scheduleCouponExpiryReminder } from '../../lib/notifications';
 import { useMiniPlayerPadding } from '../../hooks/useMiniPlayerPadding';
+import KakaoShareWebView from '../../components/KakaoShareWebView';
+import { buildCouponShareHtml } from '../../lib/services/kakaoShareService';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -42,8 +44,9 @@ export default function CouponDetailScreen() {
   const bottomPad   = useMiniPlayerPadding();
   const { coupon }  = route.params;
 
-  const [claiming,   setClaiming]   = useState(false);
-  const [photoIndex, setPhotoIndex] = useState(0);
+  const [claiming,      setClaiming]      = useState(false);
+  const [photoIndex,    setPhotoIndex]    = useState(0);
+  const [shareVisible,  setShareVisible]  = useState(false);
 
   const kind         = getCouponKindConfig(coupon.coupon_kind);
   const isExperience = coupon.coupon_kind === 'experience';
@@ -139,8 +142,8 @@ export default function CouponDetailScreen() {
             <Text style={s.photoBtnText}>←</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: 4 }}>
-            <TouchableOpacity style={s.photoBtn}>
-              <Text style={s.photoBtnText}>⬆</Text>
+            <TouchableOpacity style={s.photoBtn} onPress={() => setShareVisible(true)}>
+              <Text style={s.photoBtnText}>💬</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -286,6 +289,20 @@ export default function CouponDetailScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* 카카오 공유 모달 */}
+      <KakaoShareWebView
+        visible={shareVisible}
+        onClose={() => setShareVisible(false)}
+        html={buildCouponShareHtml({
+          id:           coupon.id,
+          title:        coupon.title,
+          discountText: discountText + discountSuffix,
+          storeName,
+          expiresAt:    coupon.expires_at,
+          imageUrl:     photos[0] ?? null,
+        })}
+      />
     </View>
   );
 }

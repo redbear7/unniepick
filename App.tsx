@@ -27,6 +27,10 @@ LogBox.ignoreLogs([
   'ReactImageView: Image source',
   'new NativeEventEmitter',
   'EventEmitter.removeListener',
+  // Supabase SDK 내부: 만료된 refresh token 자동 갱신 실패 — navigation에서 처리됨
+  'Invalid Refresh Token',
+  'Refresh Token Not Found',
+  'AuthApiError',
 ]);
 
 export default function App() {

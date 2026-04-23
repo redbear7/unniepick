@@ -190,7 +190,17 @@ export default function ReceiptReviewScreen() {
 
       if (error) {
         let msg = error.message ?? '알 수 없는 오류';
-        try { const b = await (error as any).context?.json?.(); if (b?.error) msg = b.error; } catch {}
+        try {
+          const ctx = (error as any).context as Response | undefined;
+          if (ctx) {
+            const raw = await ctx.text();
+            if (raw) {
+              try { const j = JSON.parse(raw); msg = j.error || j.message || msg; }
+              catch { msg = raw.slice(0, 200); }
+            }
+          }
+        } catch {}
+        console.error('[parse-receipt]', msg);
         throw new Error(msg);
       }
       if (!data?.receipt) throw new Error('영수증 인식에 실패했어요');
@@ -266,7 +276,17 @@ export default function ReceiptReviewScreen() {
 
       if (error) {
         let msg = error.message ?? '알 수 없는 오류';
-        try { const b = await (error as any).context?.json?.(); if (b?.error) msg = b.error; } catch {}
+        try {
+          const ctx = (error as any).context as Response | undefined;
+          if (ctx) {
+            const raw = await ctx.text();
+            if (raw) {
+              try { const j = JSON.parse(raw); msg = j.error || j.message || msg; }
+              catch { msg = raw.slice(0, 200); }
+            }
+          }
+        } catch {}
+        console.error('[submit-review]', msg);
         throw new Error(msg);
       }
 

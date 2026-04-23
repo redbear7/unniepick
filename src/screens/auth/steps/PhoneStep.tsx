@@ -22,6 +22,12 @@ interface Props {
   onNext:   () => void;
   loading?: boolean;
   error?:   string;
+  // 소셜 로그인
+  onKakaoLogin?:  () => void;
+  onGoogleLogin?: () => void;
+  onAppleLogin?:  () => void;
+  showApple?:     boolean;    // iOS 기기 + AppleAuth 가능 여부
+  socialLoading?: boolean;
 }
 
 /** 숫자만 추출 후 3-4-4 공백 포맷: "010 1234 5678" */
@@ -32,7 +38,11 @@ function formatPhone(raw: string): string {
   return `${d.slice(0, 3)} ${d.slice(3, 7)} ${d.slice(7)}`;
 }
 
-export default function PhoneStep({ phone, setPhone, onNext, loading, error }: Props) {
+export default function PhoneStep({
+  phone, setPhone, onNext, loading, error,
+  onKakaoLogin, onGoogleLogin, onAppleLogin,
+  showApple = false, socialLoading = false,
+}: Props) {
   const inputRef = useRef<TextInput>(null);
   const [legalTab, setLegalTab] = useState<LegalTab | null>(null);
 
@@ -83,6 +93,62 @@ export default function PhoneStep({ phone, setPhone, onNext, loading, error }: P
 
           {error ? <Text style={s.error}>{error}</Text> : null}
         </View>
+
+        {/* ── 소셜 로그인 ── */}
+        {(onKakaoLogin || onGoogleLogin) && (
+          <View style={s.social}>
+            {/* 구분선 */}
+            <View style={s.divRow}>
+              <View style={s.divLine} />
+              <Text style={s.divText}>또는</Text>
+              <View style={s.divLine} />
+            </View>
+
+            {/* 카카오 버튼 */}
+            {onKakaoLogin && (
+              <TouchableOpacity
+                style={[s.socialBtn, s.kakaoBg]}
+                onPress={onKakaoLogin}
+                disabled={socialLoading || loading}
+                activeOpacity={0.85}
+              >
+                {socialLoading
+                  ? <ActivityIndicator color="#3C1E1E" size="small" />
+                  : <>
+                      <Text style={s.socialIcon}>💬</Text>
+                      <Text style={[s.socialText, { color: '#3C1E1E' }]}>카카오로 시작하기</Text>
+                    </>
+                }
+              </TouchableOpacity>
+            )}
+
+            {/* 구글 버튼 */}
+            {onGoogleLogin && (
+              <TouchableOpacity
+                style={[s.socialBtn, s.googleBg]}
+                onPress={onGoogleLogin}
+                disabled={socialLoading || loading}
+                activeOpacity={0.85}
+              >
+                <Text style={s.socialIcon}>G</Text>
+                <Text style={[s.socialText, { color: PALETTE.gray900 }]}>Google로 시작하기</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Apple 버튼 (iOS 전용) */}
+            {showApple && onAppleLogin && (
+              <TouchableOpacity
+                style={[s.socialBtn, s.appleBg]}
+                onPress={onAppleLogin}
+                disabled={socialLoading || loading}
+                activeOpacity={0.85}
+              >
+                <Text style={[s.socialIcon, { color: '#fff' }]}></Text>
+                <Text style={[s.socialText, { color: '#fff' }]}>Apple로 시작하기</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* ── 하단 영역: 약관 + 버튼 ── */}
         <View style={s.footer}>
@@ -226,5 +292,58 @@ const s = StyleSheet.create({
   btnText: {
     ...T.btn16,
     color: '#FFFFFF',
+  },
+
+  // ── 소셜 로그인 ──────────────────────────────────────────
+  social: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+    gap: 10,
+  },
+
+  divRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  divLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: PALETTE.gray200,
+  },
+  divText: {
+    fontSize: 12,
+    color: PALETTE.gray400,
+    fontWeight: '500',
+  },
+
+  socialBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  kakaoBg: {
+    backgroundColor: '#FEE500',
+  },
+  googleBg: {
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: PALETTE.gray200,
+  },
+  appleBg: {
+    backgroundColor: '#000',
+  },
+  socialIcon: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  socialText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

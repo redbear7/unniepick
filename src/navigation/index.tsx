@@ -157,10 +157,23 @@ export default function Navigation() {
   useEffect(() => {
     // 로그인/로그아웃 이벤트
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || (!session && event === 'TOKEN_REFRESHED')) {
-        if (navigationRef.isReady()) {
-          navigationRef.reset({ index: 0, routes: [{ name: 'PhoneAuth' }] });
-        }
+      const needsLogout = event === 'SIGNED_OUT' || (!session && event === 'TOKEN_REFRESHED');
+      if (!needsLogout) return;
+
+      const goToPhoneAuth = () =>
+        navigationRef.reset({ index: 0, routes: [{ name: 'PhoneAuth' }] });
+
+      if (navigationRef.isReady()) {
+        goToPhoneAuth();
+      } else {
+        // NavigationContainer 마운트 전에 이벤트가 오면 준비될 때까지 대기 (최대 3초)
+        const interval = setInterval(() => {
+          if (navigationRef.isReady()) {
+            clearInterval(interval);
+            goToPhoneAuth();
+          }
+        }, 100);
+        setTimeout(() => clearInterval(interval), 3000);
       }
     });
 

@@ -20,6 +20,10 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { PALETTE } from '../../constants/theme';
 import { notifyAdmin, registerPushToken } from '../../lib/services/pushService';
+import {
+  signInWithKakao, signInWithGoogle, signInWithApple,
+  ensureSocialProfile, isAppleSignInAvailable,
+} from '../../lib/services/socialAuthService';
 
 import AuthHeader                        from './components/AuthHeader';
 import { TermsState }                    from './components/TermsSheet';
@@ -42,21 +46,6 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
 
 type AuthStep = 1 | 2 | 3 | 4 | 5 | 6;
 
-// ── 관리자 3탭 비밀 진입 ──────────────────────────────────────────
-function useAdminTap(onAdmin: () => void) {
-  const count = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  return useCallback(() => {
-    count.current += 1;
-    if (timer.current) clearTimeout(timer.current);
-    if (count.current >= 3) {
-      count.current = 0;
-      onAdmin();
-      return;
-    }
-    timer.current = setTimeout(() => { count.current = 0; }, 1200);
-  }, [onAdmin]);
-}
 
 export default function PhoneAuthScreen() {
   const navigation = useNavigation<any>();
@@ -66,13 +55,56 @@ export default function PhoneAuthScreen() {
   const [profile, setProfile] = useState<ProfileData>({
     nickname: '', birthMonth: '', birthDay: '', birthSkip: false,
   });
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState('');
-  const [profileReady, setProfileReady] = useState(false);
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState('');
+  const [profileReady,  setProfileReady]  = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [appleAvail,    setAppleAvail]    = useState(false);
 
-  const handleAdminTap = useAdminTap(() => {
-    navigation.reset({ index: 0, routes: [{ name: 'CustomerTabs' }] });
-  });
+  // Apple 가용 여부 체크 (최초 1회)
+  React.useEffect(() => {
+    isAppleSignInAvailable().then(setAppleAvail).catch(() => {});
+  }, []);
+
+  const handleAdminTap = useCallback(() => {
+    navigation.navigate('SuperAdminLogin');
+  }, [navigation]);
+
+  // ── 소셜 로그인 공통 처리 ─────────────────────────────────────────
+  const handleSocialLogin = useCallback(async (
+    loginFn: () => Promise<any>,
+  ) => {
+    setSocialLoading(true);
+    setError('');
+    try {
+      const session = await loginFn();
+      if (!session) throw new Error('로그인에 실패했어요');
+
+      const { isNew } = await ensureSocialProfile(session);
+
+      // 신규 회원 → 닉네임/생일 프로필 설정 (S3)
+      // 기존 회원 → 바로 홈으로
+      if (isNew) {
+        setStep(3);
+      } else {
+        // 기존 회원: 푸시 토큰 재등록 후 홈
+        if (session.user?.id) {
+          registerPushToken(session.user.id).catch(() => {});
+        }
+        navigation.reset({ index: 0, routes: [{ name: 'CustomerTabs' }] });
+      }
+    } catch (e: any) {
+      if (e?.message !== 'CANCELLED') {
+        setError(e?.message ?? '소셜 로그인에 실패했어요');
+      }
+    } finally {
+      setSocialLoading(false);
+    }
+  }, [navigation]);
+
+  const handleKakaoLogin  = useCallback(() => handleSocialLogin(signInWithKakao),  [handleSocialLogin]);
+  const handleGoogleLogin = useCallback(() => handleSocialLogin(signInWithGoogle), [handleSocialLogin]);
+  const handleAppleLogin  = useCallback(() => handleSocialLogin(signInWithApple),  [handleSocialLogin]);
 
   // ── 국제 전화번호 ─────────────────────────────────────────────────
   const intlPhone = (p: string) => '+82' + p.replace(/\D/g, '').slice(1); // 010→+8210
@@ -319,7 +351,9 @@ export default function PhoneAuthScreen() {
     // 가입 완료 즉시 푸시 토큰 등록 (SplashScreen은 이미 실행 완료 상태라 다음 실행까지 대기 없음)
     const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
     if (session?.user?.id) {
-      registerPushToken(session.user.id).catch(() => {});
+      registerPushToken(session.user.id).then(r => {
+        if (!r.ok) console.warn('[Push] 등록 실패:', r.reason);
+      }).catch(() => {});
     }
 
     navigation.reset({ index: 0, routes: [{ name: 'CustomerTabs' }] });
@@ -341,20 +375,9 @@ export default function PhoneAuthScreen() {
       <AuthHeader
         step={step}
         total={TOTAL}
-        onBack={step === 1 ? handleAdminTap : handleBack}
+        onBack={handleBack}
         canBack={step > 1}
-        rightAction={step === 3 ? (
-          <TouchableOpacity
-            onPress={saveProfile}
-            disabled={!profileReady || loading}
-            style={[hs.nextBtn, (!profileReady || loading) && hs.nextBtnDisabled]}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Text style={[hs.nextText, (!profileReady || loading) && hs.nextTextDisabled]}>
-              다음
-            </Text>
-          </TouchableOpacity>
-        ) : undefined}
+        onSecretTap={handleAdminTap}
       />
 
       {step === 1 && (
@@ -364,6 +387,11 @@ export default function PhoneAuthScreen() {
           onNext={sendOtp}
           loading={loading}
           error={error}
+          onKakaoLogin={handleKakaoLogin}
+          onGoogleLogin={handleGoogleLogin}
+          onAppleLogin={handleAppleLogin}
+          showApple={appleAvail}
+          socialLoading={socialLoading}
         />
       )}
 
@@ -384,6 +412,7 @@ export default function PhoneAuthScreen() {
           onCheckNick={checkNickname}
           onNext={saveProfile}
           onValidChange={setProfileReady}
+          canNext={profileReady && !loading}
           loading={loading}
           error={error}
         />

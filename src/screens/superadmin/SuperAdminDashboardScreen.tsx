@@ -90,6 +90,7 @@ export default function SuperAdminDashboardScreen() {
   const [sending, setSending]       = useState(false);
   const [testSending, setTestSending] = useState(false);
   const [myToken,   setMyToken]     = useState<string | null>(null);
+  const [tokenError, setTokenError] = useState<string | null>(null);
 
   // ── Notice 상태
   const [notices, setNotices]               = useState<AnnouncementRow[]>([]);
@@ -219,8 +220,11 @@ export default function SuperAdminDashboardScreen() {
       getSession().then(session => {
         if (session?.user.id) {
           registerPushToken(session.user.id)
-            .then(t => { if (t) setMyToken(t); })
-            .catch(() => {});
+            .then(r => {
+              if (r.ok) { setMyToken(r.token); setTokenError(null); }
+              else { setTokenError(r.reason); }
+            })
+            .catch(e => setTokenError(String(e?.message ?? e)));
         }
       })
     );
@@ -1001,7 +1005,9 @@ export default function SuperAdminDashboardScreen() {
               {myToken ? (
                 <Text style={s.tokenValue} numberOfLines={1}>{myToken}</Text>
               ) : (
-                <Text style={s.tokenMissing}>코드 없음 — 알림 권한을 확인하세요</Text>
+                <Text style={s.tokenMissing}>
+                  {tokenError ? `⚠️ ${tokenError}` : '코드 없음 — 알림 권한을 확인하세요'}
+                </Text>
               )}
             </View>
 

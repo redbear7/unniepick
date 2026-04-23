@@ -40,7 +40,9 @@ export default function PushPermissionStep({ onDone }: Props) {
       if (status === 'granted') {
         // 백그라운드로 토큰 저장 — 실패해도 홈 진입 허용
         supabase.auth.getUser().then(({ data: { user } }) => {
-          if (user) registerPushToken(user.id).catch(() => {});
+          if (user) registerPushToken(user.id).then(r => {
+            if (!r.ok) console.warn('[Push] 등록 실패:', r.reason);
+          }).catch(() => {});
         });
       }
     } catch { /* 무시 — 항상 진행 */ }

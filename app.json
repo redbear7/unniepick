@@ -22,8 +22,10 @@
         "NSCameraUsageDescription": "QR코드 스캔을 위해 카메라 접근이 필요해요.",
         "NSFaceIDUsageDescription": "관리자 인증을 위해 Face ID를 사용해요.",
         "UIBackgroundModes": [
+          "audio",
           "audio"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
         "googleMapsApiKey": "AIzaSyDy_p9KW9g4gnnKLwjYzroP5S5-s8qj_pg"

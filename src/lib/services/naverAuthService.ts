@@ -13,6 +13,7 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import { supabase } from '../supabase';
+import { registerPushToken } from './pushService';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -197,7 +198,9 @@ export async function signInWithNaver(): Promise<{ user: NaverUserInfo; isNew: b
   // 로그인 직후 푸시 토큰 등록 (비동기 — 실패해도 로그인에 영향 없음)
   const uid = session?.user?.id;
   if (uid) {
-    registerPushToken(uid).catch(() => {});
+    registerPushToken(uid).then(r => {
+      if (!r.ok) console.warn('[Push] 등록 실패:', r.reason);
+    }).catch(() => {});
   }
 
   const isNew = !session;

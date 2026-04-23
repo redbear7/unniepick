@@ -86,7 +86,9 @@ export default function SplashScreen() {
               initGeofenceEngine().catch(e =>
                 console.warn('[Splash] geofence init error:', e)
               );
-              registerPushToken(data.session.user.id).catch(() => {});
+              registerPushToken(data.session.user.id).then(r => {
+                if (!r.ok) console.warn('[Push] 등록 실패:', r.reason);
+              }).catch(() => {});
             }
           }
         } catch {

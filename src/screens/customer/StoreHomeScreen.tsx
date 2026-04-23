@@ -22,6 +22,8 @@ import { getSession } from '../../lib/services/authService';
 import { useMiniPlayerPadding } from '../../hooks/useMiniPlayerPadding';
 import { supabase } from '../../lib/supabase';
 import { notifyAdmin } from '../../lib/services/pushService';
+import KakaoShareWebView from '../../components/KakaoShareWebView';
+import { buildStoreShareHtml } from '../../lib/services/kakaoShareService';
 
 interface PriceReport {
   id:             string;
@@ -50,6 +52,7 @@ export default function StoreHomeScreen() {
   const [priceReports,  setPriceReports]  = useState<PriceReport[]>([]);
   const [voteToast,     setVoteToast]     = useState(false);
   const [votingId,      setVotingId]      = useState<string | null>(null);
+  const [shareVisible,  setShareVisible]  = useState(false);
 
   useEffect(() => { loadAll(); }, [storeId]);
 
@@ -251,10 +254,31 @@ export default function StoreHomeScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← 뒤로</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.favBtn} onPress={handleFavoriteToggle}>
-          <Text style={styles.favIcon}>{favorited ? '❤️' : '🤍'}</Text>
-        </TouchableOpacity>
+        <View style={styles.navRight}>
+          <TouchableOpacity style={styles.favBtn} onPress={() => setShareVisible(true)}>
+            <Text style={styles.favIcon}>💬</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.favBtn} onPress={handleFavoriteToggle}>
+            <Text style={styles.favIcon}>{favorited ? '❤️' : '🤍'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* 카카오 공유 모달 */}
+      {store && (
+        <KakaoShareWebView
+          visible={shareVisible}
+          onClose={() => setShareVisible(false)}
+          html={buildStoreShareHtml({
+            id:          store.id,
+            name:        store.name,
+            emoji:       store.emoji,
+            category:    store.category,
+            address:     store.address,
+            couponCount: coupons.length,
+          })}
+        />
+      )}
 
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: bottomPad }]}
@@ -629,6 +653,7 @@ const styles = StyleSheet.create({
   },
   backBtn:  { padding: 8 },
   backText: { fontSize: 16, color: COLORS.primary, fontWeight: '600' },
+  navRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   favBtn:   { padding: 8 },
   favIcon:  { fontSize: 26 },
 

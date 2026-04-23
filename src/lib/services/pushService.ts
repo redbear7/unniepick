@@ -18,10 +18,13 @@ export interface PushHistoryRow {
 }
 
 // ─── 푸시 토큰 등록 ─────────────────────────────
-export async function registerPushToken(userId: string): Promise<string | null> {
+export type PushRegisterResult =
+  | { ok: true;  token: string; reason?: never }
+  | { ok: false; token: null;   reason: string };
+
+export async function registerPushToken(userId: string): Promise<PushRegisterResult> {
   if (!Device.isDevice) {
-    console.log('[Push] 실기기 아님 — 토큰 등록 건너뜀');
-    return null;
+    return { ok: false, token: null, reason: '시뮬레이터 — 토큰 없음' };
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -33,18 +36,23 @@ export async function registerPushToken(userId: string): Promise<string | null> 
   }
 
   if (finalStatus !== 'granted') {
-    console.log('[Push] 알림 권한 거부 — 토큰 등록 건너뜀');
-    return null;
+    return { ok: false, token: null, reason: '알림 권한 거부' };
   }
 
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ??
     '54738bf4-a020-47e1-a679-dbb210f30913';
 
-  const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-  const token = tokenData.data;
+  let token: string;
+  try {
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+    token = tokenData.data;
+  } catch (e) {
+    const msg = (e as Error).message ?? String(e);
+    console.error('[Push] getExpoPushTokenAsync 실패:', msg);
+    return { ok: false, token: null, reason: `토큰 발급 실패: ${msg}` };
+  }
 
-  // Supabase에 토큰 저장 (upsert) — 권한 허용 = opt_in: true
   const { error } = await supabase.from('push_tokens').upsert(
     { user_id: userId, token, opt_in: true, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
@@ -52,11 +60,11 @@ export async function registerPushToken(userId: string): Promise<string | null> 
 
   if (error) {
     console.error('[Push] push_tokens upsert 실패:', error.message, error.code, error.details);
-  } else {
-    console.log('[Push] 토큰 등록 성공:', token.slice(0, 30) + '…');
+    return { ok: false, token: null, reason: `DB 저장 실패: ${error.message}` };
   }
 
-  return token;
+  console.log('[Push] 토큰 등록 성공:', token.slice(0, 30) + '…');
+  return { ok: true, token };
 }
 
 // ─── 전체 사용자 토큰 조회 ───────────────────────

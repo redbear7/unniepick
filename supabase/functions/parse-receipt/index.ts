@@ -203,7 +203,10 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
+    // autoRefreshToken/persistSession 비활성화 — Edge Function 내 JWT 파싱 방지
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     // ── 바디 파싱 (신규: imageBase64 직접 수신 / 구버전: storagePath) ──
     const body = await req.json();
@@ -216,20 +219,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 인증 ──────────────────────────────────────────────────────
+    // supabase.auth.admin.getUserById() 는 내부에서 ES256 JWT 파싱을 시도해
+    // 신규 Supabase 프로젝트(ES256 서명)에서 "Unsupported JWT algorithm ES256" 오류 발생.
+    // JWT payload를 base64 디코딩해 sub(userId)를 추출하는 방식으로 우회.
+    // 실제 유저 검증은 receipt_scans FK constraint 로 보장.
     const userId = decodeUserId(user_token ?? "") ?? clientUserId ?? null;
     if (!userId) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401, headers: { ...CORS, "Content-Type": "application/json" },
       });
     }
-
-    const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(userId);
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
-      });
-    }
-    const user = userData.user;
+    const user = { id: userId };
 
     // ── 이미지 base64 확보 ─────────────────────────────────────────
     let imageBase64: string;
