@@ -28,7 +28,15 @@
           "audio",
           "audio"
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "kakaolink",
+          "kakaotalk",
+          "kakaokompassauth",
+          "storykompassauth",
+          "storylink",
+          "kakaoakurat"
+        ]
       },
       "config": {
         "googleMapsApiKey": "AIzaSyDy_p9KW9g4gnnKLwjYzroP5S5-s8qj_pg"

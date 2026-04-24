@@ -22,7 +22,7 @@ import {
   Text,
   StyleSheet,
   Platform,
-  SafeAreaView,
+  Linking,
 } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { PALETTE } from '../constants/theme';
@@ -76,13 +76,15 @@ export default function KakaoShareWebView({ visible, onClose, html }: Props) {
             // 카카오 SDK → KakaoTalk 앱 열기 허용
             onShouldStartLoadWithRequest={(req) => {
               const { url } = req;
-              // kakaolink://, kakaotalk:// 등 외부 앱 링크는 Linking으로 처리
-              if (!url.startsWith('http') && !url.startsWith('about:')) {
-                // WebView 자체는 막고 RN Linking으로 열기
-                try {
-                  const Linking = require('expo-linking');
-                  Linking.openURL(url).catch(() => {});
-                } catch {}
+              // kakaolink://, kakaotalk:// 등 외부 앱 링크는 RN Linking으로 처리
+              if (
+                !url.startsWith('http') &&
+                !url.startsWith('about:') &&
+                !url.startsWith('data:')
+              ) {
+                Linking.openURL(url).catch((e) =>
+                  console.warn('[KakaoShare] openURL 실패:', url, e)
+                );
                 return false;
               }
               return true;
