@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
+import { supabase } from '../../../lib/supabase';
 import { PALETTE } from '../../../constants/theme';
 import { T } from '../../../constants/typography';
 import TermsSheet, { TermsState } from '../components/TermsSheet';
@@ -48,11 +49,26 @@ export default function NearbyStoresStep({ loadStores, onDone, loading }: Props)
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude: lat, longitude: lng } = loc.coords;
 
-      // 역지오코딩 — 동 이름
+      // 역지오코딩 — 동 이름 + 가입 위치 저장
       try {
         const [place] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
         const dong = place?.district || place?.subregion || place?.city || '';
         if (dong) setLocName(dong);
+
+        // 가입 위치를 profiles.signup_address 에 저장 (부정 사용 방지)
+        const addrParts = [place?.city, place?.district, place?.subregion].filter(Boolean);
+        const signupAddress = addrParts.join(' ') || dong;
+        if (signupAddress) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.id) {
+            supabase.from('profiles').upsert(
+              { id: session.user.id, signup_address: signupAddress },
+              { onConflict: 'id' },
+            ).then(({ error }) => {
+              if (error) console.warn('[Signup] location save error:', error.message);
+            });
+          }
+        }
       } catch { /* ignore */ }
 
       const results = await loadStores(lat, lng);

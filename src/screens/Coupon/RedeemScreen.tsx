@@ -198,6 +198,26 @@ export default function RedeemScreen() {
           style: 'default',
           onPress: async () => {
             if (!userId || !coupon) return;
+
+            // 쿠폰 사용 위치 저장 (부정 사용 방지)
+            try {
+              const locResult = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+              });
+              const { latitude: lat, longitude: lng } = locResult.coords;
+              const [place] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+              const addrParts = [place?.city, place?.district, place?.subregion].filter(Boolean);
+              const usedAddress = addrParts.join(' ') || place?.district || place?.city || '';
+              if (usedAddress) {
+                supabase.from('profiles').update({
+                  last_used_address: usedAddress,
+                  last_used_at:      new Date().toISOString(),
+                }).eq('id', userId).then(({ error }) => {
+                  if (error) console.warn('[Redeem] location save error:', error.message);
+                });
+              }
+            } catch { /* 위치 저장 실패해도 쿠폰 사용은 계속 */ }
+
             await markCouponRedeemed(coupon.user_coupon_id);
             await logLiveActivityEvent({
               userId:   userId,
