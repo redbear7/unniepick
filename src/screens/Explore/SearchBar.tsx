@@ -81,7 +81,7 @@ const s = StyleSheet.create({
   },
   input: {
     flex:       1,
-    fontFamily: F.medium,
+    ...F.medium,
     fontSize:   14,
     color:      PALETTE.gray900,
     padding:    0,

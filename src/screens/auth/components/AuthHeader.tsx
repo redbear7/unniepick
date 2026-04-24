@@ -89,7 +89,7 @@ const s = StyleSheet.create({
   },
   backChevron: {
     fontSize: 32,
-    fontFamily: F.regular,
+    ...F.regular,
     color: PALETTE.gray800,
     lineHeight: 36,
   },

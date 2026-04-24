@@ -145,7 +145,7 @@ const s = StyleSheet.create({
     elevation:       4,
   },
   pillText: {
-    fontFamily: F.semiBold,
+    ...F.semiBold,
     fontSize:   12,
     color:      PALETTE.gray800,
   },

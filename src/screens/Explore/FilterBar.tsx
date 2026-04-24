@@ -192,7 +192,7 @@ const s = StyleSheet.create({
   },
   pillDisabled: { opacity: 0.35 },
   pillText: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:   12,
     color:      PALETTE.gray700,
   },
@@ -216,7 +216,7 @@ const s = StyleSheet.create({
     borderColor:     PALETTE.orange500,
   },
   filterTxt: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:   12,
     color:      PALETTE.gray700,
   },
@@ -231,7 +231,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 3,
   },
   badgeTxt: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:   10,
     color:      '#FFFFFF',
   },
@@ -260,7 +260,7 @@ const s = StyleSheet.create({
   },
   priceChipIcon: { fontSize: 11 },
   priceChipTxt: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:   12,
     color:      PALETTE.gray700,
   },
@@ -290,7 +290,7 @@ const s = StyleSheet.create({
     backgroundColor: PALETTE.orange50,
   },
   chipTxt: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:   12,
     color:      PALETTE.gray700,
   },

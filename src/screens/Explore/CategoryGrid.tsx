@@ -120,14 +120,14 @@ const s = StyleSheet.create({
   emoji: { fontSize: 18 },
 
   label: {
-    fontFamily: F.medium,
+    ...F.medium,
     fontSize:   11,
     color:      PALETTE.gray600,
     lineHeight: 14,
     textAlign:  'center',
   },
   labelActive: {
-    fontFamily: F.bold,
+    ...F.bold,
     color:      PALETTE.orange600,
   },
 });

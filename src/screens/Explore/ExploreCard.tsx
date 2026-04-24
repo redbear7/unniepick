@@ -174,7 +174,7 @@ const s = StyleSheet.create({
     paddingVertical:   2,
   },
   hotText: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:    9,
     color:      PALETTE.red500,
   },
@@ -189,7 +189,7 @@ const s = StyleSheet.create({
     paddingVertical:   2,
   },
   couponText: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:    9,
     color:      '#FFFFFF',
   },
@@ -201,7 +201,7 @@ const s = StyleSheet.create({
     gap:                4,
   },
   price: {
-    fontFamily:    F.bold,
+    ...F.bold,
     fontSize:      11,
     color:         '#2D7A3A',
     letterSpacing: -0.1,
@@ -215,18 +215,18 @@ const s = StyleSheet.create({
     marginTop:           1,
   },
   smartBadgeText: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:   9,
   },
   name: {
-    fontFamily:    F.extraBold,
+    ...F.extraBold,
     fontSize:      14,
     color:         PALETTE.gray900,
     letterSpacing: -0.3,
     lineHeight:    18,
   },
   meta: {
-    fontFamily: F.medium,
+    ...F.medium,
     fontSize:   11,
     color:      PALETTE.gray500,
     lineHeight: 15,
@@ -240,7 +240,7 @@ const s = StyleSheet.create({
     marginTop:       4,
   },
   followers: {
-    fontFamily: F.semiBold,
+    ...F.semiBold,
     fontSize:   10,
     color:      PALETTE.gray400,
   },
@@ -258,7 +258,7 @@ const s = StyleSheet.create({
     borderColor:     PALETTE.gray300,
   },
   followTxt: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize:   10,
     color:      '#FFFFFF',
   },

@@ -79,8 +79,8 @@ function EmptyState({ query }: { query: string }) {
 const es = StyleSheet.create({
   wrap:  { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 },
   icon:  { fontSize: 40, marginBottom: 12 },
-  title: { fontFamily: F.extraBold, fontSize: 16, color: PALETTE.gray800, marginBottom: 8 },
-  sub:   { fontFamily: F.medium, fontSize: 13, color: PALETTE.gray500, textAlign: 'center', lineHeight: 20 },
+  title: { ...F.extraBold, fontSize: 16, color: PALETTE.gray800, marginBottom: 8 },
+  sub:   { ...F.medium, fontSize: 13, color: PALETTE.gray500, textAlign: 'center', lineHeight: 20 },
 });
 
 // ── 로딩 스켈레톤 ────────────────────────────────────────────────────
@@ -388,7 +388,7 @@ const st = StyleSheet.create({
     borderColor:       PALETTE.orange100,
   },
   locBannerText: {
-    fontFamily: F.semiBold,
+    ...F.semiBold,
     fontSize:   13,
     color:      PALETTE.orange600,
   },
@@ -403,7 +403,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 12,
   },
   errorText: {
-    fontFamily: F.medium,
+    ...F.medium,
     fontSize:   13,
     color:      PALETTE.red500,
   },
@@ -414,7 +414,7 @@ const st = StyleSheet.create({
     paddingVertical:    8,
   },
   countText: {
-    fontFamily: F.semiBold,
+    ...F.semiBold,
     fontSize:   12,
     color:      PALETTE.gray500,
   },

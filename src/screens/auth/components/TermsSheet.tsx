@@ -188,7 +188,7 @@ const cs = StyleSheet.create({
   required: { color: PALETTE.orange500 },
   optional: { color: PALETTE.gray500 },
   arrow: {
-    fontFamily: F.medium,
+    ...F.medium,
     fontSize: 12,
     color: PALETTE.gray500,
   },

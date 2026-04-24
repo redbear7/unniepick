@@ -14,7 +14,6 @@
     "scheme": "unniepick",
     "assetBundlePatterns": [
       "assets/*.png",
-      "assets/fonts/*.ttf",
       "assets/fonts/WantedSans-1.0.3/variable/*.ttf"
     ],
     "ios": {

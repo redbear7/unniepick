@@ -354,7 +354,7 @@ const s = StyleSheet.create({
     backgroundColor: PALETTE.orange500,
   },
   tabText: {
-    fontFamily: F.semiBold,
+    ...F.semiBold,
     fontSize: 14,
     color: PALETTE.gray500,
   },
@@ -379,7 +379,7 @@ const s = StyleSheet.create({
     paddingBottom: 12,
   },
   content: {
-    fontFamily: F.regular,
+    ...F.regular,
     fontSize: 13,
     lineHeight: 22,
     color: PALETTE.gray700,
@@ -402,7 +402,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   closeBtnText: {
-    fontFamily: F.bold,
+    ...F.bold,
     fontSize: 16,
     color: '#FFFFFF',
     letterSpacing: -0.3,
