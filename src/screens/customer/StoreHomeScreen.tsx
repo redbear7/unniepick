@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Linking,
-  FlatList, Image,
+  FlatList, Image, Modal, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -14,6 +14,11 @@ import {
   getCouponKindConfig,
   CouponRow,
 } from '../../lib/services/couponService';
+import {
+  joinPartySession,
+  formatPartyCode,
+  type PartyJoinResult,
+} from '../../lib/services/partyStampService';
 import { getOrCreateStampCard, StampCardRow } from '../../lib/services/stampService';
 import {
   isFavorite, toggleFavorite, recordStoreView,
@@ -80,6 +85,12 @@ export default function StoreHomeScreen() {
   const [voteToast,     setVoteToast]     = useState(false);
   const [votingId,      setVotingId]      = useState<string | null>(null);
   const [shareVisible,  setShareVisible]  = useState(false);
+
+  // 동반자 스탬프 코드 입력 모달
+  const [partyModal,       setPartyModal]       = useState(false);
+  const [partyCodeInput,   setPartyCodeInput]   = useState('');
+  const [partyJoinLoading, setPartyJoinLoading] = useState(false);
+  const [partyJoinResult,  setPartyJoinResult]  = useState<PartyJoinResult | null>(null);
 
   useEffect(() => { loadAll(); }, [storeId]);
 
@@ -261,6 +272,26 @@ export default function StoreHomeScreen() {
     setRefreshing(true);
     await loadAll();
     setRefreshing(false);
+  };
+
+  const handlePartyJoin = async () => {
+    if (!userId) {
+      Alert.alert('로그인 필요', '스탬프 적립은 로그인 후 이용할 수 있어요.');
+      return;
+    }
+    const raw = partyCodeInput.replace(/\s/g, '').toUpperCase();
+    if (raw.length !== 6) {
+      Alert.alert('코드 확인', '6자리 코드를 입력해주세요.');
+      return;
+    }
+    setPartyJoinLoading(true);
+    const result = await joinPartySession({ code: raw, userId });
+    setPartyJoinResult(result);
+    setPartyJoinLoading(false);
+    if (result.success) {
+      const card = await getOrCreateStampCard(userId, storeId);
+      setStampCard(card);
+    }
   };
 
   const handleFavoriteToggle = async () => {
@@ -678,6 +709,19 @@ export default function StoreHomeScreen() {
                 <Text style={styles.stampInfoItem}>• 방문 후 영수증 인증 시</Text>
                 <Text style={styles.stampInfoNote}>* 동일 가게 12시간 이후 재적립 가능</Text>
               </View>
+
+              {/* 동반자 코드 입력 버튼 */}
+              <TouchableOpacity
+                style={styles.partyCodeBtn}
+                onPress={() => {
+                  setPartyCodeInput('');
+                  setPartyJoinResult(null);
+                  setPartyModal(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.partyCodeBtnText}>🎟 동반자 코드 있어요</Text>
+              </TouchableOpacity>
             </>
           ) : (
             <TouchableOpacity
@@ -691,6 +735,109 @@ export default function StoreHomeScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {/* 동반자 스탬프 코드 입력 모달 */}
+      <Modal
+        visible={partyModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPartyModal(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalSheet}>
+            {/* 헤더 */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>🎟 동반자 스탬프</Text>
+              <TouchableOpacity
+                onPress={() => setPartyModal(false)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {partyJoinResult ? (
+              /* 결과 화면 */
+              <View style={styles.partyResultWrap}>
+                {partyJoinResult.success ? (
+                  <>
+                    <Text style={styles.partyResultEmoji}>🍖</Text>
+                    <Text style={styles.partyResultTitle}>스탬프가 적립됐어요!</Text>
+                    <Text style={styles.partyResultSub}>
+                      {partyJoinResult.storeName
+                        ? `${partyJoinResult.storeName} · `
+                        : ''}
+                      {partyJoinResult.stampCount}개 보유
+                    </Text>
+                    {partyJoinResult.isReward && (
+                      <View style={styles.partyRewardBadge}>
+                        <Text style={styles.partyRewardText}>🎉 리워드 쿠폰 발급!</Text>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.partyResultEmoji}>😢</Text>
+                    <Text style={styles.partyResultTitle}>적립하지 못했어요</Text>
+                    <Text style={styles.partyResultSub}>
+                      {partyJoinResult.errorMsg ??
+                        (partyJoinResult.reason === 'cooldown'
+                          ? '12시간 이내 이미 적립한 가게예요'
+                          : '다시 시도해주세요')}
+                    </Text>
+                  </>
+                )}
+                <TouchableOpacity
+                  style={styles.partyDoneBtn}
+                  onPress={() => setPartyModal(false)}
+                >
+                  <Text style={styles.partyDoneBtnText}>확인</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              /* 코드 입력 화면 */
+              <>
+                <Text style={styles.modalDesc}>
+                  영수증 인증한 분께 받은{'\n'}6자리 코드를 입력하세요
+                </Text>
+                <TextInput
+                  style={styles.partyInput}
+                  value={formatPartyCode(partyCodeInput)}
+                  onChangeText={(t) => {
+                    const raw = t.replace(/\s/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    setPartyCodeInput(raw.slice(0, 6));
+                  }}
+                  placeholder="ABC DEF"
+                  placeholderTextColor={COLORS.textMuted}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={7}
+                  keyboardType="default"
+                  returnKeyType="done"
+                  onSubmitEditing={handlePartyJoin}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.partySubmitBtn,
+                    (partyJoinLoading || partyCodeInput.length < 6) && { opacity: 0.5 },
+                  ]}
+                  onPress={handlePartyJoin}
+                  disabled={partyJoinLoading || partyCodeInput.length < 6}
+                  activeOpacity={0.8}
+                >
+                  {partyJoinLoading
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.partySubmitBtnText}>코드 입력하기</Text>
+                  }
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1022,5 +1169,124 @@ const styles = StyleSheet.create({
   reviewThumb: {
     width: '100%', height: 160, borderRadius: 10,
     marginTop: 8, backgroundColor: COLORS.background,
+  },
+
+  // ── 동반자 코드 버튼 ──
+  partyCodeBtn: {
+    backgroundColor: COLORS.primary + '12',
+    borderWidth: 1.5,
+    borderColor: COLORS.primary + '45',
+    borderStyle: 'dashed',
+    borderRadius: RADIUS.sm,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  partyCodeBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+
+  // ── 동반자 모달 ──
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  modalSheet: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 44,
+    gap: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  modalClose: {
+    fontSize: 18,
+    color: COLORS.textMuted,
+  },
+  modalDesc: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  partyInput: {
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    fontSize: 28,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: 6,
+    textAlign: 'center',
+  },
+  partySubmitBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  partySubmitBtnText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  partyResultWrap: {
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 16,
+  },
+  partyResultEmoji: {
+    fontSize: 56,
+    marginBottom: 4,
+  },
+  partyResultTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  partyResultSub: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  partyRewardBadge: {
+    backgroundColor: COLORS.primary + '18',
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginTop: 4,
+  },
+  partyRewardText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  partyDoneBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingVertical: 13,
+    paddingHorizontal: 44,
+    marginTop: 12,
+  },
+  partyDoneBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#fff',
   },
 });
