@@ -35,7 +35,8 @@ import StoreFeedScreen         from '../screens/customer/StoreFeedScreen';
 import MyLocationScreen        from '../screens/My/MyLocationScreen';
 import ProfileEditScreen       from '../screens/My/ProfileEditScreen';
 import PriceReportScreen       from '../screens/customer/PriceReportScreen';
-import ReceiptReviewScreen     from '../screens/customer/ReceiptReviewScreen';
+import ReceiptReviewScreen       from '../screens/customer/ReceiptReviewScreen';
+import NaverReviewClaimScreen   from '../screens/customer/NaverReviewClaimScreen';
 
 // ── 탐색 탭 ───────────────────────────────────────────────────────
 import ExploreScreen           from '../screens/Explore/ExploreScreen';
@@ -246,6 +247,7 @@ export default function Navigation() {
           <RootStack.Screen name="ProfileEdit"         component={ProfileEditScreen} />
           <RootStack.Screen name="PriceReport"         component={PriceReportScreen} />
           <RootStack.Screen name="ReceiptReview"       component={ReceiptReviewScreen} />
+          <RootStack.Screen name="NaverReviewClaim"   component={NaverReviewClaimScreen} options={{ headerShown: false }} />
 
           {/* ── 사장님 ────────────────────────────────────────────── */}
           <RootStack.Screen name="OwnerLogin"     component={OwnerLoginScreen} />

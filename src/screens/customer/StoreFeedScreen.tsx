@@ -541,6 +541,39 @@ export default function StoreFeedScreen() {
           )}
         </View>
 
+        {/* ── 네이버 리뷰 인증 쿠폰 배너 ──────────────────── */}
+        {(() => {
+          // naver_review 타입 쿠폰이 있으면 배너 표시
+          const reviewCoupon = coupons.find((c: CouponRow) => (c as any).discount_type === 'naver_review');
+          return (
+            <View style={s.section}>
+              <TouchableOpacity
+                style={s.naverReviewBanner}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('NaverReviewClaim', {
+                  storeId,
+                  storeName,
+                  couponId:    reviewCoupon?.id,
+                  couponTitle: reviewCoupon?.title,
+                })}
+              >
+                <View style={s.naverReviewLeft}>
+                  <Text style={s.naverReviewEmoji}>📸</Text>
+                  <View>
+                    <Text style={s.naverReviewTitle}>네이버 리뷰 인증 쿠폰</Text>
+                    <Text style={s.naverReviewDesc}>
+                      {reviewCoupon
+                        ? `리뷰 작성하고 "${reviewCoupon.title}" 받기`
+                        : '네이버 영수증 리뷰 작성 후 쿠폰 받기'}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={s.naverReviewArrow}>›</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })()}
+
         {/* ── 최근 공지 ─────────────────────────────────────── */}
         {posts.length > 0 && (
           <View style={s.section}>
@@ -745,4 +778,26 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: C.g400,
   },
+
+  // 네이버 리뷰 인증 배너
+  naverReviewBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#EAFAF1',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#A7ECC8',
+    padding: 16,
+  },
+  naverReviewLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  naverReviewEmoji: { fontSize: 28 },
+  naverReviewTitle: { fontSize: 15, fontWeight: '700', color: '#0C5C2E', marginBottom: 2 },
+  naverReviewDesc:  { fontSize: 13, color: '#1E7A45' },
+  naverReviewArrow: { fontSize: 22, color: '#0C5C2E', fontWeight: '300' },
 });
