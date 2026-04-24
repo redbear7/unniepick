@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Linking,
-  FlatList,
+  FlatList, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -39,6 +39,28 @@ interface PriceReport {
 const KAKAO_MAP_URI =
   process.env.EXPO_PUBLIC_KAKAO_MAP_URI ?? 'http://localhost:3000/api/kakaomap';
 
+// ── 타입 ──────────────────────────────────────────────────────────
+interface NaverReviewItem {
+  id:             string;
+  user_id:        string;
+  screenshot_url: string;
+  created_at:     string;
+  nickname:       string;
+}
+
+// ── 시간 포맷 ─────────────────────────────────────────────────────
+function timeAgo(iso: string): string {
+  const diff  = Date.now() - new Date(iso).getTime();
+  const mins  = Math.floor(diff / 60_000);
+  if (mins < 1)    return '방금';
+  if (mins < 60)   return `${mins}분 전`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24)  return `${hours}시간 전`;
+  const days  = Math.floor(hours / 24);
+  if (days < 30)   return `${days}일 전`;
+  return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+}
+
 export default function StoreHomeScreen() {
   const navigation = useNavigation<any>();
   const route      = useRoute<any>();
@@ -48,6 +70,7 @@ export default function StoreHomeScreen() {
   const [store,             setStore]             = useState<StoreRow | null>(null);
   const [coupons,           setCoupons]           = useState<CouponRow[]>([]);
   const [naverReviewCoupon, setNaverReviewCoupon] = useState<CouponRow | null>(null);
+  const [naverReviews,      setNaverReviews]      = useState<NaverReviewItem[]>([]);
   const [stampCard,         setStampCard]         = useState<StampCardRow | null>(null);
   const [favorited, setFavorited] = useState(false);
   const [userId,    setUserId]    = useState<string | null>(null);
@@ -187,6 +210,33 @@ export default function StoreHomeScreen() {
       const naverCoupon = (couponData as any[]).find((c: any) => c.discount_type === 'naver_review') ?? null;
       setNaverReviewCoupon(naverCoupon as CouponRow | null);
       setCoupons((couponData as any[]).filter((c: any) => c.discount_type !== 'naver_review') as CouponRow[]);
+
+      // 승인된 네이버 리뷰 목록
+      try {
+        const { data: reviewData } = await supabase
+          .from('review_claims')
+          .select('id, user_id, screenshot_url, created_at')
+          .eq('store_id', storeId)
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (reviewData?.length) {
+          const uids = [...new Set((reviewData as any[]).map((r: any) => r.user_id as string))];
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, nickname')
+            .in('id', uids);
+          const nickMap: Record<string, string> = {};
+          (profs ?? []).forEach((p: any) => { nickMap[p.id] = p.nickname ?? '언니'; });
+          setNaverReviews((reviewData as any[]).map((r: any) => ({
+            ...r,
+            nickname: nickMap[r.user_id] ?? '언니',
+          })));
+        } else {
+          setNaverReviews([]);
+        }
+      } catch { /* RLS 정책 미적용 시 조용히 실패 */ }
 
       const session = await getSession();
       if (session) {
@@ -437,6 +487,39 @@ export default function StoreHomeScreen() {
             </View>
           )}
         </View>
+
+        {/* ── 네이버 리뷰 인증 댓글 ── */}
+        {naverReviews.length > 0 && (
+          <View style={[styles.section, SHADOW.card]}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>📸 네이버 리뷰 인증</Text>
+              <Text style={styles.sectionBadge}>{naverReviews.length}명</Text>
+            </View>
+            {naverReviews.map((review) => (
+              <View key={review.id} style={styles.reviewRow}>
+                <View style={styles.reviewAvatar}>
+                  <Text style={styles.reviewAvatarText}>
+                    {(review.nickname ?? '언니').charAt(0)}
+                  </Text>
+                </View>
+                <View style={styles.reviewBody}>
+                  <Text style={styles.reviewNickname}>
+                    {review.nickname}님이 리뷰를 작성해주셨어요 ⭐
+                  </Text>
+                  <Text style={styles.reviewDate}>{timeAgo(review.created_at)}</Text>
+                  {/* 본인만 스크린샷 볼 수 있음 */}
+                  {review.user_id === userId && !!review.screenshot_url && (
+                    <Image
+                      source={{ uri: review.screenshot_url }}
+                      style={styles.reviewThumb}
+                      resizeMode="cover"
+                    />
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* ── 가격 정보 ── */}
         <View style={[styles.section, SHADOW.card]}>
@@ -919,5 +1002,25 @@ const styles = StyleSheet.create({
   },
   emptyReportText: {
     fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20,
+  },
+
+  // ── 네이버 리뷰 인증 댓글 ──
+  reviewRow: {
+    flexDirection: 'row', gap: 10, alignItems: 'flex-start',
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border,
+  },
+  reviewAvatar: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#EAFAF1', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  reviewAvatarText: { fontSize: 15, fontWeight: '700', color: '#0C5C2E' },
+  reviewBody:    { flex: 1, gap: 3 },
+  reviewNickname:{ fontSize: 13, fontWeight: '600', color: COLORS.text, lineHeight: 19 },
+  reviewDate:    { fontSize: 11, color: COLORS.textMuted },
+  reviewThumb: {
+    width: '100%', height: 160, borderRadius: 10,
+    marginTop: 8, backgroundColor: COLORS.background,
   },
 });
