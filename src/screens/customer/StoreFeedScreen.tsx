@@ -305,10 +305,11 @@ export default function StoreFeedScreen() {
   const [posts,        setPosts]        = useState<StorePostRow[]>([]);
   const [isFollowed,   setIsFollowed]   = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
-  const [claimedSet,   setClaimedSet]   = useState<Set<string>>(new Set());
-  const [claimingId,   setClaimingId]   = useState<string | null>(null);
-  const [userId,       setUserId]       = useState<string | null>(null);
-  const [loading,      setLoading]      = useState(true);
+  const [claimedSet,        setClaimedSet]        = useState<Set<string>>(new Set());
+  const [claimingId,        setClaimingId]        = useState<string | null>(null);
+  const [userId,            setUserId]            = useState<string | null>(null);
+  const [loading,           setLoading]           = useState(true);
+  const [naverReviewCoupon, setNaverReviewCoupon] = useState<CouponRow | null>(null);
 
   // ── 데이터 로드 ─────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -322,7 +323,7 @@ export default function StoreFeedScreen() {
       setUserId(uid);
       setStore(storeData);
 
-      // 쿠폰 (활성만)
+      // 쿠폰 (활성 + 미만료)
       const now = new Date().toISOString();
       const { data: couponData } = await supabase
         .from('coupons')
@@ -331,7 +332,12 @@ export default function StoreFeedScreen() {
         .eq('is_active', true)
         .gt('expires_at', now)
         .order('created_at', { ascending: false });
-      setCoupons((couponData ?? []) as CouponRow[]);
+
+      const allCoupons = (couponData ?? []) as CouponRow[];
+      // naver_review 타입은 배너 전용 — 일반 쿠폰북에서 제외
+      const naverCoupon = allCoupons.find((c: any) => c.discount_type === 'naver_review') ?? null;
+      setNaverReviewCoupon(naverCoupon);
+      setCoupons(allCoupons.filter((c: any) => c.discount_type !== 'naver_review'));
 
       // 최근 공지
       const { data: postData } = await supabase
@@ -541,38 +547,32 @@ export default function StoreFeedScreen() {
           )}
         </View>
 
-        {/* ── 네이버 리뷰 인증 쿠폰 배너 ──────────────────── */}
-        {(() => {
-          // naver_review 타입 쿠폰이 있으면 배너 표시
-          const reviewCoupon = coupons.find((c: CouponRow) => (c as any).discount_type === 'naver_review');
-          return (
-            <View style={s.section}>
-              <TouchableOpacity
-                style={s.naverReviewBanner}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate('NaverReviewClaim', {
-                  storeId,
-                  storeName,
-                  couponId:    reviewCoupon?.id,
-                  couponTitle: reviewCoupon?.title,
-                })}
-              >
-                <View style={s.naverReviewLeft}>
-                  <Text style={s.naverReviewEmoji}>📸</Text>
-                  <View>
-                    <Text style={s.naverReviewTitle}>네이버 리뷰 인증 쿠폰</Text>
-                    <Text style={s.naverReviewDesc}>
-                      {reviewCoupon
-                        ? `리뷰 작성하고 "${reviewCoupon.title}" 받기`
-                        : '네이버 영수증 리뷰 작성 후 쿠폰 받기'}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={s.naverReviewArrow}>›</Text>
-              </TouchableOpacity>
+        {/* ── 네이버 리뷰 인증 배너 (항상 표시) ────────────── */}
+        <View style={s.section}>
+          <TouchableOpacity
+            style={s.naverReviewBanner}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('NaverReviewClaim', {
+              storeId,
+              storeName,
+              couponId:    naverReviewCoupon?.id,
+              couponTitle: naverReviewCoupon?.title,
+            })}
+          >
+            <View style={s.naverReviewLeft}>
+              <Text style={s.naverReviewEmoji}>📸</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={s.naverReviewTitle}>네이버 리뷰 인증 쿠폰</Text>
+                <Text style={s.naverReviewDesc} numberOfLines={1}>
+                  {naverReviewCoupon
+                    ? `리뷰 작성하고 "${naverReviewCoupon.title}" 받기`
+                    : '네이버 영수증 리뷰 작성 후 혜택 받기'}
+                </Text>
+              </View>
             </View>
-          );
-        })()}
+            <Text style={s.naverReviewArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* ── 최근 공지 ─────────────────────────────────────── */}
         {posts.length > 0 && (
