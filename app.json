@@ -16,6 +16,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.bangju.unniepick",
       "usesAppleSignIn": false,
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "주변 맛집을 지도에서 보여주기 위해 위치 정보가 필요해요.",
         "NSLocationAlwaysUsageDescription": "근처 맛집 알림을 받기 위해 위치 정보가 필요해요.",
@@ -60,7 +63,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "./plugins/removeRestrictedEntitlements",
       [
         "expo-font",
         {
