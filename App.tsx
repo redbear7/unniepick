@@ -35,17 +35,9 @@ LogBox.ignoreLogs([
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    // 가변 폰트 — 레거시 호환 (기존 코드 대부분이 'WantedSans' 사용)
-    'WantedSans': require('./assets/fonts/WantedSans-1.0.3/variable/WantedSansVariable.ttf'),
-
-    // 웨이트별 개별 폰트 — typography.ts의 F.* 상수와 1:1 대응
-    // iOS는 fontWeight 단독 지정만으로 커스텀 폰트 웨이트가 나오지 않아 개별 등록 필수
-    'WantedSans-Regular':   require('./assets/fonts/WantedSans-Regular.ttf'),
-    'WantedSans-Medium':    require('./assets/fonts/WantedSans-Medium.ttf'),
-    'WantedSans-SemiBold':  require('./assets/fonts/WantedSans-SemiBold.ttf'),
-    'WantedSans-Bold':      require('./assets/fonts/WantedSans-Bold.ttf'),
-    'WantedSans-ExtraBold': require('./assets/fonts/WantedSans-ExtraBold.ttf'),
-    'WantedSans-Black':     require('./assets/fonts/WantedSans-Black.ttf'),
+    // Variable 폰트 — 단일 파일로 400~900 전 웨이트 커버
+    // typography.ts의 F.xxx는 fontFamily: 'Wanted Sans Variable' + fontWeight 조합으로 동작
+    'Wanted Sans Variable': require('./assets/fonts/WantedSans-1.0.3/variable/WantedSansVariable.ttf'),
   });
 
   // 폰트 로드 전 스플래쉬 유지
