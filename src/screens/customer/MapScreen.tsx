@@ -513,7 +513,7 @@ export default function MapScreen() {
             <View style={styles.backBtnPlaceholder} />
           )}
           <View style={styles.titleBadge}>
-            <Text style={styles.titleText}>📍 언니픽 지도</Text>
+            <Text style={styles.titleText}>📍 지도</Text>
           </View>
           <View style={{ flex: 1 }} />
           <View style={styles.topBtns}>
