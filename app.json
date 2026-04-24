@@ -12,6 +12,11 @@
       "backgroundColor": "#FFF8F5"
     },
     "scheme": "unniepick",
+    "assetBundlePatterns": [
+      "assets/*.png",
+      "assets/fonts/*.ttf",
+      "assets/fonts/WantedSans-1.0.3/variable/*.ttf"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.bangju.unniepick",
