@@ -45,9 +45,10 @@ export default function StoreHomeScreen() {
   const storeId: string = route.params?.storeId;
   const bottomPad = useMiniPlayerPadding();
 
-  const [store,     setStore]     = useState<StoreRow | null>(null);
-  const [coupons,   setCoupons]   = useState<CouponRow[]>([]);
-  const [stampCard, setStampCard] = useState<StampCardRow | null>(null);
+  const [store,             setStore]             = useState<StoreRow | null>(null);
+  const [coupons,           setCoupons]           = useState<CouponRow[]>([]);
+  const [naverReviewCoupon, setNaverReviewCoupon] = useState<CouponRow | null>(null);
+  const [stampCard,         setStampCard]         = useState<StampCardRow | null>(null);
   const [favorited, setFavorited] = useState(false);
   const [userId,    setUserId]    = useState<string | null>(null);
   const [loading,   setLoading]   = useState(true);
@@ -182,7 +183,10 @@ export default function StoreHomeScreen() {
         loadPriceReports(),
       ]);
       setStore(storeData);
-      setCoupons(couponData);
+      // naver_review 타입은 배너 전용 — 일반 쿠폰목록에서 제외
+      const naverCoupon = (couponData as any[]).find((c: any) => c.discount_type === 'naver_review') ?? null;
+      setNaverReviewCoupon(naverCoupon as CouponRow | null);
+      setCoupons((couponData as any[]).filter((c: any) => c.discount_type !== 'naver_review') as CouponRow[]);
 
       const session = await getSession();
       if (session) {
@@ -375,9 +379,32 @@ export default function StoreHomeScreen() {
               onPress={() => Linking.openURL(store.naver_place_url!)}
               activeOpacity={0.75}
             >
-              <Text style={styles.naverBtnText}>네이버 업체정보</Text>
+              <Text style={styles.naverBtnText}>네이버 업체정보 보기</Text>
             </TouchableOpacity>
           )}
+
+          {/* 📸 네이버 리뷰 인증 쿠폰 배너 */}
+          <TouchableOpacity
+            style={styles.naverReviewBanner}
+            activeOpacity={0.82}
+            onPress={() => navigation.navigate('NaverReviewClaim', {
+              storeId,
+              storeName:   store.name,
+              couponId:    naverReviewCoupon?.id,
+              couponTitle: naverReviewCoupon?.title,
+            })}
+          >
+            <Text style={styles.naverReviewEmoji}>📸</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.naverReviewTitle}>네이버 리뷰 인증 쿠폰</Text>
+              <Text style={styles.naverReviewDesc} numberOfLines={1}>
+                {naverReviewCoupon
+                  ? `리뷰 작성하고 "${naverReviewCoupon.title}" 받기`
+                  : '네이버 영수증 리뷰 작성 후 혜택 받기'}
+              </Text>
+            </View>
+            <Text style={styles.naverReviewArrow}>›</Text>
+          </TouchableOpacity>
 
           {/* 한줄 소개 */}
           {!!store.description && (
@@ -723,6 +750,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#03C75A',
     letterSpacing: -0.2,
+  },
+
+  // 네이버 리뷰 인증 배너
+  naverReviewBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#EAFAF1',
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    borderColor: '#A7ECC8',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
+  naverReviewEmoji: { fontSize: 22 },
+  naverReviewTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0C5C2E',
+    marginBottom: 1,
+  },
+  naverReviewDesc: {
+    fontSize: 11,
+    color: '#1E7A45',
+  },
+  naverReviewArrow: {
+    fontSize: 20,
+    color: '#0C5C2E',
+    fontWeight: '300',
   },
 
   storeDescBox: {
