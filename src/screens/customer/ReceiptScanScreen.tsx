@@ -18,6 +18,10 @@ import {
   NearbyStore,
 } from '../../lib/services/receiptService';
 import { ExtractedReceiptData } from '../../lib/services/ocrService';
+import {
+  createPartySession,
+  formatPartyCode,
+} from '../../lib/services/partyStampService';
 import { supabase } from '../../lib/supabase';
 
 const { width } = Dimensions.get('window');
@@ -39,7 +43,12 @@ export default function ReceiptScanScreen() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [manualAmount, setManualAmount] = useState('');
   const [timeWarning, setTimeWarning] = useState('');
-  const [showManual, setShowManual] = useState(false);
+  const [showManual,  setShowManual]  = useState(false);
+
+  // 동반자 스탬프 파티
+  const [partyCode,   setPartyCode]   = useState<string | null>(null);
+  const [partyExpiry, setPartyExpiry] = useState<Date | null>(null);
+  const [partySize,   setPartySize]   = useState(1); // 동반자 수 (조정 가능)
 
   // 안내 화면
   const GuideStep = () => (
@@ -200,6 +209,22 @@ export default function ReceiptScanScreen() {
         userLat: userLocation.lat,
         userLng: userLocation.lng,
       });
+
+      // 동반자 스탬프 파티 세션 생성 (메뉴 2개 이상이면)
+      const itemCount = parsed?.item_count ?? 1;
+      if (itemCount >= 2) {
+        const companions = Math.min(itemCount - 1, 10); // 최대 10명
+        setPartySize(companions);
+        const party = await createPartySession({
+          userId:   session.session.user.id,
+          storeId:  nearbyStore.id,
+          maxJoins: companions,
+        });
+        if (party) {
+          setPartyCode(party.code);
+          setPartyExpiry(new Date(party.expiresAt));
+        }
+      }
 
       setStep('success');
     } catch (e: any) {
@@ -374,7 +399,10 @@ export default function ReceiptScanScreen() {
     const amount = parsed?.amount ?? parseInt(manualAmount.replace(/,/g, ''));
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.successCont}>
+        <ScrollView
+          contentContainerStyle={styles.successCont}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.successEmoji}>🎉</Text>
           <Text style={styles.successTitle}>영수증 인증 완료!</Text>
           <Text style={styles.successSub}>{nearbyStore?.districtName} 상권 랭킹에 반영됐어요</Text>
@@ -384,6 +412,32 @@ export default function ReceiptScanScreen() {
             <Text style={styles.successAmount}>+{amount?.toLocaleString()}원</Text>
             <Text style={styles.successStore}>{nearbyStore?.name}</Text>
           </View>
+
+          {/* ── 동반자 스탬프 공유 ────────────────────────────────── */}
+          {partyCode ? (
+            <View style={[styles.partyCard, SHADOW.card]}>
+              <Text style={styles.partyTitle}>🍀 동반자 스탬프 공유</Text>
+              <Text style={styles.partySub}>
+                함께 방문한 {partySize}명에게 아래 코드를 알려주세요{'\n'}
+                동반자가 앱에서 코드를 입력하면 스탬프가 적립돼요
+              </Text>
+              <View style={styles.partyCodeBox}>
+                <Text style={styles.partyCodeText}>{formatPartyCode(partyCode)}</Text>
+              </View>
+              <Text style={styles.partyExpiry}>
+                ⏱ {partyExpiry ? `${partyExpiry.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}까지 유효` : '30분 유효'}
+                {' · '}최대 {partySize}명
+              </Text>
+            </View>
+          ) : (
+            /* item_count = 1이거나 파티 생성 안 된 경우 — 안내만 */
+            <View style={styles.partyHint}>
+              <Text style={styles.partyHintText}>
+                💡 동반자가 있다면 <Text style={{ fontWeight: '700' }}>가게 상세 → 내 스탬프</Text>에서{'\n'}
+                동반자 코드로 스탬프를 공유할 수 있어요
+              </Text>
+            </View>
+          )}
 
           <View style={styles.successBtns}>
             <TouchableOpacity
@@ -399,7 +453,7 @@ export default function ReceiptScanScreen() {
               <Text style={styles.homeBtnText}>홈으로</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -543,6 +597,44 @@ const styles = StyleSheet.create({
   confirmBtnText: { fontSize: 15, fontWeight: '800', color: COLORS.white },
 
   // 성공
+  // 동반자 파티
+  partyCard: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: '#A7ECC8',
+  },
+  partyTitle: { fontSize: 16, fontWeight: '800', color: '#0C5C2E' },
+  partySub:   { fontSize: 13, color: '#1E7A45', textAlign: 'center', lineHeight: 20 },
+  partyCodeBox: {
+    backgroundColor: '#EAFAF1',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    marginVertical: 4,
+    borderWidth: 1,
+    borderColor: '#A7ECC8',
+  },
+  partyCodeText: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#0C5C2E',
+    letterSpacing: 8,
+    fontVariant: ['tabular-nums'] as any,
+  },
+  partyExpiry: { fontSize: 12, color: '#4CAF50', textAlign: 'center' },
+  partyHint: {
+    width: '100%',
+    backgroundColor: '#F2F4F6',
+    borderRadius: 14,
+    padding: 14,
+  },
+  partyHintText: { fontSize: 13, color: '#6B7684', textAlign: 'center', lineHeight: 20 },
+
   successCont: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
     padding: 32, gap: 12,

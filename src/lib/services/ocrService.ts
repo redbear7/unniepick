@@ -10,10 +10,11 @@
 // 공통 타입
 // ──────────────────────────────────────────────────────────────
 export interface ExtractedReceiptData {
-  storeName: string | null;   // 영수증 상호명
-  datetime: Date | null;      // 결제 날짜/시간
-  amount: number | null;      // 합계 금액 (원)
-  rawText: string;            // OCR 원문 (디버깅용)
+  storeName:  string | null;  // 영수증 상호명
+  datetime:   Date | null;    // 결제 날짜/시간
+  amount:     number | null;  // 합계 금액 (원)
+  item_count: number | null;  // 주문 메뉴/항목 수 (인원 추정용)
+  rawText:    string;         // OCR 원문 (디버깅용)
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -47,13 +48,15 @@ async function claudeVisionExtract(base64Image: string): Promise<ExtractedReceip
 {
   "store_name": "영수증 최상단 가게 상호명 (없으면 null)",
   "datetime": "YYYY-MM-DDTHH:MM:SS 형식 결제 날짜/시간 (없으면 null)",
-  "amount": 합계금액 숫자 (원 단위, 없으면 null)
+  "amount": 합계금액 숫자 (원 단위, 없으면 null),
+  "item_count": 주문 항목(메뉴) 종류 수 숫자 (수량 합계가 아닌 줄 수, 없으면 null)
 }
 
 주의:
 - store_name: 영수증에 인쇄된 가게 이름 그대로
 - datetime: 가장 최근 결제 시각 기준
-- amount: 합계/총액/결제금액 중 가장 큰 값 (부가세 포함 최종 금액)`;
+- amount: 합계/총액/결제금액 중 가장 큰 값 (부가세 포함 최종 금액)
+- item_count: 영수증에 나열된 메뉴/상품 항목의 줄 수 (예: 아메리카노 2, 라떼 1 → 2)`;
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -117,15 +120,21 @@ function parseClaudeResponse(rawText: string): ExtractedReceiptData {
         ? parsed.amount
         : null;
 
+    const item_count =
+      typeof parsed.item_count === 'number' && parsed.item_count > 0
+        ? Math.min(parsed.item_count, 20) // 최대 20명으로 제한
+        : null;
+
     return {
       storeName: parsed.store_name ?? null,
       datetime,
       amount,
+      item_count,
       rawText,
     };
   } catch {
     // JSON 파싱 실패 — 텍스트만 반환 (폴백)
-    return { storeName: null, datetime: null, amount: null, rawText };
+    return { storeName: null, datetime: null, amount: null, item_count: null, rawText };
   }
 }
 
@@ -169,6 +178,7 @@ export function parseReceiptTextFallback(rawText: string): ExtractedReceiptData 
   let datetime: Date | null = null;
   let storeName: string | null = null;
   let amount: number | null = null;
+  let item_count: number | null = null;
 
   // 날짜/시간 파싱
   const p1 = rawText.match(/(\d{4})[-\/.](\d{2})[-\/.](\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);
@@ -207,5 +217,10 @@ export function parseReceiptTextFallback(rawText: string): ExtractedReceiptData 
   const firstLine = rawText.split('\n').find(l => l.trim().length > 1);
   storeName = firstLine?.trim() ?? null;
 
-  return { storeName, datetime, amount, rawText };
+  // ML Kit 폴백: 줄 수 기반 메뉴 항목 추정
+  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+  const priceLineCount = lines.filter(l => /[\d,]{3,}원?$/.test(l) && !/합계|총액|결제|부가/.test(l)).length;
+  item_count = priceLineCount > 0 ? Math.min(priceLineCount, 20) : null;
+
+  return { storeName, datetime, amount, item_count, rawText };
 }
