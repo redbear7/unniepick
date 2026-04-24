@@ -339,10 +339,17 @@ export default function ExploreScreen() {
 
       {/* 로딩 스켈레톤 */}
       {loading ? (
-        <View style={{ flex: 1 }}>
+        <>
           <CategoryGrid selected={category} onSelect={setCategory} />
+          <FilterBar
+            sort={sort}
+            onSort={setSort}
+            filter={filter}
+            onFilter={setFilter}
+            gpsOk={gpsOk}
+          />
           <SkeletonGrid />
-        </View>
+        </>
       ) : (
         <FlatList
           data={evenItems}
