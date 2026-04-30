@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>언니픽 V1 디자인 시스템</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous" />
+<link rel="preload" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css" />
+<style>
+  :root {
+    --brand: #ff6f0f;
+    --brand-2: #ff9a3d;
+    --brand-soft: #fff3eb;
+    --ink: #191f28;
+    --ink-2: #333d4b;
+    --muted: #6b7684;
+    --dim: #8b95a1;
+    --line: #e5e8eb;
+    --line-2: #f2f4f6;
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --green: #0ac86e;
+    --violet: #7c3aed;
+    --yellow: #ffb020;
+    --radius-card: 18px;
+    --shadow: 0 18px 42px rgba(25, 31, 40, 0.1);
+    --shadow-sm: 0 10px 24px rgba(25, 31, 40, 0.07);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    color: var(--ink);
+    background: linear-gradient(180deg, #fff 0, #f7f8fa 520px, #f0f2f5 100%);
+    line-height: 1.55;
+  }
+
+  .hero {
+    padding: 40px 28px 34px;
+    border-bottom: 1px solid var(--line);
+    background: #fff;
+  }
+  .hero-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .app-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    color: #fff;
+    font-size: 21px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 28px rgba(255, 111, 15, 0.24);
+  }
+  .brand-name {
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 800;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 18px;
+  }
+  h1 {
+    margin: 0 0 16px;
+    font-size: clamp(32px, 4.3vw, 56px);
+    line-height: 1.12;
+    letter-spacing: -0.2px;
+  }
+  .hero-copy {
+    max-width: 640px;
+    color: var(--muted);
+    font-size: 17px;
+    margin: 0 0 24px;
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 900;
+    text-decoration: none;
+  }
+  .btn.primary {
+    background: var(--brand);
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(255, 111, 15, 0.25);
+  }
+  .btn.secondary {
+    background: var(--line-2);
+    color: var(--ink-2);
+  }
+
+  .hero-showcase {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .stat-card,
+  .mini-card,
+  .sheet,
+  .token-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-card {
+    padding: 20px;
+    background: linear-gradient(135deg, #fff 0%, #fff6ef 100%);
+    border-color: #ffd9bf;
+  }
+  .stat-card strong {
+    display: block;
+    font-size: 14px;
+    color: var(--brand);
+    margin-bottom: 8px;
+  }
+  .stat-card b {
+    display: block;
+    font-size: 28px;
+    line-height: 1.16;
+    margin-bottom: 10px;
+    letter-spacing: -0.2px;
+  }
+  .stat-card p,
+  .mini-card p,
+  .token-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .mini-card {
+    padding: 18px;
+  }
+  .mini-card strong,
+  .token-card strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .token-card {
+    padding: 18px;
+  }
+
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 42px 28px 80px;
+  }
+  .section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    margin: 22px 0 18px;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.24;
+    letter-spacing: -0.1px;
+  }
+  .section-head p {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    display: grid;
+    gap: 18px;
+  }
+  .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .sheet {
+    padding: 20px;
+  }
+  .sheet h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+    line-height: 1.32;
+    letter-spacing: -0.1px;
+  }
+  .sheet p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    margin-bottom: 12px;
+  }
+  .badge.orange { background: var(--brand-soft); color: var(--brand); }
+  .badge.green { background: #e9fbf2; color: #099250; }
+  .badge.violet { background: #f3f0ff; color: var(--violet); }
+  .badge.yellow { background: #fff8e6; color: #b54708; }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pill {
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .list-item {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  .list-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .list-copy strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 15px;
+  }
+  .list-copy span {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .compare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .compare .sheet {
+    min-height: 100%;
+  }
+  .check,
+  .defer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .check div,
+  .defer div {
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .check div {
+    background: #f8fbff;
+    border: 1px solid #deebff;
+    color: #174ea6;
+  }
+  .defer div {
+    background: #fffaf5;
+    border: 1px solid #ffe3c7;
+    color: #9a3412;
+  }
+
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .flow-card {
+    padding: 18px;
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+  }
+  .flow-card b {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .flow-card strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 17px;
+    line-height: 1.28;
+  }
+  .flow-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .footer-note {
+    margin-top: 28px;
+    padding: 18px 20px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  @media (max-width: 1120px) {
+    .hero-inner,
+    .grid-4,
+    .grid-3,
+    .grid-2,
+    .compare,
+    .flow {
+      grid-template-columns: 1fr;
+    }
+    .hero-showcase {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .hero {
+      padding: 30px 20px;
+    }
+    main {
+      padding: 28px 20px 60px;
+    }
+    .hero-showcase {
+      grid-template-columns: 1fr;
+    }
+    .section-head {
+      display: block;
+    }
+    h1 {
+      font-size: 36px;
+    }
+    .hero-copy {
+      font-size: 16px;
+    }
+  }
+</style>
+</head>
+<body>
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="brand-row">
+          <div class="app-icon">U</div>
+          <div class="brand-name">언니픽 V1 Design System</div>
+        </div>
+        <div class="eyebrow">V1 기준 문서</div>
+        <h1>언니픽은 쿠폰으로 오게 하고<br />푸쉬로 다시 부르고<br />스탬프로 또 오게 만든다</h1>
+        <p class="hero-copy">
+          언니픽 V1은 동네 쿠폰 앱이면서 동시에 소상공인 상권 활성화 도구다. 첫 방문은 쿠폰,
+          재호출은 단골 푸쉬, 재방문은 심플 스탬프로 설계하고, 사장님 참여는 최대한 쉽고 빠르게 만든다.
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="/Users/bangju/Documents/PROGRAM/unniepick/docs/창원만원픽-앱목업.html">참고 목업 보기</a>
+          <a class="btn secondary" href="/Users/bangju/Documents/PROGRAM/unniepick-admin/public/design-mockups/unniepick-app-flow-mockup.html">앱 플로우 목업 보기</a>
+        </div>
+      </div>
+      <div class="hero-showcase">
+        <div class="stat-card">
+          <strong>V1 제품 정의</strong>
+          <b>실시간 상권 활성화 앱</b>
+          <p>가볍고 빠른 참여, 실제 혜택, 운영 가능한 관리자 흐름까지 한 번에 묶는다.</p>
+        </div>
+        <div class="mini-card">
+          <strong>핵심 기능 축</strong>
+          <p>쿠폰 · 단골 푸쉬 · 심플 스탬프 · 사장님 30초 참여 · 신청 상태 확인</p>
+        </div>
+        <div class="mini-card">
+          <strong>디자인 무드</strong>
+          <p>밝고 정돈된 실제 앱 인상. 과한 게임화나 마케팅 랜딩 느낌은 피한다.</p>
+        </div>
+        <div class="token-card">
+          <strong>메인 폰트</strong>
+          <p>Wanted Sans를 기준으로 하고, 큰 제목과 짧은 카피로 빠른 이해를 돕는다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>V1 제품 원칙</h2>
+          <p>거지맵처럼 빠르게 참여되지만, 더 고급스럽고 소상공인에게 실제 도움이 되는 쪽으로 간다.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <article class="sheet">
+          <div class="badge orange">원칙 1</div>
+          <h3>쉽고 빨라야 한다</h3>
+          <p>사용자와 사장님 모두 생각 없이 바로 움직일 수 있어야 한다. 입력은 짧고, 행동은 분명하고, 완료까지 망설임이 적어야 한다.</p>
+        </article>
+        <article class="sheet">
+          <div class="badge green">원칙 2</div>
+          <h3>실시간 반응이 보여야 한다</h3>
+          <p>저장, 사용, 신청, 발행, 숏폼, 푸쉬 같은 활동이 살아 움직이는 느낌을 줘야 참여가 붙는다.</p>
+        </article>
+        <article class="sheet">
+          <div class="badge violet">원칙 3</div>
+          <h3>운영 가능한 서비스여야 한다</h3>
+          <p>예쁜 시안만이 아니라 검수, 승인, 반려, 상태 확인, 중복 체크, 좌표 확인까지 실제 운영 흐름이 이어져야 한다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>핵심 기능 구성</h2>
+          <p>언니픽 V1은 세 가지 반복 구조를 중심으로 설계한다.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <article class="flow-card">
+          <b>01</b>
+          <strong>첫 방문은 쿠폰</strong>
+          <p>홈과 가게 상세에서 오늘 바로 쓸 수 있는 혜택이 가장 먼저 보여야 한다. 혜택 제목은 크고, 조건은 짧고, CTA는 명확해야 한다.</p>
+        </article>
+        <article class="flow-card">
+          <b>02</b>
+          <strong>재호출은 단골 푸쉬</strong>
+          <p>사장님이 단골들에게 오늘의 쿠폰, 한산 시간대 혜택, 새 숏폼, 이벤트 오픈을 바로 알릴 수 있어야 한다.</p>
+        </article>
+        <article class="flow-card">
+          <b>03</b>
+          <strong>재방문은 심플 스탬프</strong>
+          <p>복잡한 등급제 대신 가게별 1개의 단순한 스탬프 카드로 다시 오게 만든다. 예: 10회 방문 시 1회 혜택.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>V1 필수 화면</h2>
+          <p>지금 단계에서 꼭 완성도가 높아야 하는 사용자 플로우다.</p>
+        </div>
+      </div>
+      <div class="grid-4">
+        <article class="sheet">
+          <div class="badge orange">사용자</div>
+          <h3>스플래시 · 위치 온보딩</h3>
+          <p>처음 들어오자마자 근처 혜택이 보일 것 같은 기대를 만들어야 한다.</p>
+        </article>
+        <article class="sheet">
+          <div class="badge orange">사용자</div>
+          <h3>홈 피드 · 지도 · 쿠폰 상세</h3>
+          <p>오늘 저장 많은 쿠폰, 지금 반응 오는 가게, 저장과 길찾기 행동이 빠르게 이어져야 한다.</p>
+        </article>
+        <article class="sheet">
+          <div class="badge green">리텐션</div>
+          <h3>푸쉬 · 스탬프 · 마이</h3>
+          <p>저장한 쿠폰, 단골 알림, 진행 중 스탬프가 조용하지만 꾸준히 재방문을 만들게 한다.</p>
+        </article>
+        <article class="sheet">
+          <div class="badge violet">사장님</div>
+          <h3>참여 · 신청 완료 · 상태 확인</h3>
+          <p>사장님 30초 참여 플로우는 쉽고 안심되며, 신청 후에도 다음 단계가 바로 보여야 한다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>살릴 것과 미룰 것</h2>
+          <p>초기 디자인 시스템에서 강점은 가져오고, 지금 제품 흐름을 흐리는 요소는 뒤로 미룬다.</p>
+        </div>
+      </div>
+      <div class="compare">
+        <article class="sheet">
+          <div class="badge green">지금 바로 살릴 것</div>
+          <h3>V1에 적극 반영</h3>
+          <div class="check">
+            <div>오렌지 포인트 컬러와 밝은 배경 톤</div>
+            <div>얇은 보더와 정돈된 카드 스타일</div>
+            <div>큰 제목, 짧은 설명, 빠른 CTA 구조</div>
+            <div>바텀 탭과 피드 카드의 실제 앱 같은 밀도</div>
+            <div>쿠폰 카드 위계, 상태 배지, 운영 화면 정보 구조</div>
+          </div>
+        </article>
+        <article class="sheet">
+          <div class="badge yellow">V2로 미룰 것</div>
+          <h3>처음부터 무겁게 가지 않기</h3>
+          <div class="defer">
+            <div>복잡한 등급제와 다층 단골 리워드</div>
+            <div>QR 중심 적립 구조 전체</div>
+            <div>시크릿 혜택과 과한 게임화</div>
+            <div>지갑형 IA를 메인 홈 구조로 쓰는 것</div>
+            <div>한 번에 너무 많은 방문 룰을 노출하는 방식</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>스타일 가이드</h2>
+          <p>언니픽은 생활형 혜택 앱처럼 보여야 한다. 화려함보다 신뢰감과 속도를 우선한다.</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <article class="sheet">
+          <div class="badge orange">Visual</div>
+          <h3>색과 레이아웃</h3>
+          <div class="row">
+            <div class="pill">Brand #FF6F0F</div>
+            <div class="pill">Soft #FFF3EB</div>
+            <div class="pill">Text #191F28</div>
+            <div class="pill">Line #E5E8EB</div>
+            <div class="pill">BG #F6F7F9</div>
+          </div>
+          <div class="list">
+            <div class="list-item">
+              <div class="list-num">A</div>
+              <div class="list-copy">
+                <strong>밝고 정돈된 바탕</strong>
+                <span>배경은 가볍고, 카드는 실제 앱처럼 단정하게 배치한다.</span>
+              </div>
+            </div>
+            <div class="list-item">
+              <div class="list-num">B</div>
+              <div class="list-copy">
+                <strong>카드는 둥글지만 과하지 않게</strong>
+                <span>라운드는 16~18px 중심, 그림자는 얕고 보더는 선명하게 가져간다.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="sheet">
+          <div class="badge violet">Type</div>
+          <h3>타이포와 카피</h3>
+          <div class="stack">
+            <div class="pill">Wanted Sans</div>
+            <div class="pill">큰 제목, 짧은 보조 설명</div>
+            <div class="pill">버튼은 짧고 행동형 문장</div>
+          </div>
+          <div class="list">
+            <div class="list-item">
+              <div class="list-num">1</div>
+              <div class="list-copy">
+                <strong>제목은 크고 단호하게</strong>
+                <span>쿠폰 제목, 참여 CTA, 완료 화면 제목은 실제 앱 헤드라인처럼 크게 쓴다.</span>
+              </div>
+            </div>
+            <div class="list-item">
+              <div class="list-num">2</div>
+              <div class="list-copy">
+                <strong>설명은 짧고 안심되게</strong>
+                <span>긴 설명 대신 지금 무슨 일이 일어나는지 한 줄로 알려준다.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>사장님 참여 UX 원칙</h2>
+          <p>사장님용 플로우는 무조건 쉽고 간결하고 빨리 참여할 수 있어야 한다.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <article class="sheet">
+          <div class="badge orange">진입</div>
+          <h3>질문형 시작</h3>
+          <p>현재 위치 기반으로 “사장님! OO 사장님이세요?”처럼 바로 선택하게 만든다. 맞으면 큰 CTA로 즉시 이어져야 한다.</p>
+        </article>
+        <article class="sheet">
+          <div class="badge green">입력</div>
+          <h3>짧은 단계와 자동완성</h3>
+          <p>검색, 자동입력, 좌표 보정, AI 쿠폰 추천으로 생각할 양을 줄인다. 필수 아닌 항목은 가볍게 건너뛸 수 있게 한다.</p>
+        </article>
+        <article class="sheet">
+          <div class="badge violet">안심</div>
+          <h3>완료 후 상태가 보여야 한다</h3>
+          <p>신청 완료, 검토 중, 승인 완료 흐름이 자연스럽게 이어지고, 내 신청 상태 보기가 명확해야 한다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>디자인 시스템 한 줄 요약</h2>
+          <p>팀 전체가 같은 방향을 보게 만드는 문장이다.</p>
+        </div>
+      </div>
+      <article class="sheet">
+        <div class="badge orange">Summary</div>
+        <h3>언니픽 V1은 쉽고 빠른 동네 혜택 앱이어야 한다</h3>
+        <p>
+          홈에서는 쿠폰이 제일 먼저 보이고, 단골에게는 푸쉬로 다시 오게 하고, 스탬프로 한 번 더 방문 이유를 만든다.
+          사장님 참여는 최대한 가볍게 시작하고, 운영자는 검수와 상태 확인을 안정적으로 처리한다.
+          디자인은 화려함보다 신뢰감과 속도를 우선한다.
+        </p>
+      </article>
+      <div class="footer-note">
+        참고 기준: 초기 언니픽 디자인 시스템의 컬러/카드/정보 위계 자산, 창원만원픽 앱 목업의 밝고 정돈된 시안 톤,
+        그리고 현재 언니픽 관리자/신청 플로우에서 다듬은 실제 운영 경험을 함께 반영했다.
+      </div>
+    </section>
+  </main>
+</body>
+</html>
