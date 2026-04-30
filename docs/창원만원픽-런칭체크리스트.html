@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>창원 만원픽 런칭 체크리스트</title>
+<style>
+  :root{
+    --brand:#ff6f0f; --brand-soft:#fff1e7; --ink:#171b22; --sub:#3d4652; --muted:#738091;
+    --bg:#f5f7fa; --card:#ffffff; --line:#e6eaef; --green:#12b76a; --blue:#1570ef; --red:#f04438;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Noto Sans KR",sans-serif;line-height:1.6}
+  header{padding:52px 24px;background:linear-gradient(135deg,#171b22 0%,#2d3440 55%,#5a3417 100%);color:#fff}
+  .wrap{max-width:1180px;margin:0 auto}
+  .eyebrow{display:inline-flex;padding:6px 12px;border-radius:999px;background:rgba(255,111,15,.16);color:#ffd0b0;font-size:12px;font-weight:900}
+  h1{margin:18px 0 10px;font-size:clamp(34px,5vw,58px);line-height:1.08}
+  .hero{max-width:780px;color:rgba(255,255,255,.76);font-size:17px}
+  main{max-width:1180px;margin:0 auto;padding:34px 20px 80px}
+  section{margin-bottom:28px}
+  h2{margin:0 0 14px;font-size:24px}
+  h3{margin:0 0 8px;font-size:17px}
+  p{margin:0;color:var(--sub)}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 6px 18px rgba(23,27,34,.05)}
+  .span4{grid-column:span 4}.span6{grid-column:span 6}.span12{grid-column:span 12}
+  .metric{font-size:30px;font-weight:950;color:var(--brand);line-height:1;margin-bottom:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900}
+  .chip.orange{background:var(--brand-soft);color:var(--brand)}
+  .chip.green{background:#eaf8f1;color:var(--green)}
+  .chip.blue{background:#eef4ff;color:var(--blue)}
+  .chip.red{background:#fff0ef;color:var(--red)}
+  .stack{display:flex;flex-wrap:wrap;gap:8px}
+  .list{display:grid;gap:10px;margin-top:14px}
+  .task{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;padding:12px 13px;border:1px solid var(--line);border-radius:14px;background:#fff}
+  .box{width:20px;height:20px;border:2px solid #c9d1da;border-radius:6px;background:#fff}
+  .task strong{display:block;font-size:14px}
+  .task span{display:block;margin-top:2px;font-size:12px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  th{background:#1f2630;color:#fff;text-align:left;padding:12px 14px;font-size:12px}
+  td{padding:13px 14px;border-top:1px solid var(--line);vertical-align:top;font-size:14px;color:var(--sub)}
+  .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .kpi .card{padding:18px}
+  .kpi b{font-size:13px;color:var(--muted)}
+  .kpi strong{display:block;margin-top:7px;font-size:28px;color:var(--ink)}
+  .phase{border-left:5px solid var(--brand)}
+  .timeline{display:grid;grid-template-columns:92px 1fr;gap:16px}
+  .week{font-size:13px;font-weight:950;color:var(--brand)}
+  .hint{margin-top:12px;padding:14px 16px;border-radius:14px;background:#fff7f1;border:1px solid #ffd8be;color:#8a4f1b;font-size:13px}
+  @media(max-width:900px){.span4,.span6{grid-column:span 12}.kpi{grid-template-columns:repeat(2,1fr)}.timeline{grid-template-columns:1fr}}
+  @media(max-width:560px){.kpi{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="eyebrow">LAUNCH CHECKLIST BOARD</div>
+      <h1>창원 만원픽<br />앱 런칭 실행 체크리스트</h1>
+      <p class="hero">전략 문서가 아니라 실제 오픈 준비용 보드입니다. V1 파일럿 오픈까지 4주 기준으로 개발, 운영, 콘텐츠, 사장님 모집, 사용자 유입을 한 화면에서 점검할 수 있게 정리했습니다.</p>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>런칭 기준</h2>
+      <div class="kpi">
+        <div class="card"><b>사장님 모집</b><strong>30곳</strong></div>
+        <div class="card"><b>활성 쿠폰</b><strong>50개</strong></div>
+        <div class="card"><b>숏폼 확보</b><strong>30편</strong></div>
+        <div class="card"><b>파일럿 유저</b><strong>300명</strong></div>
+      </div>
+      <div class="hint">오픈 기준은 “앱이 예쁘게 보이는지”가 아니라 사용자가 첫날 실제로 쓸 쿠폰과 사장님이 체감할 활동량이 준비됐는지입니다.</div>
+    </section>
+
+    <section>
+      <h2>V1 범위</h2>
+      <div class="grid">
+        <div class="card span4">
+          <div class="chip orange">고객 앱</div>
+          <div class="list">
+            <div class="task"><div class="box"></div><div><strong>상권/가격 필터</strong><span>상남동 기준 빠른 탐색</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>쿠폰 받기 CTA</strong><span>첫 화면에서 바로 진입</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>쿠폰함 + QR 사용</strong><span>현장 사용 흐름 확인</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>실시간 활동 피드</strong><span>참여감과 신뢰 확보</span></div></div>
+          </div>
+        </div>
+        <div class="card span4">
+          <div class="chip green">사장님/운영</div>
+          <div class="list">
+            <div class="task"><div class="box"></div><div><strong>30초 참여 폼</strong><span>사업자번호 또는 등록증, GPS 선택</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>관리자 검수함</strong><span>검색, 필터, 반려 사유, 중복 의심</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>쿠폰 자동 생성</strong><span>승인 시 coupon_draft 반영</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>상태 확인 페이지</strong><span>신청자 재방문용 링크</span></div></div>
+          </div>
+        </div>
+        <div class="card span4">
+          <div class="chip blue">콘텐츠</div>
+          <div class="list">
+            <div class="task"><div class="box"></div><div><strong>관리자 숏폼 생성</strong><span>음악 + 쿠폰 조합</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>AI 혜택 추천</strong><span>OpenRouter 기반 추천</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>쿠폰형 템플릿</strong><span>세로 9:16 기본 템플릿</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>캡션 복사/배포</strong><span>인스타 릴스 운영</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>4주 일정</h2>
+      <div class="grid">
+        <div class="card span6 phase">
+          <div class="timeline">
+            <div class="week">1주차</div>
+            <div>
+              <h3>신청과 검수 완성</h3>
+              <div class="list">
+                <div class="task"><div class="box"></div><div><strong>사장님 참여 폼 QA</strong><span>대행사 신청, 사업자번호, AI 혜택 추천, GPS 선택 확인</span></div></div>
+                <div class="task"><div class="box"></div><div><strong>관리자 신청함 QA</strong><span>반려 사유, 중복 의심, 검색/정렬/필터 확인</span></div></div>
+                <div class="task"><div class="box"></div><div><strong>상태 조회 링크 테스트</strong><span>신청 후 SMS 링크로 재확인 흐름 점검</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card span6 phase">
+          <div class="timeline">
+            <div class="week">2주차</div>
+            <div>
+              <h3>쿠폰과 실시간 운영</h3>
+              <div class="list">
+                <div class="task"><div class="box"></div><div><strong>승인 시 자동 쿠폰 생성 점검</strong><span>AI 추천 쿠폰 구조까지 반영되는지 확인</span></div></div>
+                <div class="task"><div class="box"></div><div><strong>실시간 활동 피드 정리</strong><span>쿠폰 발행, 저장, 사용, 사장님 신청 이벤트 확인</span></div></div>
+                <div class="task"><div class="box"></div><div><strong>운영 대시보드 숫자 점검</strong><span>신청 수, 승인율, 저장률, 사용률 추적</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card span6 phase">
+          <div class="timeline">
+            <div class="week">3주차</div>
+            <div>
+              <h3>킬러 콘텐츠 세팅</h3>
+              <div class="list">
+                <div class="task"><div class="box"></div><div><strong>숏폼 템플릿 3종 완성</strong><span>만원픽, 한산시간, 친구동행형</span></div></div>
+                <div class="task"><div class="box"></div><div><strong>숏폼 20~30편 선제작</strong><span>상남동 가게별 기본 물량 확보</span></div></div>
+                <div class="task"><div class="box"></div><div><strong>배포 채널 캡션 세팅</strong><span>인스타 릴스, 카카오 공유 문구 정리</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card span6 phase">
+          <div class="timeline">
+            <div class="week">4주차</div>
+            <div>
+              <h3>파일럿 오픈</h3>
+              <div class="list">
+                <div class="task"><div class="box"></div><div><strong>상남동 가게 30곳 오픈</strong><span>실사용 가능한 쿠폰만 노출</span></div></div>
+                <div class="task"><div class="box"></div><div><strong>파일럿 유저 300명 배포</strong><span>인스타, 카카오, 커뮤니티 채널 집중</span></div></div>
+                <div class="task"><div class="box"></div><div><strong>첫 주 운영 회고</strong><span>쿠폰 저장/사용, 반려 사유, 콘텐츠 반응 수집</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>담당별 실행 항목</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>영역</th>
+            <th>해야 할 일</th>
+            <th>완료 기준</th>
+            <th>우선순위</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>개발</td>
+            <td>사장님 참여, 관리자 신청함, 쿠폰 자동 생성, 상태 페이지, 실시간 피드 안정화</td>
+            <td>핵심 시나리오 수동 테스트 통과</td>
+            <td>상</td>
+          </tr>
+          <tr>
+            <td>운영</td>
+            <td>반려 사유 템플릿, 검수 기준, 중복 가게 처리 룰, 대행사 처리 기준 정리</td>
+            <td>운영자 1명이 하루 30건 이상 처리 가능</td>
+            <td>상</td>
+          </tr>
+          <tr>
+            <td>콘텐츠</td>
+            <td>상남동 쿠폰형 숏폼 30편, 배너 5개, 공유 카드 5개 제작</td>
+            <td>상권 첫 진입 시 피드가 비어 보이지 않음</td>
+            <td>상</td>
+          </tr>
+          <tr>
+            <td>사장님 모집</td>
+            <td>상남동 우선 30곳 섭외, 참여 폼 링크 배포, 대행사 연계 가게 확보</td>
+            <td>오픈 전 승인 가게 30곳 확보</td>
+            <td>상</td>
+          </tr>
+          <tr>
+            <td>유입</td>
+            <td>카카오 공유, 인스타 릴스, 동네 커뮤니티 게시물 배포</td>
+            <td>첫 주 파일럿 유저 300명 도달</td>
+            <td>중</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>오픈 직전 점검표</h2>
+      <div class="grid">
+        <div class="card span6">
+          <div class="stack">
+            <span class="chip orange">운영 체크</span>
+            <span class="chip green">필수</span>
+          </div>
+          <div class="list">
+            <div class="task"><div class="box"></div><div><strong>가게 30곳 승인</strong><span>중복/사업자 확인 완료</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>반려 사유 템플릿 준비</strong><span>사유별 응대 문구 고정</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>실시간 피드 동작 확인</strong><span>사장님 신청, 쿠폰 생성, 저장 이벤트 확인</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>상태 링크 확인</strong><span>신청자 재방문 링크 정상 동작</span></div></div>
+          </div>
+        </div>
+        <div class="card span6">
+          <div class="stack">
+            <span class="chip blue">콘텐츠 체크</span>
+            <span class="chip red">오픈 전 확보</span>
+          </div>
+          <div class="list">
+            <div class="task"><div class="box"></div><div><strong>숏폼 30편 업로드</strong><span>만원픽/한산딜/동행형 믹스</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>쿠폰 50개 활성화</strong><span>기간 만료/조건 오류 없음</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>카카오 공유 문구 준비</strong><span>상권별 3종 이상</span></div></div>
+            <div class="task"><div class="box"></div><div><strong>릴스 캡션 세트 준비</strong><span>상남동 기준 10종 이상</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>첫 주 운영 목표</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>지표</th>
+            <th>목표</th>
+            <th>확인 포인트</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>쿠폰 저장</td>
+            <td>150건+</td>
+            <td>상권별 저장 편차, 숏폼 유입 비중</td>
+          </tr>
+          <tr>
+            <td>쿠폰 사용</td>
+            <td>30건+</td>
+            <td>실제 방문 전환 여부</td>
+          </tr>
+          <tr>
+            <td>사장님 신규 신청</td>
+            <td>20건+</td>
+            <td>대행사 유입/직접 유입 비율</td>
+          </tr>
+          <tr>
+            <td>반려율</td>
+            <td>20% 이하</td>
+            <td>가장 많이 발생한 반려 사유</td>
+          </tr>
+          <tr>
+            <td>숏폼 반응</td>
+            <td>상위 5편 저장 전환 확보</td>
+            <td>어떤 문구/혜택 타입이 강한지</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
