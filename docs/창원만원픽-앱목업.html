@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>언니픽 창원 만원픽 앱 목업</title>
+<style>
+  :root {
+    --brand: #ff6f0f;
+    --brand-2: #ff9a3d;
+    --brand-soft: #fff3eb;
+    --ink: #191f28;
+    --ink-2: #333d4b;
+    --muted: #6b7684;
+    --dim: #8b95a1;
+    --line: #e5e8eb;
+    --line-2: #f2f4f6;
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --green: #0ac86e;
+    --red: #e53935;
+    --blue: #1a73e8;
+    --yellow: #fee500;
+    --dark: #191f28;
+    --radius-card: 16px;
+    --shadow: 0 18px 42px rgba(25, 31, 40, 0.12);
+    --shadow-sm: 0 8px 24px rgba(25, 31, 40, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    color: var(--ink);
+    background:
+      linear-gradient(180deg, #fff 0, #f7f8fa 520px, #f0f2f5 100%);
+    line-height: 1.55;
+  }
+
+  .hero {
+    padding: 38px 28px 34px;
+    border-bottom: 1px solid var(--line);
+    background: #fff;
+  }
+  .hero-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+  .app-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    box-shadow: 0 8px 24px rgba(255,111,15,.22);
+  }
+  .brand-name {
+    font-size: 15px;
+    color: var(--muted);
+    font-weight: 800;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 18px;
+  }
+  h1 {
+    margin: 0 0 16px;
+    font-size: clamp(38px, 5vw, 68px);
+    line-height: 1.05;
+    letter-spacing: 0;
+  }
+  .hero-copy {
+    max-width: 620px;
+    color: var(--muted);
+    font-size: 18px;
+    margin: 0 0 24px;
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 900;
+    text-decoration: none;
+  }
+  .btn.primary { background: var(--brand); color: #fff; box-shadow: 0 10px 24px rgba(255,111,15,.26); }
+  .btn.secondary { background: var(--line-2); color: var(--ink-2); }
+
+  .hero-showcase {
+    min-height: 500px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .phone-stack {
+    position: relative;
+    width: min(560px, 100%);
+    height: 520px;
+  }
+  .phone-stack .phone:nth-child(1) {
+    position: absolute;
+    left: 10px;
+    top: 34px;
+    transform: rotate(-6deg) scale(.9);
+    opacity: .92;
+  }
+  .phone-stack .phone:nth-child(2) {
+    position: absolute;
+    left: 178px;
+    top: 0;
+    z-index: 3;
+  }
+  .phone-stack .phone:nth-child(3) {
+    position: absolute;
+    right: 0;
+    top: 64px;
+    transform: rotate(7deg) scale(.88);
+    opacity: .92;
+  }
+
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 42px 28px 80px;
+  }
+  .section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    margin: 22px 0 18px;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.2;
+  }
+  .section-head p {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .screen-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
+  }
+  .wide-grid {
+    display: grid;
+    grid-template-columns: 1.05fr .95fr;
+    gap: 24px;
+  }
+
+  .phone {
+    width: 292px;
+    height: 600px;
+    border-radius: 42px;
+    padding: 13px;
+    background: #151922;
+    box-shadow: var(--shadow);
+  }
+  .phone.sm { width: 260px; height: 536px; border-radius: 38px; }
+  .screen {
+    position: relative;
+    height: 100%;
+    border-radius: 31px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .status {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink);
+    background: rgba(255,255,255,.92);
+  }
+  .status.dark { background: transparent; color: #fff; }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .loc {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .loc small { color: var(--muted); font-size: 10px; font-weight: 700; }
+  .loc strong { font-size: 16px; }
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--line-2);
+    display: grid;
+    place-items: center;
+    color: var(--ink-2);
+    font-weight: 900;
+  }
+  .content {
+    height: calc(100% - 30px - 57px - 70px);
+    overflow: hidden;
+    padding: 14px 14px 0;
+  }
+  .content.no-tab { height: calc(100% - 30px - 57px); }
+  .tabbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 70px;
+    border-top: 1px solid var(--line);
+    background: rgba(255,255,255,.96);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding-top: 8px;
+  }
+  .tab {
+    text-align: center;
+    font-size: 10px;
+    color: var(--dim);
+    font-weight: 700;
+  }
+  .tab b { display: block; font-size: 18px; line-height: 22px; }
+  .tab.active { color: var(--brand); }
+
+  .ai-card {
+    background: var(--dark);
+    border-radius: 20px;
+    padding: 17px;
+    color: white;
+    box-shadow: var(--shadow-sm);
+  }
+  .ai-card .label {
+    display: inline-flex;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255,111,15,.18);
+    color: #ffbd8c;
+    font-size: 10px;
+    font-weight: 900;
+    margin-bottom: 10px;
+  }
+  .ai-title { font-size: 24px; font-weight: 900; line-height: 1.16; margin-bottom: 13px; }
+  .ask {
+    min-height: 42px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.12);
+    display: flex;
+    align-items: center;
+    padding: 0 13px;
+    color: rgba(255,255,255,.72);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .chips {
+    display: flex;
+    gap: 7px;
+    overflow: hidden;
+    margin: 13px 0 10px;
+  }
+  .chip {
+    flex: 0 0 auto;
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ink-2);
+    font-weight: 800;
+  }
+  .chip.on {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
+  .deal-card {
+    background: white;
+    border-radius: 17px;
+    padding: 14px;
+    margin-top: 11px;
+    box-shadow: 0 4px 12px rgba(25,31,40,.05);
+  }
+  .deal-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    color: white;
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+    flex: 0 0 auto;
+  }
+  .deal-meta {
+    flex: 1;
+    min-width: 0;
+  }
+  .deal-meta strong {
+    display: block;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .deal-meta small { color: var(--muted); font-size: 10px; font-weight: 700; }
+  .badge {
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-size: 10px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  .price {
+    margin: 12px 0 8px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .price b { font-size: 25px; color: var(--ink); }
+  .price span { color: var(--green); font-size: 12px; font-weight: 900; }
+  .reason {
+    border-radius: 12px;
+    background: var(--line-2);
+    padding: 9px 10px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .cta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 11px;
+  }
+  .mini-btn {
+    height: 34px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 900;
+    background: var(--line-2);
+  }
+  .mini-btn.primary { background: var(--brand); color: #fff; }
+
+  .shorts-screen {
+    background: #0f1117;
+    color: white;
+  }
+  .shorts-video {
+    position: absolute;
+    inset: 30px 0 70px;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,.62), rgba(0,0,0,.06) 44%, rgba(0,0,0,.82)),
+      linear-gradient(135deg, #7b3c15, #17191f 62%, #2c1d16);
+    overflow: hidden;
+  }
+  .shorts-video::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 22px 22px;
+    opacity: .35;
+  }
+  .shorts-video::after {
+    content: "🍱";
+    position: absolute;
+    right: -18px;
+    bottom: 92px;
+    font-size: 168px;
+    opacity: .22;
+    transform: rotate(-10deg);
+  }
+  .shorts-head {
+    position: relative;
+    padding: 34px 20px 0;
+    z-index: 2;
+  }
+  .shorts-head h3 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.12;
+  }
+  .shorts-head p {
+    margin: 9px 0 0;
+    color: #ffb47d;
+    font-size: 13px;
+    font-weight: 900;
+  }
+  .coupon-float {
+    position: absolute;
+    left: 15px;
+    right: 15px;
+    bottom: 110px;
+    z-index: 3;
+    padding: 13px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255,111,15,.96), rgba(255,78,0,.96));
+    box-shadow: 0 10px 34px rgba(255,111,15,.36);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .coupon-float .ticket { font-size: 32px; }
+  .coupon-float small { color: rgba(255,255,255,.78); font-size: 10px; font-weight: 800; }
+  .coupon-float b { display: block; font-size: 22px; line-height: 1; }
+  .wave {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 52px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 34px;
+  }
+  .wave span {
+    flex: 1;
+    border-radius: 999px;
+    background: rgba(255,111,15,.88);
+  }
+  .wave span:nth-child(1) { height: 16px; }
+  .wave span:nth-child(2) { height: 26px; }
+  .wave span:nth-child(3) { height: 12px; }
+  .wave span:nth-child(4) { height: 30px; }
+  .wave span:nth-child(5) { height: 19px; }
+  .wave span:nth-child(6) { height: 28px; }
+  .wave span:nth-child(7) { height: 13px; }
+  .wave span:nth-child(8) { height: 22px; }
+  .shorts-actions {
+    position: absolute;
+    right: 12px;
+    bottom: 178px;
+    z-index: 4;
+    display: grid;
+    gap: 10px;
+  }
+  .shorts-actions div {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: rgba(0,0,0,.38);
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+  }
+
+  .map-card {
+    height: 245px;
+    border-radius: 20px;
+    position: relative;
+    background:
+      linear-gradient(90deg, rgba(25,31,40,.05) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(25,31,40,.05) 1px, transparent 1px),
+      #fff;
+    background-size: 34px 34px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .pin {
+    position: absolute;
+    width: 78px;
+    min-height: 54px;
+    padding: 8px 9px;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(25,31,40,.13);
+    border: 1px solid var(--line);
+    font-size: 10px;
+    font-weight: 800;
+  }
+  .pin b { display: block; color: var(--brand); font-size: 13px; margin-top: 2px; }
+  .pin:nth-child(1) { left: 22px; top: 28px; }
+  .pin:nth-child(2) { right: 32px; top: 44px; }
+  .pin:nth-child(3) { left: 92px; bottom: 46px; }
+  .pin:nth-child(4) { right: 88px; bottom: 32px; }
+  .pin.hot {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
+  .pin.hot b { color: #fff; }
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #fff;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -10px 24px rgba(25,31,40,.08);
+    padding: 14px;
+  }
+  .sheet-handle {
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    margin: 0 auto 12px;
+  }
+
+  .wallet-card {
+    background: linear-gradient(135deg, var(--brand), #ff8a2b);
+    border-radius: 20px;
+    padding: 17px;
+    color: #fff;
+    box-shadow: 0 12px 28px rgba(255,111,15,.24);
+  }
+  .wallet-card small { color: rgba(255,255,255,.72); font-weight: 800; }
+  .wallet-card h3 { margin: 6px 0 16px; font-size: 26px; }
+  .qr {
+    height: 96px;
+    border-radius: 16px;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    color: var(--ink);
+    font-size: 46px;
+  }
+
+  .owner-panel {
+    border-radius: 26px;
+    background: #151922;
+    color: white;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .owner-top {
+    padding: 20px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .owner-top h3 { margin: 0; font-size: 19px; }
+  .owner-body {
+    display: grid;
+    grid-template-columns: 260px 1fr 280px;
+    min-height: 540px;
+  }
+  .track-list, .control-panel, .preview-panel {
+    padding: 18px;
+    border-right: 1px solid rgba(255,255,255,.08);
+  }
+  .preview-panel { border-right: 0; }
+  .dark-input {
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.08);
+    color: rgba(255,255,255,.55);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 13px;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,.04);
+  }
+  .track-row.active {
+    background: rgba(255,111,15,.16);
+    border: 1px solid rgba(255,111,15,.36);
+  }
+  .track-cover {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ff6f0f, #ffb45c);
+    display: grid;
+    place-items: center;
+  }
+  .track-row strong { display: block; font-size: 12px; }
+  .track-row small { color: rgba(255,255,255,.45); font-size: 10px; }
+  .control-card {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 12px;
+  }
+  .control-card h4 {
+    margin: 0 0 12px;
+    font-size: 13px;
+  }
+  .dark-chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .dark-chip {
+    padding: 7px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.08);
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(255,255,255,.65);
+  }
+  .dark-chip.on { background: var(--brand); color: white; }
+  .timeline {
+    height: 82px;
+    border-radius: 15px;
+    background: rgba(0,0,0,.24);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 12px;
+    margin-top: 9px;
+  }
+  .timeline span {
+    flex: 1;
+    border-radius: 999px;
+    background: rgba(255,111,15,.72);
+  }
+  .timeline span:nth-child(odd) { height: 28px; }
+  .timeline span:nth-child(even) { height: 52px; }
+  .render-btn {
+    height: 46px;
+    border-radius: 14px;
+    background: var(--brand);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 900;
+    margin-top: 12px;
+  }
+  .preview-phone {
+    width: 206px;
+    height: 366px;
+    border-radius: 24px;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.12) 44%, rgba(0,0,0,.85)),
+      linear-gradient(135deg, #914916, #1b1f2a);
+    margin: 0 auto 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .preview-phone h4 {
+    position: absolute;
+    top: 24px;
+    left: 18px;
+    right: 18px;
+    margin: 0;
+    font-size: 21px;
+    line-height: 1.16;
+  }
+  .preview-ticket {
+    position: absolute;
+    left: 13px;
+    right: 13px;
+    bottom: 82px;
+    padding: 11px;
+    border-radius: 15px;
+    background: linear-gradient(135deg, #ff6f0f, #ff4e00);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .preview-ticket b { display: block; font-size: 18px; }
+
+  .notes {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .note {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px;
+  }
+  .note h3 { margin: 0 0 8px; font-size: 16px; }
+  .note p { margin: 0; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 1180px) {
+    .screen-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .wide-grid { grid-template-columns: 1fr; }
+    .owner-body { grid-template-columns: 1fr; }
+    .track-list, .control-panel, .preview-panel { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .preview-panel { border-bottom: 0; }
+  }
+  @media (max-width: 860px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .hero-showcase { min-height: 400px; overflow: hidden; }
+    .phone-stack { transform: scale(.78); transform-origin: top center; height: 410px; }
+    .screen-grid, .notes { grid-template-columns: 1fr; justify-items: center; }
+    .section-head { display: block; }
+    main { padding: 30px 18px 60px; }
+    .owner-panel { width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="brand-row">
+          <img class="app-icon" src="../assets/icon.png" alt="언니픽 앱 아이콘" />
+          <div class="brand-name">UnniePick · Changwon Manwon Pick</div>
+        </div>
+        <div class="eyebrow">창원 상권 활성화 앱 목업</div>
+        <h1>만원으로 발견하고<br />숏폼으로 퍼지는<br />창원 동네딜</h1>
+        <p class="hero-copy">
+          거지맵의 가격 발견성을 소상공인에게 도움이 되는 방향으로 바꾸고,
+          관리자 음악 쿠폰 숏폼 엔진을 킬러 콘텐츠로 전면 배치한 앱 디자인 시안입니다.
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#screens">앱 화면 보기</a>
+          <a class="btn secondary" href="#shorts">숏폼 엔진 보기</a>
+        </div>
+      </div>
+
+      <div class="hero-showcase">
+        <div class="phone-stack">
+          <div class="phone sm">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="bar">
+                <div class="loc"><small>내 주변</small><strong>창원대 앞</strong></div>
+                <button class="icon-btn">⌕</button>
+              </div>
+              <div class="content">
+                <div class="map-card">
+                  <div class="pin">백반<b>8,000</b></div>
+                  <div class="pin hot">라떼 1+1<b>2시</b></div>
+                  <div class="pin">돈가스<b>9,900</b></div>
+                  <div class="pin">국수<b>7,000</b></div>
+                  <div class="sheet">
+                    <div class="sheet-handle"></div>
+                    <div class="deal-top">
+                      <div class="avatar">☕</div>
+                      <div class="deal-meta"><strong>모카팩토리 창원대점</strong><small>312m · 사장님 인증</small></div>
+                      <span class="badge">응원딜</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <div class="tab active"><b>🏠</b>홈</div><div class="tab"><b>🎬</b>숏폼</div><div class="tab"><b>🗺</b>지도</div><div class="tab"><b>🎟</b>쿠폰</div><div class="tab"><b>👤</b>MY</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>●●●</span></div>
+              <div class="bar">
+                <div class="loc"><small>오늘의 동네딜</small><strong>상남동 만원픽</strong></div>
+                <button class="icon-btn">🔔</button>
+              </div>
+              <div class="content">
+                <div class="ai-card">
+                  <span class="label">AI 추천</span>
+                  <div class="ai-title">점심 1만원 이하<br />지금 갈 곳 찾아드려요</div>
+                  <div class="ask">상남동 혼밥 가능한 곳</div>
+                </div>
+                <div class="chips">
+                  <span class="chip on">1만원 이하</span><span class="chip">혼밥</span><span class="chip">오늘 쿠폰</span>
+                </div>
+                <div class="deal-card">
+                  <div class="deal-top">
+                    <div class="avatar">🍲</div>
+                    <div class="deal-meta"><strong>청담국수 상남점</strong><small>210m · 오늘 검증</small></div>
+                    <span class="badge">만원픽</span>
+                  </div>
+                  <div class="price"><b>8,500원</b><span>음료 500원 할인</span></div>
+                  <div class="reason">📍 가깝고 · ⏰ 점심 시간 · 🎟 쿠폰 적용 가능</div>
+                  <div class="cta-row"><div class="mini-btn primary">쿠폰 받기</div><div class="mini-btn">길찾기</div></div>
+                </div>
+                <div class="deal-card">
+                  <div class="deal-top">
+                    <div class="avatar">🍱</div>
+                    <div class="deal-meta"><strong>도시락공방</strong><small>255m · 제보 검증</small></div>
+                    <span class="badge">학생픽</span>
+                  </div>
+                  <div class="price"><b>7,900원</b><span>2회차 스탬프</span></div>
+                </div>
+              </div>
+              <div class="tabbar">
+                <div class="tab active"><b>🏠</b>홈</div><div class="tab"><b>🎬</b>숏폼</div><div class="tab"><b>🗺</b>지도</div><div class="tab"><b>🎟</b>쿠폰</div><div class="tab"><b>👤</b>MY</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="phone sm">
+            <div class="screen shorts-screen">
+              <div class="status dark"><span>9:41</span><span>●●●</span></div>
+              <div class="shorts-video">
+                <div class="shorts-head"><h3>창원대 앞<br />카페 2시 딜</h3><p>언니픽 BGM으로 보는 오늘의 혜택</p></div>
+                <div class="shorts-actions"><div>♡</div><div>↗</div><div>🎟</div></div>
+                <div class="coupon-float"><div class="ticket">🎟</div><div><small>모카팩토리 라떼</small><b>1+1</b></div></div>
+                <div class="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+              </div>
+              <div class="tabbar">
+                <div class="tab"><b>🏠</b>홈</div><div class="tab active"><b>🎬</b>숏폼</div><div class="tab"><b>🗺</b>지도</div><div class="tab"><b>🎟</b>쿠폰</div><div class="tab"><b>👤</b>MY</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="screens">
+      <div class="section-head">
+        <div>
+          <h2>앱 주요 화면</h2>
+          <p>홈, 숏폼, 지도, 쿠폰함을 하나의 행동 루프로 연결했습니다.</p>
+        </div>
+      </div>
+      <div class="screen-grid">
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>●●●</span></div>
+            <div class="bar"><div class="loc"><small>AI 동네 추천</small><strong>오늘 뭐 먹지?</strong></div><button class="icon-btn">⚙</button></div>
+            <div class="content">
+              <div class="ai-card"><span class="label">창원 만원픽</span><div class="ai-title">상남동에서<br />만원 이하 점심</div><div class="ask">비 오는 날 따뜻한 백반</div></div>
+              <div class="chips"><span class="chip on">7천원~1만원</span><span class="chip">사장님 인증</span></div>
+              <div class="deal-card"><div class="deal-top"><div class="avatar">🍜</div><div class="deal-meta"><strong>청담국수</strong><small>210m · 오늘 인증</small></div><span class="badge">D-1</span></div><div class="price"><b>8,500원</b><span>500원 쿠폰</span></div><div class="reason">AI 이유: 지금 위치에서 가장 가깝고 점심 시간 반응률이 높아요.</div></div>
+              <div class="deal-card"><div class="deal-top"><div class="avatar">🍛</div><div class="deal-meta"><strong>상남백반</strong><small>430m · 사진 검증</small></div><span class="badge">든든픽</span></div><div class="price"><b>9,000원</b><span>재방문 스탬프</span></div></div>
+            </div>
+            <div class="tabbar"><div class="tab active"><b>🏠</b>홈</div><div class="tab"><b>🎬</b>숏폼</div><div class="tab"><b>🗺</b>지도</div><div class="tab"><b>🎟</b>쿠폰</div><div class="tab"><b>👤</b>MY</div></div>
+          </div>
+        </div>
+
+        <div class="phone">
+          <div class="screen shorts-screen">
+            <div class="status dark"><span>9:41</span><span>●●●</span></div>
+            <div class="shorts-video">
+              <div class="shorts-head"><h3>상남동<br />만원 점심</h3><p>20초 안에 저장하는 오늘의 딜</p></div>
+              <div class="shorts-actions"><div>♥</div><div>💬</div><div>↗</div><div>🎟</div></div>
+              <div class="coupon-float"><div class="ticket">🎟</div><div><small>청담국수 쿠폰</small><b>500원 할인</b></div></div>
+              <div class="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="tabbar"><div class="tab"><b>🏠</b>홈</div><div class="tab active"><b>🎬</b>숏폼</div><div class="tab"><b>🗺</b>지도</div><div class="tab"><b>🎟</b>쿠폰</div><div class="tab"><b>👤</b>MY</div></div>
+          </div>
+        </div>
+
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>●●●</span></div>
+            <div class="bar"><div class="loc"><small>지도</small><strong>창원 착한가격</strong></div><button class="icon-btn">⌕</button></div>
+            <div class="content">
+              <div class="chips"><span class="chip on">상남동</span><span class="chip">창원대</span><span class="chip">마산 창동</span></div>
+              <div class="map-card">
+                <div class="pin">라멘<b>9,500</b></div><div class="pin hot">백반<b>8,000</b></div><div class="pin">카페<b>1+1</b></div><div class="pin">국수<b>7,000</b></div>
+                <div class="sheet">
+                  <div class="sheet-handle"></div>
+                  <div class="deal-top"><div class="avatar">🍲</div><div class="deal-meta"><strong>상남백반</strong><small>430m · 사장님 인증 · 오늘 제보 3건</small></div><span class="badge">검증됨</span></div>
+                  <div class="cta-row"><div class="mini-btn primary">쿠폰 받기</div><div class="mini-btn">가격 제보</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="tabbar"><div class="tab"><b>🏠</b>홈</div><div class="tab"><b>🎬</b>숏폼</div><div class="tab active"><b>🗺</b>지도</div><div class="tab"><b>🎟</b>쿠폰</div><div class="tab"><b>👤</b>MY</div></div>
+          </div>
+        </div>
+
+        <div class="phone">
+          <div class="screen">
+            <div class="status"><span>9:41</span><span>●●●</span></div>
+            <div class="bar"><div class="loc"><small>내 쿠폰함</small><strong>오늘 쓸 수 있어요</strong></div><button class="icon-btn">QR</button></div>
+            <div class="content">
+              <div class="wallet-card"><small>사용 가능 쿠폰</small><h3>3장</h3><div class="qr">▦</div></div>
+              <div class="deal-card"><div class="deal-top"><div class="avatar">🍜</div><div class="deal-meta"><strong>청담국수 500원 할인</strong><small>오늘 14:00까지 · 210m</small></div><span class="badge">오늘만</span></div><div class="cta-row"><div class="mini-btn primary">QR 열기</div><div class="mini-btn">길찾기</div></div></div>
+              <div class="deal-card"><div class="deal-top"><div class="avatar">☕</div><div class="deal-meta"><strong>라떼 1+1</strong><small>창원대 앞 · 2시~5시</small></div><span class="badge">한산딜</span></div></div>
+            </div>
+            <div class="tabbar"><div class="tab"><b>🏠</b>홈</div><div class="tab"><b>🎬</b>숏폼</div><div class="tab"><b>🗺</b>지도</div><div class="tab active"><b>🎟</b>쿠폰</div><div class="tab"><b>👤</b>MY</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="shorts">
+      <div class="section-head">
+        <div>
+          <h2>관리자 숏폼 생성 프로그램</h2>
+          <p>관리자가 만든 음악, 쿠폰, 상권 캠페인을 조합해 배포용 영상을 만드는 킬러 콘텐츠 엔진입니다.</p>
+        </div>
+      </div>
+      <div class="owner-panel">
+        <div class="owner-top">
+          <h3>🎬 숏폼 생성 · 창원 만원픽 캠페인</h3>
+          <div class="badge">Remotion 렌더</div>
+        </div>
+        <div class="owner-body">
+          <div class="track-list">
+            <div class="dark-input">제목, 아티스트, 태그 검색...</div>
+            <div class="track-row active"><div class="track-cover">🎵</div><div><strong>Orange Lunch Beat</strong><small>언니픽 · 126 BPM</small></div></div>
+            <div class="track-row"><div class="track-cover">☕</div><div><strong>Rainy Cafe Loop</strong><small>cozy · 84 BPM</small></div></div>
+            <div class="track-row"><div class="track-cover">🌙</div><div><strong>After Work Groove</strong><small>evening · 104 BPM</small></div></div>
+            <div class="track-row"><div class="track-cover">✨</div><div><strong>Campus Pick</strong><small>bright · 118 BPM</small></div></div>
+          </div>
+          <div class="control-panel">
+            <div class="control-card">
+              <h4>클라이맥스 구간</h4>
+              <div class="dark-chip-row"><span class="dark-chip on">자동 감지</span><span class="dark-chip">20초</span><span class="dark-chip">1.5초 페이드</span></div>
+              <div class="timeline"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="control-card">
+              <h4>쿠폰 첨부</h4>
+              <div class="track-row active"><div class="track-cover">🎟</div><div><strong>청담국수 500원 할인</strong><small>상남동 · 오늘 마감</small></div></div>
+              <div class="track-row"><div class="track-cover">🎟</div><div><strong>모카팩토리 라떼 1+1</strong><small>창원대 · 2시~5시</small></div></div>
+            </div>
+            <div class="control-card">
+              <h4>비주얼 스타일</h4>
+              <div class="dark-chip-row"><span class="dark-chip on">Bar 파형</span><span class="dark-chip">Beat 커버</span><span class="dark-chip">별빛</span><span class="dark-chip">만원픽 템플릿</span></div>
+            </div>
+            <div class="render-btn">숏폼 생성하기</div>
+          </div>
+          <div class="preview-panel">
+            <div class="preview-phone">
+              <h4>상남동<br />만원 점심</h4>
+              <div class="preview-ticket"><span>🎟</span><div><small>청담국수 쿠폰</small><b>500원 할인</b></div></div>
+            </div>
+            <div class="control-card">
+              <h4>배포 캡션</h4>
+              <p style="margin:0;color:rgba(255,255,255,.64);font-size:12px;">창원 상남동 점심값 아끼는 법. 오늘 2시까지 앱에서 쿠폰 받아요. #창원만원픽 #언니픽</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>디자인 원칙</h2>
+          <p>소비자에게는 재미, 사장님에게는 존중, 운영자에게는 반복 생산성을 줍니다.</p>
+        </div>
+      </div>
+      <div class="notes">
+        <div class="note"><h3>가격은 크게, 낙인은 작게</h3><p>만원 이하를 즉시 알아보게 하되 “싼 집”보다 “착한 구성”, “사장님 인증”으로 표현합니다.</p></div>
+        <div class="note"><h3>숏폼이 첫 번째 콘텐츠</h3><p>피드 카드는 쿠폰 설명이 아니라 15~20초 영상에서 바로 저장되는 전환 장치입니다.</p></div>
+        <div class="note"><h3>한 화면 한 행동</h3><p>홈은 추천, 숏폼은 저장, 지도는 길찾기, 쿠폰함은 사용으로 행동을 분리합니다.</p></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
